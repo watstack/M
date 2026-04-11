@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Formula Transition Plan</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1e1a2e;
+    --muted: #6b6280;
+    --faint: #f0edf8;
+    --border: #ddd8ee;
+    --breast: #e8a87c;
+    --breast-bg: #fdf3ec;
+    --breast-border: #f0c9a8;
+    --formula: #6db8c8;
+    --formula-bg: #eef7fa;
+    --formula-border: #b0dce8;
+    --pump: #7ab87a;
+    --pump-bg: #edf6ed;
+    --pump-border: #b0d8b0;
+    --solo-bg: #fffbf5;
+    --together-bg: #f4f0fc;
+    --night-bg: #f0eef8;
+    --accent: #8b6fc0;
+    --terra: #c47c5a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Source Sans 3', sans-serif; background: #f8f6fc; color: var(--ink); font-size: 13.5px; line-height: 1.55; }
+
+  header {
+    background: var(--ink);
+    padding: 2rem 1.5rem 1.8rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 100% at 20% 50%, rgba(139,111,192,0.25) 0%, transparent 70%),
+                radial-gradient(ellipse 60% 100% at 80% 50%, rgba(109,184,200,0.2) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  h1 { font-family: 'Playfair Display', serif; font-size: 1.85rem; color: #fff; position: relative; z-index: 1; letter-spacing: -0.01em; }
+  .subtitle { font-size: 0.78rem; color: #b0a8cc; margin-top: 0.4rem; font-weight: 300; position: relative; z-index: 1; }
+
+  .how-it-works {
+    background: var(--together-bg);
+    border-bottom: 2px solid var(--border);
+    padding: 1rem 1.3rem;
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .how-it-works strong { color: var(--ink); }
+  .how-it-works h3 { font-family: 'Playfair Display', serif; font-size: 0.95rem; color: var(--accent); margin-bottom: 0.4rem; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem 1.2rem; }
+
+  .legend {
+    display: flex; gap: 1rem; flex-wrap: wrap;
+    justify-content: center;
+    padding: 0.7rem 1rem;
+    background: white;
+    border-bottom: 1px solid var(--border);
+  }
+  .leg { display: flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; color: var(--muted); font-weight: 500; }
+  .leg-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+  /* Phase headers */
+  .phase-head {
+    background: var(--ink);
+    color: white;
+    padding: 0.65rem 1.3rem;
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .phase-head h2 { font-family: 'Playfair Display', serif; font-size: 0.98rem; font-weight: 600; }
+  .phase-dates { font-size: 0.7rem; color: #a09ac0; font-weight: 300; }
+
+  .phase-note {
+    border-left: 3px solid var(--accent);
+    background: var(--faint);
+    padding: 0.75rem 1.1rem;
+    font-size: 0.76rem; color: var(--muted); line-height: 1.75;
+  }
+  .phase-note strong { color: var(--ink); }
+
+  /* Day card */
+  .day-card {
+    background: white;
+    border-bottom: 1px solid var(--border);
+  }
+  .day-card:hover { background: var(--faint); }
+
+  .day-inner { display: grid; grid-template-columns: 64px 1fr; }
+
+  .day-label {
+    padding: 0.8rem 0.5rem 0.8rem 1rem;
+    border-right: 2px solid var(--border);
+    display: flex; flex-direction: column; justify-content: flex-start;
+    padding-top: 1rem;
+  }
+  .day-n { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--accent); line-height: 1; }
+  .day-d { font-size: 0.62rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 0.1rem; }
+
+  .day-body { display: flex; flex-direction: column; }
+
+  /* Time bands */
+  .band {
+    padding: 0.5rem 0.9rem;
+    display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center;
+  }
+  .band + .band { border-top: 1px dashed var(--border); }
+  .band-solo { background: var(--solo-bg); }
+  .band-together { background: var(--together-bg); }
+  .band-night { background: var(--night-bg); }
+
+  .band-label {
+    width: 100%; font-size: 0.6rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 0.15rem;
+  }
+  .band-label.solo { color: #c47c5a; }
+  .band-label.together { color: var(--accent); }
+  .band-label.night { color: #6b6280; }
+
+  /* Pills */
+  .pill {
+    display: inline-flex; align-items: center; gap: 0.22rem;
+    border-radius: 20px; padding: 0.17rem 0.5rem;
+    font-size: 0.71rem; font-weight: 500;
+    white-space: nowrap; border: 1.5px solid transparent;
+  }
+  .pill.breast { background: var(--breast-bg); border-color: var(--breast-border); color: #a0522d; }
+  .pill.formula { background: var(--formula-bg); border-color: var(--formula-border); color: #1a6e82; }
+  .pill.pump { background: var(--pump-bg); border-color: var(--pump-border); color: #2e6b2e; }
+  .pill.simultaneous {
+    background: linear-gradient(135deg, var(--formula-bg) 50%, var(--pump-bg) 50%);
+    border-color: var(--formula-border);
+    color: var(--ink);
+    font-style: italic;
+  }
+  .pill.note { font-size: 0.68rem; color: var(--muted); font-style: italic; background: none; border: none; padding-left: 0; }
+  .pill.new { border-color: var(--accent); }
+
+  .new-badge {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 0.55rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    padding: 0.05rem 0.28rem;
+    margin-left: 0.1rem;
+    vertical-align: middle;
+  }
+
+  .summary {
+    background: var(--faint);
+    border-top: 1px solid var(--border);
+    padding: 0.4rem 0.9rem;
+    display: flex; gap: 0.6rem; flex-wrap: wrap;
+    font-size: 0.68rem; color: var(--muted);
+  }
+  .s-pill {
+    display: inline-flex; align-items: center; gap: 0.2rem;
+    background: white; border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.1rem 0.4rem;
+    font-weight: 500;
+  }
+
+  .divider { height: 3px; background: linear-gradient(to right, var(--accent), var(--formula)); }
+
+  .engorgement-box {
+    background: #fff8f0;
+    border: 1.5px solid var(--breast-border);
+    border-radius: 6px;
+    margin: 0.7rem 1rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.75rem; color: var(--muted); line-height: 1.75;
+  }
+  .engorgement-box h4 { font-family: 'Playfair Display', serif; color: var(--terra); margin-bottom: 0.25rem; font-size: 0.88rem; }
+  .engorgement-box strong { color: var(--ink); }
+
+  footer {
+    background: var(--ink);
+    color: #8a82a8;
+    padding: 1.2rem 1.5rem;
+    font-size: 0.74rem; line-height: 1.9;
+  }
+  footer h3 { font-family: 'Playfair Display', serif; color: white; font-size: 0.95rem; margin-bottom: 0.5rem; }
+  footer strong { color: #c0b8e0; }
+  .footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.2rem 1.5rem; }
+  @media (max-width: 500px) { .two-col, .footer-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Formula Transition Plan</h1>
+  <div class="subtitle">Transition feeds outside 9–5 only · You bottle feed, partner pumps simultaneously · Starting 10 April 2026</div>
+</header>
+
+<div class="how-it-works">
+  <h3>How this works</h3>
+  <div class="two-col">
+    <div>→ <strong>Daytime (9–5):</strong> Completely untouched. Partner breastfeeds solo as now. No changes, no stress.</div>
+    <div>→ <strong>Outside work hours:</strong> This is where the transition happens. You give the bottle, partner pumps at the same time.</div>
+    <div>→ <strong>Current outside-work feeds:</strong> ~2 am, ~5 am, ~8 am (before you leave), ~6–7 pm (when you're home), ~10 pm (already formula).</div>
+    <div>→ <strong>Pump strategy:</strong> Pump replaces the breast feed being dropped. Duration shrinks each phase so supply falls gradually.</div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="leg"><div class="leg-dot" style="background:var(--breast)"></div> Breast feed</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--formula)"></div> Formula bottle (you feed)</div>
+  <div class="leg"><div class="leg-dot" style="background:var(--pump)"></div> Pump (partner, simultaneous)</div>
+  <span style="font-size:0.7rem;color:var(--muted)">🟠 Solo daytime &nbsp;|&nbsp; 🟣 Together (transition zone)</span>
+</div>
+
+<!-- ══════════════════ PHASE 1 ══════════════════ -->
+<div class="phase-head">
+  <h2>Phase 1 — Replace the Evening Feed</h2>
+  <span class="phase-dates">Days 1–4 · Thu 10 – Sun 13 Apr</span>
+</div>
+
+<div class="phase-note">
+  <strong>What changes:</strong> The ~6:30 pm breast feed becomes a formula bottle — you give it, partner pumps at the same time (~15 min, full session). Everything else stays exactly the same. The 9 pm pump moves to this 6:30 pm slot so they overlap with the feed. Night breast feeds untouched.
+</div>
+
+<div class="day-card">
+  <div class="day-inner">
+    <div class="day-label"><div class="day-n">1–4</div><div class="day-d">Thu–Sun</div></div>
+    <div class="day-body">
+      <div class="band band-night">
+        <div class="band-label night">🌙 Night (together)</div>
+        <span class="pill breast">~2 am Breast</span>
+        <span class="pill breast">~5 am Breast</span>
+        <span class="pill breast">~8 am Breast</span>
+      </div>
+      <div class="band band-solo">
+        <div class="band-label solo">🟠 9 am – 5 pm · Partner solo — unchanged</div>
+        <span class="pill breast">~10 am Breast</span>
+        <span class="pill breast">~1 pm Breast</span>
+        <span class="pill breast">~3:30 pm Breast</span>
+      </div>
+      <div class="band band-together">
+        <div class="band-label together">🟣 Evening (together — transition zone)</div>
+        <span class="pill formula new">~6:30 pm 🍼 Formula (you feed) <span class="new-badge">new</span></span>
+        <span class="pill pump new">~6:30 pm 🔵 Pump 15 min (simultaneous) <span class="new-badge">new</span></span>
+        <span class="pill formula">~10 pm 🍼 Formula</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="summary">
+  <span class="s-pill">🤱 6 breast (day unchanged)</span>
+  <span class="s-pill">🍼 2 formula</span>
+  <span class="s-pill">🔵 1 pump — 15 min at 6:30 pm</span>
+  <span class="s-pill">✓ Pump + feed happen together</span>
+</div>
+
+<div class="engorgement-box">
+  <h4>Supply check after Day 4</h4>
+  After 4 days your body should be producing slightly less at the 6:30 pm feed time. If breasts still feel very full by evening, extend Phase 1 by 2 days before moving on. <strong>That's fine — this is the slow lane by design.</strong>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ PHASE 2 ══════════════════ -->
+<div class="phase-head">
+  <h2>Phase 2 — Replace the 8 am Feed</h2>
+  <span class="phase-dates">Days 5–8 · Mon 14 – Thu 17 Apr</span>
+</div>
+
+<div class="phase-note">
+  <strong>What changes:</strong> The ~8 am feed (just before you leave for work) becomes formula + pump together. You feed, partner pumps — then you head to work. Pump drops to ~12 min. Evening pump (6:30 pm) also reduces to 12 min. Night feeds still breast.
+</div>
+
+<div class="day-card">
+  <div class="day-inner">
+    <div class="day-label"><div class="day-n">5–8</div><div class="day-d">Mon–Thu</div></div>
+    <div class="day-body">
+      <div class="band band-night">
+        <div class="band-label night">🌙 Night (together)</div>
+        <span class="pill breast">~2 am Breast</span>
+        <span class="pill breast">~5 am Breast</span>
+        <span class="pill formula new">~8 am 🍼 Formula (you feed) <span class="new-badge">new</span></span>
+        <span class="pill pump new">~8 am 🔵 Pump 12 min (simultaneous) <span class="new-badge">new</span></span>
+      </div>
+      <div class="band band-solo">
+        <div class="band-label solo">🟠 9 am – 5 pm · Partner solo — unchanged</div>
+        <span class="pill breast">~10 am Breast</span>
+        <span class="pill breast">~1 pm Breast</span>
+        <span class="pill breast">~3:30 pm Breast</span>
+      </div>
+      <div class="band band-together">
+        <div class="band-label together">🟣 Evening (together)</div>
+        <span class="pill formula">~6:30 pm 🍼 Formula (you feed)</span>
+        <span class="pill pump">~6:30 pm 🔵 Pump 12 min (simultaneous)</span>
+        <span class="pill formula">~10 pm 🍼 Formula</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="summary">
+  <span class="s-pill">🤱 5 breast</span>
+  <span class="s-pill">🍼 3 formula</span>
+  <span class="s-pill">🔵 2 pumps — 12 min each</span>
+  <span class="s-pill">✓ Both pumps run with a feed</span>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ PHASE 3 ══════════════════ -->
+<div class="phase-head">
+  <h2>Phase 3 — Replace the 5 am Feed</h2>
+  <span class="phase-dates">Days 9–12 · Fri 18 – Mon 21 Apr</span>
+</div>
+
+<div class="phase-note">
+  <strong>What changes:</strong> The ~5 am breast feed becomes formula + pump. You're both awake anyway — you feed, partner pumps alongside (~10 min). Only the ~2 am feed is breast now outside work hours. Daytime still all breast. Pumps drop to 10 min.
+</div>
+
+<div class="day-card">
+  <div class="day-inner">
+    <div class="day-label"><div class="day-n">9–12</div><div class="day-d">Fri–Mon</div></div>
+    <div class="day-body">
+      <div class="band band-night">
+        <div class="band-label night">🌙 Night (together)</div>
+        <span class="pill breast">~2 am Breast</span>
+        <span class="pill formula new">~5 am 🍼 Formula (you feed) <span class="new-badge">new</span></span>
+        <span class="pill pump new">~5 am 🔵 Pump 10 min (simultaneous) <span class="new-badge">new</span></span>
+        <span class="pill formula">~8 am 🍼 Formula (you feed)</span>
+        <span class="pill pump">~8 am 🔵 Pump 10 min (simultaneous)</span>
+      </div>
+      <div class="band band-solo">
+        <div class="band-label solo">🟠 9 am – 5 pm · Partner solo — unchanged</div>
+        <span class="pill breast">~10 am Breast</span>
+        <span class="pill breast">~1 pm Breast</span>
+        <span class="pill breast">~3:30 pm Breast</span>
+      </div>
+      <div class="band band-together">
+        <div class="band-label together">🟣 Evening (together)</div>
+        <span class="pill formula">~6:30 pm 🍼 Formula (you feed)</span>
+        <span class="pill pump">~6:30 pm 🔵 Pump 10 min (simultaneous)</span>
+        <span class="pill formula">~10 pm 🍼 Formula</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="summary">
+  <span class="s-pill">🤱 4 breast</span>
+  <span class="s-pill">🍼 4 formula</span>
+  <span class="s-pill">🔵 3 pumps — 10 min each</span>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ PHASE 4 ══════════════════ -->
+<div class="phase-head">
+  <h2>Phase 4 — Replace the 2 am Feed</h2>
+  <span class="phase-dates">Days 13–16 · Tue 22 – Fri 25 Apr</span>
+</div>
+
+<div class="phase-note">
+  <strong>What changes:</strong> The ~2 am feed — the last outside-work breast feed — becomes formula + pump. All outside-work feeds are now formula. Daytime still all breast. Pump drops to 7 min. Supply is now only being maintained by the 3 daytime breast feeds.
+</div>
+
+<div class="day-card">
+  <div class="day-inner">
+    <div class="day-label"><div class="day-n">13–16</div><div class="day-d">Tue–Fri</div></div>
+    <div class="day-body">
+      <div class="band band-night">
+        <div class="band-label night">🌙 Night (together)</div>
+        <span class="pill formula new">~2 am 🍼 Formula (you feed) <span class="new-badge">new</span></span>
+        <span class="pill pump new">~2 am 🔵 Pump 7 min (simultaneous) <span class="new-badge">new</span></span>
+        <span class="pill formula">~5 am 🍼 Formula (you feed)</span>
+        <span class="pill pump">~5 am 🔵 Pump 7 min (simultaneous)</span>
+        <span class="pill formula">~8 am 🍼 Formula (you feed)</span>
+        <span class="pill pump">~8 am 🔵 Pump 7 min (simultaneous)</span>
+      </div>
+      <div class="band band-solo">
+        <div class="band-label solo">🟠 9 am – 5 pm · Partner solo — unchanged</div>
+        <span class="pill breast">~10 am Breast</span>
+        <span class="pill breast">~1 pm Breast</span>
+        <span class="pill breast">~3:30 pm Breast</span>
+      </div>
+      <div class="band band-together">
+        <div class="band-label together">🟣 Evening (together)</div>
+        <span class="pill formula">~6:30 pm 🍼 Formula (you feed)</span>
+        <span class="pill pump">~6:30 pm 🔵 Pump 7 min (simultaneous)</span>
+        <span class="pill formula">~10 pm 🍼 Formula</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="summary">
+  <span class="s-pill">🤱 3 breast (daytime only)</span>
+  <span class="s-pill">🍼 5 formula</span>
+  <span class="s-pill">🔵 4 pumps — 7 min each</span>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ PHASE 5 ══════════════════ -->
+<div class="phase-head">
+  <h2>Phase 5 — Taper Daytime Feeds</h2>
+  <span class="phase-dates">Days 17–21 · Sat 26 – Wed 30 Apr (flex week)</span>
+</div>
+
+<div class="phase-note">
+  <strong>What changes:</strong> Now all outside-work feeds are formula — supply is only being driven by the 3 daytime breast feeds. Drop these one at a time, every 3 days. Replace each with a formula bottle (partner gives it solo). Pumps reduce to 5 min comfort-only, then stop. <strong>Start with the middle one (~1 pm) as the gentlest first drop.</strong>
+</div>
+
+<div class="day-card">
+  <div class="day-inner">
+    <div class="day-label"><div class="day-n">17–19</div><div class="day-d">Sat–Mon</div></div>
+    <div class="day-body">
+      <div class="band band-night">
+        <div class="band-label night">🌙 Night (together)</div>
+        <span class="pill formula">~2 am 🍼 Formula</span>
+        <span class="pill pump">~2 am 🔵 Pump 5 min</span>
+        <span class="pill formula">~5 am 🍼 Formula</span>
+        <span class="pill formula">~8 am 🍼 Formula</span>
+      </div>
+      <div class="band band-solo">
+        <div class="band-label solo">🟠 9 am – 5 pm · Partner solo</div>
+        <span class="pill breast">~10 am Breast</span>
+        <span class="pill formula new">~1 pm 🍼 Formula (partner solo) <span class="new-badge">new</span></span>
+        <span class="pill breast">~3:30 pm Breast</span>
+      </div>
+      <div class="band band-together">
+        <div class="band-label together">🟣 Evening</div>
+        <span class="pill formula">~6:30 pm 🍼 Formula</span>
+        <span class="pill pump">~6:30 pm 🔵 Pump 5 min</span>
+        <span class="pill formula">~10 pm 🍼 Formula</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="summary">
+  <span class="s-pill">🤱 2 breast</span><span class="s-pill">🍼 6 formula</span><span class="s-pill">🔵 2 pumps — 5 min only</span>
+</div>
+
+<div class="day-card" style="margin-top:1px">
+  <div class="day-inner">
+    <div class="day-label"><div class="day-n">20–21</div><div class="day-d">Tue–Wed</div></div>
+    <div class="day-body">
+      <div class="band band-night">
+        <div class="band-label night">🌙 Night (together)</div>
+        <span class="pill formula">~2 am 🍼 Formula</span>
+        <span class="pill formula">~5 am 🍼 Formula</span>
+        <span class="pill formula">~8 am 🍼 Formula</span>
+      </div>
+      <div class="band band-solo">
+        <div class="band-label solo">🟠 9 am – 5 pm · Partner solo</div>
+        <span class="pill formula new">~10 am 🍼 Formula <span class="new-badge">new</span></span>
+        <span class="pill formula">~1 pm 🍼 Formula</span>
+        <span class="pill breast">~3:30 pm Breast (last remaining)</span>
+      </div>
+      <div class="band band-together">
+        <div class="band-label together">🟣 Evening</div>
+        <span class="pill formula">~6:30 pm 🍼 Formula</span>
+        <span class="pill pump">~6:30 pm 🔵 Pump if uncomfortable only</span>
+        <span class="pill formula">~10 pm 🍼 Formula</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="summary">
+  <span class="s-pill">🤱 1 breast</span><span class="s-pill">🍼 7 formula</span><span class="s-pill">🔵 pump if needed only</span>
+</div>
+
+<div class="divider"></div>
+
+<!-- ══════════════════ PHASE 6 ══════════════════ -->
+<div class="phase-head">
+  <h2>Phase 6 — Fully Formula</h2>
+  <span class="phase-dates">Day 22+ · Thu 1 May onwards</span>
+</div>
+
+<div class="phase-note">
+  <strong>Final step:</strong> Replace the last ~3:30 pm breast feed with formula. No more pumping scheduled — only pump briefly if engorged (3–4 min max, never to empty). Supply should be very low after this slow taper. <strong>Done.</strong>
+</div>
+
+<div class="day-card">
+  <div class="day-inner">
+    <div class="day-label"><div class="day-n">22+</div><div class="day-d">From 1 May</div></div>
+    <div class="day-body">
+      <div class="band band-night">
+        <div class="band-label night">🌙 Night</div>
+        <span class="pill formula">~2 am 🍼 Formula</span>
+        <span class="pill formula">~6 am 🍼 Formula</span>
+      </div>
+      <div class="band band-solo">
+        <div class="band-label solo">🟠 Day</div>
+        <span class="pill formula">~9:30 am 🍼 Formula</span>
+        <span class="pill formula">~1 pm 🍼 Formula</span>
+        <span class="pill formula">~4 pm 🍼 Formula</span>
+      </div>
+      <div class="band band-together">
+        <div class="band-label together">🟣 Evening</div>
+        <span class="pill formula">~7 pm 🍼 Formula</span>
+        <span class="pill formula">~10:30 pm 🍼 Formula</span>
+        <span class="pill note">🎉 Transition complete</span>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="summary">
+  <span class="s-pill">🤱 0 breast</span>
+  <span class="s-pill">🍼 7 formula (across 24 hrs)</span>
+  <span class="s-pill">🔵 no pump</span>
+</div>
+
+<footer>
+  <h3>Rules to keep supply declining safely</h3>
+  <div class="footer-grid">
+    <div>→ <strong>One feed swap every 3–4 days minimum.</strong> Don't rush phases.</div>
+    <div>→ <strong>Pump only simultaneously with feeds.</strong> Never pump in isolation during transition — it maintains supply.</div>
+    <div>→ <strong>Pump to comfort, never to empty.</strong> Emptying is a "make more" signal.</div>
+    <div>→ <strong>Daytime stays untouched until Phase 5.</strong> Partner has no extra pressure.</div>
+    <div>→ <strong>If engorged between sessions:</strong> cold compress first; 3–4 min relief pump only if needed.</div>
+    <div>→ <strong>Red patches + heat + fever = mastitis.</strong> Contact GP or midwife same day.</div>
+    <div>→ <strong>Flex is built in.</strong> Hold any phase an extra 2–3 days if supply is dropping too fast.</div>
+    <div>→ <strong>Growth spurts:</strong> increase formula volume, not breast feeds.</div>
+  </div>
+</footer>
+
+</body>
+</html>
