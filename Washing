@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wash Day</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ink: #1c1c2e;
+    --paper: #f5f0e8;
+    --accent: #3a7bd5;
+    --sun: #e8a020;
+    --green: #2d7a4f;
+    --red: #c0392b;
+    --muted: #888;
+    --card: #fffdf7;
+    --border: #ddd8cc;
+  }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 16px 64px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 3rem;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  header h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  header p {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px;
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 20px;
+  }
+
+  .card-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .time-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .time-row label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+  }
+
+  input[type="time"] {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: var(--ink);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--ink);
+    padding: 4px 0;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="time"]:focus { border-color: var(--accent); }
+
+  .duration-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  .duration-row label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  select {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.88rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 6px 10px;
+    color: var(--ink);
+    cursor: pointer;
+    outline: none;
+  }
+  select:focus { border-color: var(--accent); }
+
+  .btn {
+    display: block;
+    width: 100%;
+    max-width: 560px;
+    padding: 16px;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    margin-bottom: 20px;
+  }
+
+  .btn:hover { background: #2e2e4a; }
+  .btn:active { transform: scale(0.99); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .verdict {
+    width: 100%;
+    max-width: 560px;
+    border-radius: 4px;
+    padding: 24px 28px;
+    margin-bottom: 20px;
+    display: none;
+    animation: fadeUp 0.3s ease;
+  }
+
+  .verdict.yes { background: #eaf5ef; border: 1px solid #a8d5b8; }
+  .verdict.no  { background: #fdecea; border: 1px solid #f0b8b3; }
+
+  .verdict-icon { font-size: 2rem; margin-bottom: 8px; }
+
+  .verdict-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.9rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .verdict.yes .verdict-title { color: var(--green); }
+  .verdict.no  .verdict-title { color: var(--red); }
+
+  .verdict-detail { font-size: 0.76rem; color: #555; line-height: 1.75; }
+
+  /* Forecast card */
+  .forecast-card { display: none; animation: fadeUp 0.35s ease 0.1s both; }
+
+  .forecast-title {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .day-summary {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+
+  .day-stat { display: flex; flex-direction: column; gap: 3px; }
+
+  .day-stat-label {
+    font-size: 0.58rem;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: var(--muted);
+  }
+
+  .day-stat-value { font-size: 1.05rem; font-weight: 500; }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.6rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .legend-swatch {
+    width: 12px; height: 12px; border-radius: 2px;
+  }
+
+  .swatch-wash   { background: #fff3cd; border: 1px solid #f0c040; }
+  .swatch-rain   { background: #dce8f7; }
+  .swatch-normal { background: #f0ebe0; }
+
+  .forecast-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 6px;
+  }
+
+  .hour-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 4px 6px;
+    border-radius: 4px;
+    background: #f0ebe0;
+    border: 1px solid transparent;
+    transition: background 0.2s;
+  }
+
+  .hour-block.highlighted {
+    background: #fff3cd;
+    border-color: #f0c040;
+  }
+
+  .hour-block.rainy { background: #dce8f7; }
+
+  .hour-block.rainy.highlighted {
+    background: #c8d8f0;
+    border-color: var(--accent);
+  }
+
+  .hour-label  { font-size: 0.58rem; color: var(--muted); }
+  .hour-icon   { font-size: 1.15rem; line-height: 1; }
+  .hour-temp   { font-size: 0.63rem; font-weight: 500; }
+  .hour-rain   { font-size: 0.55rem; color: var(--accent); }
+  .wash-tag    { font-size: 0.5rem; color: #a07800; font-weight: 500; }
+
+  .spinner {
+    display: none;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  .error-msg {
+    display: none;
+    width: 100%;
+    max-width: 560px;
+    background: #fdecea;
+    border: 1px solid #f0b8b3;
+    border-radius: 4px;
+    padding: 16px 20px;
+    font-size: 0.76rem;
+    color: var(--red);
+    margin-bottom: 16px;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 1; }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Should I put on a <em>wash?</em></h1>
+  <p>Weather-aware laundry planner</p>
+</header>
+
+<div class="card">
+  <div class="card-label">When are you starting the wash?</div>
+  <div class="time-row">
+    <label>Start</label>
+    <input type="time" id="startTime" value="08:00">
+  </div>
+  <div class="duration-row">
+    <label>Cycle length</label>
+    <select id="duration">
+      <option value="1">~1 hour</option>
+      <option value="1.5" selected>~1.5 hours</option>
+      <option value="2">~2 hours</option>
+      <option value="2.5">~2.5 hours</option>
+      <option value="3">~3 hours</option>
+    </select>
+  </div>
+</div>
+
+<button class="btn" id="checkBtn" onclick="checkWeather()">Check the forecast →</button>
+
+<div class="spinner" id="spinner">Fetching weather…</div>
+<div class="error-msg" id="errorMsg"></div>
+
+<div class="verdict" id="verdict">
+  <div class="verdict-icon" id="verdictIcon"></div>
+  <div class="verdict-title" id="verdictTitle"></div>
+  <div class="verdict-detail" id="verdictDetail"></div>
+</div>
+
+<div class="card forecast-card" id="forecastCard">
+  <div class="forecast-title" id="forecastTitle">Today's weather</div>
+  <div class="day-summary" id="daySummary"></div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch swatch-wash"></div> Wash window</div>
+    <div class="legend-item"><div class="legend-swatch swatch-rain"></div> Rain likely</div>
+    <div class="legend-item"><div class="legend-swatch swatch-normal"></div> Clear</div>
+  </div>
+  <div class="forecast-grid" id="forecastGrid"></div>
+</div>
+
+<script>
+  function weatherIcon(code, isDay) {
+    if (code === 0)           return isDay ? '☀️' : '🌙';
+    if (code <= 2)            return '🌤️';
+    if (code === 3)           return '☁️';
+    if (code <= 49)           return '🌫️';
+    if (code <= 67)           return '🌧️';
+    if (code <= 77)           return '❄️';
+    if (code <= 82)           return '🌦️';
+    if (code <= 86)           return '🌨️';
+    if (code >= 95)           return '⛈️';
+    return '🌡️';
+  }
+
+  function isRainyCode(code) {
+    return (code >= 51 && code <= 82) || code >= 95;
+  }
+
+  function fmtHour(isoStr) {
+    const h = new Date(isoStr).getHours();
+    if (h === 0)  return '12am';
+    if (h === 12) return '12pm';
+    return h < 12 ? `${h}am` : `${h-12}pm`;
+  }
+
+  function endLabel(startH, durHrs) {
+    const total = startH + durHrs;
+    const h = Math.floor(total) % 24;
+    const m = Math.round((total % 1) * 60);
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  }
+
+  async function checkWeather() {
+    const btn     = document.getElementById('checkBtn');
+    const spinner = document.getElementById('spinner');
+    const errBox  = document.getElementById('errorMsg');
+    const verdict = document.getElementById('verdict');
+    const fcCard  = document.getElementById('forecastCard');
+
+    verdict.style.display = 'none';
+    fcCard.style.display  = 'none';
+    errBox.style.display  = 'none';
+    spinner.style.display = 'block';
+    btn.disabled = true;
+
+    try {
+      // 1. Geolocation
+      const pos = await new Promise((res, rej) =>
+        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 10000 })
+      );
+      const { latitude: lat, longitude: lon } = pos.coords;
+
+      // 2. City name (Nominatim)
+      let cityName = '';
+      try {
+        const geo = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`);
+        const gd  = await geo.json();
+        cityName  = gd.address?.suburb || gd.address?.city || gd.address?.town || '';
+      } catch {}
+
+      // 3. Open-Meteo hourly + daily
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+        `&hourly=temperature_2m,precipitation_probability,weathercode,is_day` +
+        `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode` +
+        `&temperature_unit=celsius&precipitation_unit=mm&timezone=auto&forecast_days=1`;
+
+      const resp = await fetch(url);
+      const data = await resp.json();
+
+      spinner.style.display = 'none';
+      btn.disabled = false;
+
+      // 4. Parse wash window
+      const [startH, startM] = document.getElementById('startTime').value.split(':').map(Number);
+      const startFrac = startH + startM / 60;
+      const durHrs    = parseFloat(document.getElementById('duration').value);
+      const endFrac   = startFrac + durHrs;
+
+      const { time: hours, precipitation_probability: precip, weathercode: codes,
+              temperature_2m: temps, is_day: isDayArr } = data.hourly;
+
+      let maxRain = 0;
+      let riskyHours = [];
+
+      hours.forEach((t, i) => {
+        const h = new Date(t).getHours() + new Date(t).getMinutes() / 60;
+        if (h >= startFrac && h < endFrac) {
+          if (precip[i] > maxRain) maxRain = precip[i];
+          if (precip[i] >= 30 || isRainyCode(codes[i])) riskyHours.push(fmtHour(t));
+        }
+      });
+
+      const shouldWash = riskyHours.length === 0 && maxRain < 30;
+
+      // 5. Verdict
+      verdict.className = `verdict ${shouldWash ? 'yes' : 'no'}`;
+      document.getElementById('verdictIcon').textContent  = shouldWash ? '✅' : '🚫';
+      document.getElementById('verdictTitle').textContent = shouldWash ? 'Yeah, chuck it on.' : 'Better hold off.';
+
+      const windowStr = `${document.getElementById('startTime').value} → ${endLabel(startFrac, durHrs)}`;
+      document.getElementById('verdictDetail').textContent = shouldWash
+        ? `No significant rain expected during your wash window (${windowStr}). Max rain chance: ${maxRain}%. Good drying conditions.`
+        : `Rain likely during your wash window (${windowStr}).`
+          + (riskyHours.length ? ` Risky hours: ${riskyHours.join(', ')}.` : '')
+          + ` Max rain chance: ${maxRain}%. Might not dry in time.`;
+
+      verdict.style.display = 'block';
+
+      // 6. Day summary
+      const daily = data.daily;
+      document.getElementById('daySummary').innerHTML = `
+        <div class="day-stat">
+          <span class="day-stat-label">High</span>
+          <span class="day-stat-value">${daily.temperature_2m_max[0]}°C</span>
+        </div>
+        <div class="day-stat">
+          <span class="day-stat-label">Low</span>
+          <span class="day-stat-value">${daily.temperature_2m_min[0]}°C</span>
+        </div>
+        <div class="day-stat">
+          <span class="day-stat-label">Total rain</span>
+          <span class="day-stat-value">${daily.precipitation_sum[0]}mm</span>
+        </div>
+        <div class="day-stat">
+          <span class="day-stat-label">Overall</span>
+          <span class="day-stat-value">${weatherIcon(daily.weathercode[0], true)}</span>
+        </div>
+      `;
+
+      document.getElementById('forecastTitle').textContent =
+        `Today's forecast${cityName ? ' — ' + cityName : ''}`;
+
+      // 7. Hourly grid (all 24h)
+      const grid = document.getElementById('forecastGrid');
+      grid.innerHTML = '';
+
+      hours.forEach((t, i) => {
+        const h = new Date(t).getHours() + new Date(t).getMinutes() / 60;
+        const inWindow = h >= startFrac && h < endFrac;
+        const rainy    = precip[i] >= 30 || isRainyCode(codes[i]);
+
+        const block = document.createElement('div');
+        block.className = 'hour-block'
+          + (inWindow ? ' highlighted' : '')
+          + (rainy    ? ' rainy'       : '');
+
+        block.innerHTML = `
+          <span class="hour-label">${fmtHour(t)}</span>
+          <span class="hour-icon">${weatherIcon(codes[i], isDayArr[i])}</span>
+          <span class="hour-temp">${Math.round(temps[i])}°</span>
+          <span class="hour-rain">${precip[i]}%</span>
+          ${inWindow ? '<span class="wash-tag">wash</span>' : ''}
+        `;
+        grid.appendChild(block);
+      });
+
+      fcCard.style.display = 'block';
+
+    } catch (err) {
+      spinner.style.display = 'none';
+      btn.disabled = false;
+      errBox.textContent = err.code === 1
+        ? 'Location access denied. Please allow location access and try again.'
+        : `Something went wrong: ${err.message}`;
+      errBox.style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>
