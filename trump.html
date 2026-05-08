@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IDIOCRACY PREDICTED THIS</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Share+Tech+Mono&family=Oswald:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --orange:#E8620A; --yellow:#FFD600; --red:#CC1100;
+  --dark:#0D0D0D; --mid:#181818; --card:#141414;
+  --border:#2A2A2A; --text:#E8E8E0; --muted:#777770;
+  --film:#E8620A; --trump-col:#CC1100;
+  --match-strong:#00C853; --match-thematic:#FFD600; --match-loose:#666660;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--dark);color:var(--text);font-family:'Oswald',sans-serif;font-weight:300;overflow-x:hidden;}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.055) 3px,rgba(0,0,0,.055) 4px);
+  pointer-events:none;z-index:998;}
+
+/* HEADER */
+header{border-bottom:3px solid var(--orange);padding:38px 20px 28px;text-align:center;position:relative;overflow:hidden;}
+header::before{content:'';position:absolute;top:-50%;left:-10%;width:120%;height:200%;
+  background:radial-gradient(ellipse at 50% 0%,rgba(232,98,10,.1) 0%,transparent 65%);pointer-events:none;}
+.eyebrow{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:4px;color:var(--orange);
+  text-transform:uppercase;margin-bottom:10px;opacity:.8;}
+h1{font-family:'Black Ops One',cursive;font-size:clamp(28px,7vw,72px);line-height:.88;letter-spacing:2px;
+  color:var(--yellow);text-shadow:3px 3px 0 var(--orange),6px 6px 0 rgba(204,17,0,.35);margin-bottom:10px;}
+h1 span{color:var(--orange);text-shadow:3px 3px 0 var(--red);}
+.header-sub{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;margin-top:14px;}
+
+/* INTRO */
+.intro-note{max-width:680px;margin:26px auto;padding:16px 20px;
+  border:1px solid var(--border);border-left:3px solid var(--yellow);background:rgba(255,214,0,.03);
+  font-size:12px;line-height:1.75;color:var(--muted);font-family:'Share Tech Mono',monospace;letter-spacing:.4px;}
+.intro-note strong{color:var(--yellow);}
+
+/* LEGEND */
+.legend{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;padding:14px 20px;
+  border-bottom:1px solid var(--border);font-family:'Share Tech Mono',monospace;font-size:11px;}
+.legend-item{display:flex;align-items:center;gap:7px;}
+.legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+
+/* FILTERS */
+.filters{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;padding:16px 20px;border-bottom:1px solid var(--border);}
+.filter-btn{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:6px 14px;
+  font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;text-transform:uppercase;transition:all .15s;}
+.filter-btn:hover,.filter-btn.active{background:var(--orange);border-color:var(--orange);color:#000;}
+
+/* COL HEADERS */
+.col-headers{display:grid;grid-template-columns:1fr 56px 1fr;max-width:1040px;margin:0 auto;padding:0 20px;
+  border-bottom:1px solid var(--border);background:rgba(232,98,10,.035);}
+.col-head{padding:12px 16px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;
+  text-transform:uppercase;display:flex;align-items:center;gap:7px;}
+.col-head-film{color:var(--film);border-right:1px solid var(--border);}
+.col-head-mid{justify-content:center;color:var(--border);font-size:8px;}
+.col-head-trump{color:var(--trump-col);border-left:1px solid var(--border);}
+
+.stat-bar{max-width:1040px;margin:0 auto;padding:7px 36px;display:flex;justify-content:flex-end;}
+.stat{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:1px;}
+.stat strong{color:var(--text);}
+
+/* TIMELINE */
+.timeline{max-width:1040px;margin:0 auto;padding:6px 20px 80px;}
+
+/* DATE MARKERS */
+.date-marker{text-align:center;padding:28px 0 4px;position:relative;}
+.date-marker::before{content:'';position:absolute;top:50%;left:8%;right:8%;height:1px;
+  background:linear-gradient(to right,transparent,var(--border) 30%,var(--border) 70%,transparent);}
+.date-pill{display:inline-block;background:var(--mid);border:1px solid var(--orange);color:var(--orange);
+  font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;padding:4px 16px;
+  position:relative;z-index:1;text-transform:uppercase;}
+
+/* ENTRIES */
+.entry{display:grid;grid-template-columns:1fr 56px 1fr;align-items:start;transition:opacity .25s;}
+.entry.hidden{display:none;}
+
+/* SPINE */
+.spine{display:flex;flex-direction:column;align-items:center;position:relative;z-index:2;}
+.spine-line-top{width:2px;height:24px;background:linear-gradient(to bottom,transparent,var(--border));flex-shrink:0;}
+.spine-line-bot{width:2px;flex:1;min-height:24px;background:linear-gradient(to bottom,var(--border),transparent);}
+.spine-node{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);background:var(--dark);
+  flex-shrink:0;position:relative;}
+.spine-node::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:6px;height:6px;border-radius:50%;background:var(--border);}
+
+/* CARDS — clickable */
+.film-side,.real-side{padding:0 14px 24px;}
+.card{border:1px solid var(--border);background:var(--card);padding:15px 17px;
+  cursor:pointer;transition:border-color .15s,transform .15s,box-shadow .15s;
+  user-select:none;-webkit-tap-highlight-color:transparent;}
+.card:hover{transform:translateY(-2px);box-shadow:0 4px 18px rgba(0,0,0,.45);}
+.card:active{transform:scale(.985);}
+.film-card{border-left:3px solid var(--film);}
+.film-card:hover{border-color:var(--film);box-shadow:0 4px 20px rgba(232,98,10,.18);}
+.real-card{border-left:3px solid var(--trump-col);}
+.real-card:hover{border-color:var(--trump-col);box-shadow:0 4px 20px rgba(204,17,0,.18);}
+
+.card.flash-film{animation:flash-o .35s ease;}
+.card.flash-trump{animation:flash-r .35s ease;}
+@keyframes flash-o{0%{background:rgba(232,98,10,.25);}100%{background:var(--card);}}
+@keyframes flash-r{0%{background:rgba(204,17,0,.25);}100%{background:var(--card);}}
+
+.card-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;
+  margin-bottom:7px;display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.film-label{color:var(--film);}
+.real-label{color:var(--trump-col);}
+.card-title{font-family:'Oswald',sans-serif;font-weight:700;font-size:13px;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--text);margin-bottom:7px;line-height:1.2;}
+.card-body{font-size:12px;line-height:1.65;color:#99988F;font-weight:300;}
+.card-year{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-top:9px;letter-spacing:1px;}
+
+.match-badge{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;
+  padding:2px 7px;border-radius:2px;text-transform:uppercase;white-space:nowrap;}
+.match-direct{background:rgba(0,200,83,.12);color:var(--match-strong);border:1px solid rgba(0,200,83,.25);}
+.match-thematic{background:rgba(255,214,0,.08);color:var(--match-thematic);border:1px solid rgba(255,214,0,.25);}
+.match-loose{background:rgba(102,102,96,.1);color:var(--match-loose);border:1px solid rgba(102,102,96,.2);}
+
+/* TRUMP POPUP */
+#trump-popup{position:fixed;bottom:-250px;right:28px;z-index:2000;
+  transition:bottom .44s cubic-bezier(.34,1.56,.64,1);pointer-events:none;user-select:none;}
+#trump-popup.visible{bottom:0;}
+.trump-wrap{display:flex;flex-direction:column;align-items:center;}
+.trump-bubble{background:#fff;border:3px solid #111;border-radius:12px;padding:10px 14px;
+  max-width:200px;min-width:145px;font-family:'Black Ops One',cursive;font-size:11px;line-height:1.4;
+  color:#111;text-align:center;margin-bottom:6px;position:relative;box-shadow:3px 3px 0 #111;}
+.trump-bubble::after{content:'';position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);
+  width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:12px solid #111;}
+.trump-bubble::before{content:'';position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);
+  width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:10px solid #fff;z-index:1;}
+.trump-figure{width:112px;height:184px;display:block;}
+
+/* FOOTER */
+footer{border-top:3px solid var(--orange);padding:24px 20px;text-align:center;
+  font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;
+  background:var(--mid);line-height:1.8;}
+footer span{color:var(--orange);}
+
+/* MOBILE */
+@media(max-width:600px){
+  .entry{grid-template-columns:1fr;}
+  .film-side{padding:0 0 6px;}
+  .spine{display:none;}
+  .real-side{padding:0 0 20px;}
+  .col-headers{display:none;}
+  #trump-popup{right:8px;}
+  .trump-figure{width:84px;height:138px;}
+  .trump-bubble{max-width:148px;font-size:10px;}
+}
+</style>
+</head>
+<body>
+
+<!-- TRUMP POPUP -->
+<div id="trump-popup">
+  <div class="trump-wrap">
+    <div class="trump-bubble" id="trump-quote">WRONG!</div>
+    <svg class="trump-figure" viewBox="0 0 112 184" xmlns="http://www.w3.org/2000/svg">
+      <!-- Body/suit -->
+      <rect x="23" y="90" width="66" height="74" rx="4" fill="#1A3A6A"/>
+      <polygon points="45,90 56,110 56,90" fill="#1E4A8A"/>
+      <polygon points="67,90 56,110 56,90" fill="#162E58"/>
+      <!-- Shirt -->
+      <rect x="50" y="90" width="12" height="20" fill="#EEEEEE"/>
+      <!-- Tie — long -->
+      <polygon points="52,96 60,96 62,152 50,152" fill="#CC1100"/>
+      <polygon points="55,152 57,152 58,159 53,159" fill="#CC1100"/>
+      <circle cx="56" cy="102" r="1.5" fill="#CCCCCC"/>
+      <circle cx="56" cy="109" r="1.5" fill="#CCCCCC"/>
+      <!-- Legs -->
+      <rect x="25" y="156" width="26" height="24" rx="3" fill="#162E58"/>
+      <rect x="61" y="156" width="26" height="24" rx="3" fill="#162E58"/>
+      <ellipse cx="38" cy="180" rx="17" ry="5" fill="#111111"/>
+      <ellipse cx="74" cy="180" rx="17" ry="5" fill="#111111"/>
+      <!-- Neck -->
+      <rect x="47" y="76" width="18" height="18" rx="2" fill="#F4A44A"/>
+      <!-- Head -->
+      <ellipse cx="56" cy="57" rx="33" ry="31" fill="#F4A44A"/>
+      <!-- Tan -->
+      <ellipse cx="56" cy="65" rx="29" ry="21" fill="#E08030" opacity="0.22"/>
+      <!-- Eye whites -->
+      <ellipse cx="43" cy="54" rx="7.5" ry="6.5" fill="#ffffff"/>
+      <ellipse cx="69" cy="54" rx="7.5" ry="6.5" fill="#ffffff"/>
+      <!-- Eye bags -->
+      <ellipse cx="43" cy="58.5" rx="7.5" ry="3" fill="#C87840" opacity="0.4"/>
+      <ellipse cx="69" cy="58.5" rx="7.5" ry="3" fill="#C87840" opacity="0.4"/>
+      <!-- Pupils -->
+      <circle cx="43" cy="54" r="3.8" fill="#333333"/>
+      <circle cx="69" cy="54" r="3.8" fill="#333333"/>
+      <circle cx="44.5" cy="52.5" r="1.3" fill="#ffffff"/>
+      <circle cx="70.5" cy="52.5" r="1.3" fill="#ffffff"/>
+      <!-- Eyebrows -->
+      <rect x="36" y="44" width="14" height="3.5" rx="1.5" fill="#A07018" transform="rotate(-7,43,45.5)"/>
+      <rect x="62" y="44" width="14" height="3.5" rx="1.5" fill="#A07018" transform="rotate(7,69,45.5)"/>
+      <!-- Nose -->
+      <ellipse cx="56" cy="63" rx="5.5" ry="4.5" fill="#D07840"/>
+      <circle cx="53" cy="65.5" r="1.6" fill="#A05030" opacity="0.4"/>
+      <circle cx="59" cy="65.5" r="1.6" fill="#A05030" opacity="0.4"/>
+      <!-- Mouth — pursed pout -->
+      <path d="M45 72 Q56 68 67 72" stroke="#7B3A18" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <path d="M48 72 Q56 75 64 72" stroke="#B05030" stroke-width="1.5" fill="#CC7050" opacity="0.5"/>
+      <!-- Hair — combover -->
+      <path d="M25 45 Q21 21 46 19 Q56 16 66 19 Q81 23 85 39 Q89 31 83 19 Q71 5 56 4 Q39 3 27 14 Q17 24 19 41 Z" fill="#D0A820"/>
+      <path d="M24 47 Q19 29 39 21 Q56 15 73 23 Q85 31 83 47 Q73 37 56 35 Q39 37 24 47 Z" fill="#ECC840"/>
+      <path d="M27 43 Q31 33 46 31 Q56 29 63 33 Q51 35 41 39 Q34 42 29 47 Z" fill="#F8D850"/>
+      <path d="M56 29 Q53 23 49 25 Q46 27 47 31" stroke="#FAEA70" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <!-- Ears -->
+      <ellipse cx="23" cy="58" rx="6" ry="8.5" fill="#F4A44A"/>
+      <ellipse cx="89" cy="58" rx="6" ry="8.5" fill="#F4A44A"/>
+      <ellipse cx="23" cy="58" rx="3" ry="5.5" fill="#D07840" opacity="0.35"/>
+      <ellipse cx="89" cy="58" rx="3" ry="5.5" fill="#D07840" opacity="0.35"/>
+      <!-- Left arm + tiny hand -->
+      <rect x="5" y="94" width="19" height="11" rx="5" fill="#1A3A6A"/>
+      <ellipse cx="8" cy="111" rx="9.5" ry="8.5" fill="#F4A44A"/>
+      <ellipse cx="2"  cy="107" rx="4.2" ry="3.2" fill="#F4A44A"/>
+      <ellipse cx="2"  cy="114" rx="4.2" ry="3.2" fill="#F4A44A"/>
+      <ellipse cx="9"  cy="118" rx="4.2" ry="3.2" fill="#F4A44A"/>
+      <ellipse cx="15" cy="117" rx="4.2" ry="3.2" fill="#F4A44A"/>
+      <!-- Right arm raised, pointing -->
+      <rect x="88" y="88" width="19" height="11" rx="5" fill="#1A3A6A" transform="rotate(-30,97,93)"/>
+      <ellipse cx="106" cy="80" rx="8.5" ry="7.5" fill="#F4A44A"/>
+      <ellipse cx="112" cy="75" rx="3.8" ry="2.8" fill="#F4A44A"/>
+      <ellipse cx="112" cy="83" rx="3.8" ry="2.8" fill="#F4A44A"/>
+      <ellipse cx="106" cy="71" rx="3.8" ry="2.8" fill="#F4A44A" transform="rotate(-22,106,71)"/>
+    </svg>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="eyebrow">Mike Judge (2006) × Donald J. Trump (2015–2026)</div>
+  <h1>IDIOCRACY<br><span>PREDICTED</span><br>THIS</h1>
+  <div class="header-sub">ordered by real-world date &nbsp;·&nbsp; click any card to summon the president</div>
+</header>
+
+<div class="intro-note">
+  <strong>HOW TO READ THIS:</strong> Left = Idiocracy scene/theme. Right = Trump-era parallel, sorted chronologically by the real event date. Rated: <strong style="color:var(--match-strong)">DIRECT</strong> / <strong style="color:var(--match-thematic)">THEMATIC</strong> / <strong style="color:var(--match-loose)">LOOSE</strong>. <strong>Click any card</strong> to summon the President.
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--film)"></div><span>IDIOCRACY (2006)</span></div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--trump-col)"></div><span>TRUMP-ERA REALITY</span></div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--match-strong)"></div><span>DIRECT</span></div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--match-thematic)"></div><span>THEMATIC</span></div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--match-loose)"></div><span>LOOSE</span></div>
+</div>
+
+<div class="filters">
+  <button class="filter-btn active" onclick="filterEntries('all',this)">ALL (13)</button>
+  <button class="filter-btn" onclick="filterEntries('direct',this)">DIRECT</button>
+  <button class="filter-btn" onclick="filterEntries('thematic',this)">THEMATIC</button>
+  <button class="filter-btn" onclick="filterEntries('loose',this)">LOOSE</button>
+</div>
+
+<div class="col-headers">
+  <div class="col-head col-head-film">📽 IDIOCRACY SCENE / THEME</div>
+  <div class="col-head col-head-mid">★</div>
+  <div class="col-head col-head-trump">🇺🇸 TRUMP-ERA PARALLEL</div>
+</div>
+<div class="stat-bar">
+  <div class="stat">Showing <strong id="count">13</strong> of 13</div>
+</div>
+
+<div class="timeline" id="timeline">
+
+  <!-- ══ 2004–2015 ══ -->
+  <div class="date-marker" data-group="g1"><span class="date-pill">2004 – 2015</span></div>
+  <div class="entry" data-match="direct" data-group="g1">
+    <div class="film-side"><div class="card film-card" data-idx="0">
+      <div class="card-label film-label"><span>PRESIDENT CAMACHO</span><span class="match-badge match-direct">DIRECT</span></div>
+      <div class="card-title">Former pro wrestler becomes President of the United States</div>
+      <div class="card-body">Dwayne Elizondo Mountain Dew Herbert Camacho — five-time Ultimate Smackdown champion and porn star — won the presidency through sheer entertainment value. He addresses Congress with machine guns and pyrotechnics. Policy is performance. The crowd cheers the show itself.</div>
+      <div class="card-year">Film — 2505</div>
+    </div></div>
+    <div class="spine"><div class="spine-line-top"></div><div class="spine-node"></div><div class="spine-line-bot"></div></div>
+    <div class="real-side"><div class="card real-card" data-idx="0">
+      <div class="card-label real-label"><span>CELEBRITY PRESIDENT</span><span class="match-badge match-direct">DIRECT</span></div>
+      <div class="card-title">WWE Hall of Famer and 14-season reality TV host announces presidential run</div>
+      <div class="card-body">Trump was inducted into the WWE Hall of Fame in 2013 and participated in WrestleMania spectacles. The Apprentice ran 14 seasons before he launched his campaign. His rallies were modelled on entertainment spectacle — entrance music, crowd chants, theatrical energy. Governance as performance art.</div>
+      <div class="card-year">2004–2015 TV career → June 2015 campaign launch</div>
+    </div></div>
+  </div>
+
+  <!-- ══ Feb 2016 ══ -->
+  <div class="date-marker" data-group="g2"><span class="date-pill">February 2016</span></div>
+  <div class="entry" data-match="thematic" data-group="g2">
+    <div class="film-side"><div class="card film-card" data-idx="1">
+      <div class="card-label film-label"><span>OPENING MONTAGE</span><span class="match-badge match-thematic">THEMATIC</span></div>
+      <div class="card-title">Intelligence becomes a competitive disadvantage</div>
+      <div class="card-body">The film opens comparing two families: the careful, educated couple who kept postponing children, and the Dix family who multiplied without hesitation. Society slowly bred intelligence out of relevance. Natural selection stopped favouring the smart.</div>
+      <div class="card-year">Film — 2005 setting, prologue</div>
+    </div></div>
+    <div class="spine"><div class="spine-line-top"></div><div class="spine-node"></div><div class="spine-line-bot"></div></div>
+    <div class="real-side"><div class="card real-card" data-idx="1">
+      <div class="card-label real-label"><span>ANTI-INTELLECTUALISM</span><span class="match-badge match-thematic">THEMATIC</span></div>
+      <div class="card-title">"I love the poorly educated"</div>
+      <div class="card-body">Nevada primary victory speech. Trump celebrated winning voters without college degrees with genuine enthusiasm. His broader campaign consistently framed universities, experts, and fact-checkers as the enemy — things to distrust. Credentialed expertise became a punchline.</div>
+      <div class="card-year">February 24, 2016 — Nevada victory rally</div>
+    </div></div>
+  </div>
+
+    <!-- ══ Nov–Dec 2016 ══ -->
+  <div class="date-marker" data-group="g3"><span class="date-pill">November – December 2016</span></div>
+  <div class="entry" data-match="thematic" data-group="g3">
+    <div class="film-side"><div class="card film-card" data-idx="2">
+      <div class="card-label film-label"><span>BRAND COLONISATION</span><span class="match-badge match-thematic">THEMATIC</span></div>
+      <div class="card-title">Carl's Jr. runs the Dept. of Education. Starbucks is a brothel chain.</div>
+      <div class="card-body">Corporate brands have absorbed every government function. There's no distinction between commercial interest and public institution. The joke: it's only a minor extrapolation from the lobbying and revolving-door dynamics of 2005.</div>
+      <div class="card-year">Film — 2505</div>
+    </div></div>
+    <div class="spine"><div class="spine-line-top"></div><div class="spine-node"></div><div class="spine-line-bot"></div></div>
+    <div class="real-side"><div class="card real-card" data-idx="2">
+      <div class="card-label real-label"><span>CABINET NOMINATIONS</span><span class="match-badge match-thematic">THEMATIC</span></div>
+      <div class="card-title">Industry executives nominated to lead the agencies that regulate their own industries</div>
+      <div class="card-body">Nominees included: Rex Tillerson (ExxonMobil CEO) as Secretary of State; Andy Puzder (Carl's Jr. CEO, later withdrawn) for Labor; Betsy DeVos (no public school background) for Education; Scott Pruitt (career EPA opponent) as EPA head. Industry heads became the regulators of their own industries.</div>
+      <div class="card-year">November–December 2016 — Cabinet nominations</div>
+    </div></div>
+  </div>
+
+  <!-- ══ Jan 2017 ══ -->
+  <div class="date-marker" data-group="g4"><span class="date-pill">January 2017</span></div>
+  <div class="entry" data-match="direct" data-group="g4">
+    <div class="film-side"><div class="card film-card" data-idx="3">
+      <div class="card-label film-label"><span>TIME MASHEEN</span><span class="match-badge match-direct">DIRECT</span></div>
+      <div class="card-title">History is a theme park ride with completely invented facts</div>
+      <div class="card-body">The "Time Masheen" — this society's entire grasp of history — is an amusement ride featuring Charlie Chaplin as a Nazi who used dinosaurs to wage war. History has been so corrupted by entertainment that it bears no resemblance to reality. Nobody notices. Nobody cares.</div>
+      <div class="card-year">Film — 2505</div>
+    </div></div>
+    <div class="spine"><div class="spine-line-top"></div><div class="spine-node"></div><div class="spine-line-bot"></div></div>
+    <div class="real-side"><div class="card real-card" data-idx="3">
+      <div class="card-label real-label"><span>ALTERNATIVE FACTS</span><span class="match-badge match-direct">DIRECT</span></div>
+      <div class="card-title">Kellyanne Conway coins "alternative facts" over inauguration crowd size</div>
+      <div class="card-body">Day three of the administration. Spicer gave a provably false briefing claiming Trump's inauguration was "the largest ever." Aerial photography showed otherwise. Conway told NBC the White House had used "alternative facts." The phrase entered the language instantly. PolitiFact tracked over 30,000 false or misleading Trump statements across his first term.</div>
+      <div class="card-year">January 22, 2017 — NBC Meet the Press</div>
+    </div></div>
+  </div>
+
+  <!-- ══ Jun 2017 ══ -->
+  <div class="date-marker" data-group="g5"><span class="date-pill">June 2017</span></div>
+  <div class="entry" data-match="direct" data-group="g5">
+    <div class="film-side"><div class="card film-card" data-idx="4">
+      <div class="card-label film-label"><span>ENVIRONMENTAL COLLAPSE</span><span class="match-badge match-direct">DIRECT</span></div>
+      <div class="card-title">Crops fail because everyone ignored the scientists for years</div>
+      <div class="card-body">The nation faces food collapse because of Brawndo irrigation. Scientists had been warning about this for years. Their warnings were ignored because the message conflicted with corporate interest and popular belief. The disaster is fully in progress before anyone acknowledges it.</div>
+      <div class="card-year">Film — 2505</div>
+    </div></div>
+    <div class="spine"><div class="spine-line-top"></div><div class="spine-node"></div><div class="spine-line-bot"></div></div>
+    <div class="real-side"><div class="card real-card" data-idx="4">
+      <div class="card-label real-label"><span>CLIMATE DENIAL</span><span class="match-badge match-direct">DIRECT</span></div>
+      <div class="card-title">US withdraws from Paris Agreement; 100+ EPA regulations rolled back</div>
+      <div class="card-body">Trump had called climate change a Chinese hoax repeatedly from 2012 onwards. June 1, 2017: withdrawal from the Paris Climate Agreement announced. His administration rolled back over 100 environmental regulations. EPA scientific advisory boards were restructured — academic scientists replaced with industry representatives. The mechanism mirrors the film: tribal and corporate interests overriding documented warnings already in progress.</div>
+      <div class="card-year">June 1, 2017 — Paris Agreement withdrawal</div>
+    </div></div>
+  </div>
+
+  <!-- ══ Jan 2018 ══ -->
+  <div class="date-marker" data-group="g6"><span class="date-pill">January 2018</span></div>
+  <div class="entry" data-match="thematic" data-group="g6">
+    <div class="film-side"><div class="card film-card" data-idx="5">
+      <div class="card-label film-label"><span>JOE THE GENIUS</span><span class="match-badge match-thematic">THEMATIC</span></div>
+      <div class="card-title">The most average man alive is now the smartest person on Earth</div>
+      <div class="card-body">Joe was chosen for the experiment because he was the most utterly generic, unexceptional soldier available. He wakes up scoring off the charts — not because he improved, but because the baseline collapsed around him. Mediocrity becomes elite by default.</div>
+      <div class="card-year">Film — 2505</div>
+    </div></div>
+    <div class="spine"><div class="spine-line-top"></div><div class="spine-node"></div><div class="spine-line-bot"></div></div>
+    <div class="real-side"><div class="card real-card" data-idx="5">
+      <div class="card-label real-label"><span>STABLE GENIUS</span><span class="match-badge match-thematic">THEMATIC</span></div>
+      <div class="card-title">"A very stable genius" with "one of the great memories of all time"</div>
+      <div class="card-body">Trump described himself repeatedly as a genius, coined "very stable genius" in January 2018 tweets responding to a book questioning his fitness, and claimed "one of the great memories of all time." Expertise was asserted as personal brand rather than demonstrated through track record. The satire: the bar for genius had simply lowered around him.</div>
+      <div class="card-year">January 6, 2018 — Trump tweets</div>
+    </div></div>
+  </div>
+
+  <!-- ══ 2009–2023 ══ -->
+  <div class="date-marker" data-group="g7"><span class="date-pill">2009 – 2023</span></div>
+  <div class="entry" data-match="thematic" data-group="g7">
+    <div class="film-side"><div class="card film-card" data-idx="6">
+      <div class="card-label film-label"><span>CONGRESS SCENE</span><span class="match-badge match-thematic">THEMATIC</span></div>
+      <div class="card-title">Congress collapses into shouting matches and threats</div>
+      <div class="card-body">When Camacho presents the water-the-crops plan, Congress devolves immediately into tribal noise and brawling. Policy debate is impossible. Peer pressure — not argument — determines outcomes. One congressman threatens to teabag another. The chamber governs by spectacle.</div>
+      <div class="card-year">Film — 2505</div>
+    </div></div>
+    <div class="spine"><div class="spine-line-top"></div><div class="spine-node"></div><div class="spine-line-bot"></div></div>
+    <div class="real-side"><div class="card real-card" data-idx="6">
+      <div class="card-label real-label"><span>CONGRESSIONAL CHAOS</span><span class="match-badge match-thematic">THEMATIC</span></div>
+      <div class="card-title">"You lie!", State of the Union heckling, and a 15-round Speaker election</div>
+      <div class="card-body">Rep. Wilson shouted "You lie!" during a 2009 presidential address — a precedent for normalised disruption. By Trump's tenure: members censured for social media threats, State of the Union addresses repeatedly heckled by name, and the 2023 Speaker election required 15 rounds as the chamber negotiated live on television for days. The House as reality show.</div>
+      <div class="card-year">2009–2023 — Multiple congressional incidents</div>
+    </div></div>
+  </div>
+
+  <!-- ══ Apr 2020 ══ -->
+  <div class="date-marker" data-group="g8"><span class="date-pill">April 2020</span></div>
+  <div class="entry" data-match="direct" data-group="g8">
+    <div class="film-side"><div class="card film-card" data-idx="7">
+      <div class="card-label film-label"><span>BRAWNDO / CROPS</span><span class="match-badge match-direct">DIRECT</span></div>
+      <div class="card-title">Watering crops with sports drink because "it's got electrolytes"</div>
+      <div class="card-body">Brawndo has replaced water everywhere, including agriculture. Crops are dying. Scientists explain plants need water. The crowd shouts them down: "But it's what plants crave." Brand loyalty overrides observable reality. The disaster is in full swing before anyone admits it.</div>
+      <div class="card-year">Film — 2505</div>
+    </div></div>
+    <div class="spine"><div class="spine-line-top"></div><div class="spine-node"></div><div class="spine-line-bot"></div></div>
+    <div class="real-side"><div class="card real-card" data-idx="7">
+      <div class="card-label real-label"><span>PSEUDOSCIENCE / COVID</span><span class="match-badge match-direct">DIRECT</span></div>
+      <div class="card-title">Publicly musing about disinfectant injections and UV light as COVID treatments</div>
+      <div class="card-body">April 23, 2020 White House briefing. After a DHS official explained bleach kills the virus on surfaces, Trump mused aloud whether disinfectant could work "by injection inside, or almost a cleaning" of the lungs, and whether UV light inside the body could help. Lysol's manufacturer issued an emergency public warning. Dr. Birx's expression was photographed worldwide. Authority bypassing scientific consensus through intuition, then doubling down.</div>
+      <div class="card-year">April 23, 2020 — White House COVID briefing</div>
+    </div></div>
+  </div>
+
+  <!-- ══ 2019–2024 ══ -->
+  <div class="date-marker" data-group="g9"><span class="date-pill">2019 – 2024</span></div>
+  <div class="entry" data-match="thematic" data-group="g9">
+    <div class="film-side"><div class="card film-card" data-idx="8">
+      <div class="card-label film-label"><span>JOE'S TRIAL</span><span class="match-badge match-thematic">THEMATIC</span></div>
+      <div class="card-title">Legal proceedings as televised entertainment</div>
+      <div class="card-body">Joe's trial is broadcast live as a ratings event. His assigned lawyer immediately antagonises the judge. The verdict is effectively audience-sourced. Due process is background noise to the spectacle. Justice as content.</div>
+      <div class="card-year">Film — 2505</div>
+    </div></div>
+    <div class="spine"><div class="spine-line-top"></div><div class="spine-node"></div><div class="spine-line-bot"></div></div>
+    <div class="real-side"><div class="card real-card" data-idx="8">
+      <div class="card-label real-label"><span>LEGAL SPECTACLE</span><span class="match-badge match-thematic">THEMATIC</span></div>
+      <div class="card-title">Two impeachments and a criminal conviction conducted live on cable news</div>
+      <div class="card-body">Trump became the first president impeached twice (December 2019, January 2021) and the first former president convicted of felonies (May 2024, 34 counts). Each proceeding ran in parallel with live cable commentary, social media verdicts, and crowd-reaction management as an explicit component of legal strategy. Process and performance became indistinguishable.</div>
+      <div class="card-year">2019–2024 — Impeachments and Manhattan trial</div>
+    </div></div>
+  </div>
+
+  <!-- ══ Nov 2024 ══ -->
+  <div class="date-marker" data-group="g10"><span class="date-pill">November 2024</span></div>
+  <div class="entry" data-match="loose" data-group="g10">
+    <div class="film-side"><div class="card film-card" data-idx="9">
+      <div class="card-label film-label"><span>ENDING / CODA</span><span class="match-badge match-loose">LOOSE</span></div>
+      <div class="card-title">Average guy fixes things — but the credits warn it won't last</div>
+      <div class="card-body">Joe becomes president, crops recover, society improves. But the narration notes Joe had 3 children while Frito had 32. The structural forces creating the idiocracy are still running. Individual competence can't permanently reverse systemic stupidity. Post-credits: the pimp's pod opens.</div>
+      <div class="card-year">Film — ending</div>
+    </div></div>
+    <div class="spine"><div class="spine-line-top"></div><div class="spine-node"></div><div class="spine-line-bot"></div></div>
+    <div class="real-side"><div class="card real-card" data-idx="9">
+      <div class="card-label real-label"><span>THE SYSTEMIC QUESTION</span><span class="match-badge match-loose">LOOSE</span></div>
+      <div class="card-title">Trump lost in 2020, was convicted in 2024, and won again anyway</div>
+      <div class="card-body">The film's most honest prediction isn't any specific gag — it's the structural thesis. Trump lost the 2020 election, was impeached twice, was convicted on 34 felony counts, and was re-elected by a clear margin in November 2024. The Idiocracy point isn't that bad leaders win. It's that the systems producing them persist after any individual is removed. The pimp's pod always opens.</div>
+      <div class="card-year">November 2024 — US Presidential election</div>
+    </div></div>
+  </div>
+
+  <!-- ══ Jan 2025 ══ -->
+  <div class="date-marker" data-group="g11"><span class="date-pill">January 2025</span></div>
+  <div class="entry" data-match="thematic" data-group="g11">
+    <div class="film-side"><div class="card film-card" data-idx="10">
+      <div class="card-label film-label"><span>CORPORATE CAPTURE</span><span class="match-badge match-thematic">THEMATIC</span></div>
+      <div class="card-title">Brawndo bought both the FDA and the FCC</div>
+      <div class="card-body">Corporate interest and regulatory oversight are literally the same entity. Costco is a city-state. The government exists to serve the brand. There is no longer any conceptual separation between the regulator and the regulated. The joke: a slight extrapolation from 2005.</div>
+      <div class="card-year">Film — 2505</div>
+    </div></div>
+    <div class="spine"><div class="spine-line-top"></div><div class="spine-node"></div><div class="spine-line-bot"></div></div>
+    <div class="real-side"><div class="card real-card" data-idx="10">
+      <div class="card-label real-label"><span>DOGE / REGULATORY CAPTURE</span><span class="match-badge match-thematic">THEMATIC</span></div>
+      <div class="card-title">Elon Musk leads DOGE while SpaceX, Tesla and Starlink remain regulated by those same agencies</div>
+      <div class="card-body">From January 2025, Musk led the Department of Government Efficiency while his companies remained subject to FAA, NHTSA, FCC, and SEC oversight. Multiple ethics complaints cited conflicts of interest. The Idiocracy joke: Brawndo buys the FDA. The 2025 version is structurally identical — and nobody in charge appeared to notice the mirror.</div>
+      <div class="card-year">January 2025 — DOGE appointment</div>
+    </div></div>
+  </div>
+
+  <!-- ══ 2025 Ongoing ══ -->
+  <div class="date-marker" data-group="g12"><span class="date-pill">2025 — Ongoing</span></div>
+  <div class="entry" data-match="direct" data-group="g12">
+    <div class="film-side"><div class="card film-card" data-idx="11">
+      <div class="card-label film-label"><span>CAMACHO'S ADDRESS</span><span class="match-badge match-direct">DIRECT</span></div>
+      <div class="card-title">Presidential speech as hype event: big promises, zero specifics</div>
+      <div class="card-body">Camacho's congressional address is pure energy. He promises to fix everything — the economy, the crops, the garbage — but the plan is always deferred: "I got a guy." Governing through vibes. The crowd cheers the performance, not the substance. The show IS the policy.</div>
+      <div class="card-year">Film — 2505</div>
+    </div></div>
+    <div class="spine"><div class="spine-line-top"></div><div class="spine-node"></div><div class="spine-line-bot"></div></div>
+    <div class="real-side"><div class="card real-card" data-idx="11">
+      <div class="card-label real-label"><span>GOVERNANCE BY SPECTACLE</span><span class="match-badge match-direct">DIRECT</span></div>
+      <div class="card-title">Tariff announcements, executive order blitzes, and Truth Social as governing instrument</div>
+      <div class="card-body">Trump's second term opened with a blitz of executive orders signed for cameras, sweeping tariff announcements made via social media post with major market consequences, and Truth Social used to announce policy before briefing affected agencies. The governing product remained the announcement — the spectacle — rather than implemented outcomes. Vibes as policy.</div>
+      <div class="card-year">2025 — Second-term governance pattern</div>
+    </div></div>
+  </div>
+
+  <div class="entry" data-match="loose" data-group="g12">
+    <div class="film-side"><div class="card film-card" data-idx="12">
+      <div class="card-label film-label"><span>GARBAGE AVALANCHE</span><span class="match-badge match-loose">LOOSE</span></div>
+      <div class="card-title">Society drowning in accumulated trash — literally</div>
+      <div class="card-body">The world of 2505 is overwhelmed by garbage. Mountains of rubbish frame every scene. Collective maintenance of public goods has broken down completely. Nobody takes responsibility for the unglamorous work of upkeep. The metaphor: a civilisation that stopped investing in what it built.</div>
+      <div class="card-year">Film — visual motif throughout</div>
+    </div></div>
+    <div class="spine"><div class="spine-line-top"></div><div class="spine-node"></div><div class="spine-line-bot"></div></div>
+    <div class="real-side"><div class="card real-card" data-idx="12">
+      <div class="card-label real-label"><span>DOGE CUTS / INFRASTRUCTURE</span><span class="match-badge match-loose">LOOSE</span></div>
+      <div class="card-title">DOGE removes FAA safety inspectors, FEMA staff, and inspectors general</div>
+      <div class="card-body">2025 DOGE operations cut thousands of federal employees including FAA safety inspectors and FEMA personnel. Multiple aviation near-misses were reported in subsequent months, triggering congressional investigations. The metaphor is loose — not literal garbage — but the underlying pattern holds: unglamorous maintenance infrastructure gets cut when it isn't entertaining. Flagged honestly as a stretch.</div>
+      <div class="card-year">2025 — DOGE federal workforce reductions</div>
+    </div></div>
+  </div>
+
+</div><!-- /timeline -->
+
+<footer>
+  <div>IDIOCRACY © 2006 20TH CENTURY FOX / MIKE JUDGE &nbsp;·&nbsp; <span>THIS PAGE IS SATIRE AND POLITICAL COMMENTARY</span></div>
+  <div style="margin-top:6px;opacity:.42">Film co-writer Etan Cohen, 2016: "I never expected it to become a documentary."</div>
+</footer>
+
+<script>
+const QUOTES = [
+  "NOBODY KNOWS ENTERTAINMENT BETTER THAN ME. NOBODY.",
+  "I LOVE THE POORLY EDUCATED. THEY'RE THE BEST.",
+  "CARL'S JR. TREMENDOUS PLACE. VERY CLASSY.",
+  "THAT'S CALLED ALTERNATIVE FACTS. TOTALLY VALID.",
+  "HOAX! TOTAL HOAX! CHINA DID IT!",
+  "I'M A VERY STABLE GENIUS. VERY STABLE.",
+  "TOTAL CHAOS IN THERE. SO UNFAIR TO ME.",
+  "LOOK INTO THE DISINFECTANT THING. JUST ASKING QUESTIONS.",
+  "PERFECT. EVERYTHING I DO IS PERFECT.",
+  "I WON. I WON BIGLY. EVERYONE KNOWS IT.",
+  "BRAWNDO. BEAUTIFUL COMPANY. GREAT ELECTROLYTES.",
+  "BEST EXECUTIVE ORDERS. NOBODY SIGNS BETTER.",
+  "WE HAVE THE BEST GARBAGE. WORLD-CLASS."
+];
+
+const popup   = document.getElementById('trump-popup');
+const quoteEl = document.getElementById('trump-quote');
+let hideTimer = null;
+
+function triggerTrump(idx, cardEl, side) {
+  const cls = side === 'film' ? 'flash-film' : 'flash-trump';
+  cardEl.classList.remove(cls);
+  void cardEl.offsetWidth;
+  cardEl.classList.add(cls);
+  setTimeout(() => cardEl.classList.remove(cls), 400);
+
+  clearTimeout(hideTimer);
+  quoteEl.textContent = QUOTES[idx] || 'WRONG!';
+  popup.classList.add('visible');
+  hideTimer = setTimeout(() => popup.classList.remove('visible'), 3200);
+}
+
+// Wire up all cards
+document.querySelectorAll('.card').forEach(card => {
+  const idx  = parseInt(card.dataset.idx, 10);
+  const side = card.classList.contains('film-card') ? 'film' : 'trump';
+
+  card.addEventListener('click', () => triggerTrump(idx, card, side));
+  card.addEventListener('touchend', e => {
+    e.preventDefault();
+    triggerTrump(idx, card, side);
+  }, { passive: false });
+});
+
+function filterEntries(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+
+  let count = 0;
+  document.querySelectorAll('.entry').forEach(e => {
+    const show = type === 'all' || e.dataset.match === type;
+    e.classList.toggle('hidden', !show);
+    if (show) count++;
+  });
+
+  // hide date markers that have no visible entries beneath them
+  document.querySelectorAll('.date-marker').forEach(dm => {
+    const g = dm.dataset.group;
+    const hasVisible = !!document.querySelector(`.entry[data-group="${g}"]:not(.hidden)`);
+    dm.style.display = hasVisible ? '' : 'none';
+  });
+
+  document.getElementById('count').textContent = count;
+}
+</script>
+</body>
+</html>
