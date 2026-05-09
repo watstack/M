@@ -25,7 +25,18 @@ header{border-bottom:3px solid var(--orange);padding:38px 20px 28px;text-align:c
 header::before{content:'';position:absolute;top:-50%;left:-10%;width:120%;height:200%;
   background:radial-gradient(ellipse at 50% 0%,rgba(232,98,10,.1) 0%,transparent 65%);pointer-events:none;}
 .eyebrow{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:4px;color:var(--orange);
-  text-transform:uppercase;margin-bottom:10px;opacity:.8;}
+ .header-img{
+  display:block;
+  width:100%;
+  max-width:420px;
+  margin:10px auto 0;
+  border:3px solid var(--orange);
+  box-shadow:0 0 24px rgba(232,98,10,.35),4px 4px 0 #000;
+}
+@media(max-width:780px){.header-img{max-width:320px;}}
+@media(max-width:520px){.header-img{max-width:100%;border-width:2px;}}
+
+ text-transform:uppercase;margin-bottom:10px;opacity:.8;}
 h1{font-family:'Black Ops One',cursive;font-size:clamp(28px,7vw,72px);line-height:.88;letter-spacing:2px;
   color:var(--yellow);text-shadow:3px 3px 0 var(--orange),6px 6px 0 rgba(204,17,0,.35);margin-bottom:10px;}
 h1 span{color:var(--orange);text-shadow:3px 3px 0 var(--red);}
