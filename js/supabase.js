@@ -147,7 +147,7 @@ function generateCode() {
 
 function sanitizeNickname(raw) {
   // Strip HTML, trim, limit to 20 chars, allow letters/numbers/spaces/hyphens
-  const clean = raw.replace(/[<>&"']/g, '').trim().slice(0, 20);
+  const clean = raw.replace(/[<>&"]/g, '').trim().slice(0, 20);
   if (clean.length < 2) return null;
   if (!/^[\w\s\-'.]+$/u.test(clean)) return null;
   return clean;

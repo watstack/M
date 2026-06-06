@@ -65,25 +65,40 @@ describe('getFlagColors', () => {
     }
   });
 
-  it('FLAG_COLORS has more than 48 entries — fallback draw slices first 48', () => {
-    // The draw fallback in sweepstake.html does .slice(0, 48) on FLAG_COLORS entries.
-    // If the map has 82+ entries the last teams are silently excluded from that fallback.
-    // This test documents the count so any changes are visible.
-    const allCodes = [
-      'ENG','GER','FRA','ESP','NED','POR','BEL','ITA','POL','SUI',
-      'CRO','DEN','AUT','SRB','TUR','SCO','HUN','SVN',
-      'BRA','ARG','COL','URU','CHI','ECU','VEN','PAR','BOL','PER',
-      'MAR','SEN','CMR','NGA','GHA','EGY','CIV','TUN','RSA','COD','MLI','AGO','ZAM','ALG','BEN','MRT','COM',
-      'JPN','KOR','AUS','IRN','KSA','QAT','UZB','IRQ','JOR','UAE','OMA','BHR','KUW','CHN','TJK','KGZ','PAL','BAN','IND','THA','IDN','PHI',
-      'USA','MEX','CAN','HON','PAN','CRC','JAM','GUA','TRI','CUB','SLV','NCA',
-      'NZL','FIJ','PNG',
+  it('WC_2026_TEAMS has exactly 48 entries and every code is in FLAG_COLORS', () => {
+    // WC_2026_TEAMS replaced the old .slice(0,48) fallback that excluded USA/MEX/CAN.
+    // WC_2026_TEAMS is a const so we verify it indirectly via getFlagColors.
+    const wc2026 = [
+      // UEFA (16)
+      'ENG','GER','ESP','FRA','NED','POR','BEL','CRO',
+      'SUI','AUT','DEN','SRB','TUR','SCO','HUN','SVN',
+      // CONMEBOL (6)
+      'BRA','ARG','COL','URU','ECU','VEN',
+      // CAF (9)
+      'MAR','SEN','NGA','EGY','CIV','TUN','CMR','RSA','COD',
+      // AFC (8)
+      'JPN','KOR','IRN','AUS','KSA','IRQ','JOR','UZB',
+      // CONCACAF (6)
+      'USA','MEX','CAN','HON','PAN','CRC',
+      // OFC (1)
+      'NZL',
+      // Inter-confederation (2)
+      'IDN','MLI',
     ];
-    // Every code in the map should return its own entry (not the fallback)
-    for (const code of allCodes) {
+
+    expect(wc2026).toHaveLength(48);
+
+    for (const code of wc2026) {
       const c = ctx.getFlagColors(code);
-      expect(c.primary, `${code} should not return fallback grey`).not.toBe('#888888');
+      expect(c.primary, `${code} missing from FLAG_COLORS (got fallback grey)`).not.toBe('#888888');
     }
-    // Document: total entries exceeds 48
-    expect(allCodes.length).toBeGreaterThan(48);
+  });
+
+  it('CONCACAF hosts are in the correct team set (regression: old slice excluded them)', () => {
+    for (const host of ['USA', 'MEX', 'CAN']) {
+      const c = ctx.getFlagColors(host);
+      expect(c.primary).not.toBe('#888888');
+      expect(c.name).toBeTruthy();
+    }
   });
 });

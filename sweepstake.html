@@ -627,10 +627,10 @@ async function handleStartDraw() {
 
     // If API fails, fall back to FLAG_COLORS keys
     if (teams.length === 0) {
-      teams = Object.entries(FLAG_COLORS)
-        .filter(([k]) => k !== '_DEFAULT')
-        .map(([k, v]) => ({ tla: k, name: v.name, shortName: v.name }))
-        .slice(0, 48);
+      teams = WC_2026_TEAMS.map(code => {
+        const c = getFlagColors(code);
+        return { tla: code, name: c.name, shortName: c.name };
+      });
     }
 
     const trimmedSlots = buildSlots(allParticipants);

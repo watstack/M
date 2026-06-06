@@ -36,10 +36,8 @@ describe('sanitizeNickname', () => {
     expect(ctx.sanitizeNickname('')).toBeNull();
   });
 
-  it('apostrophe is stripped before regex check (known behaviour — dead code in regex)', () => {
-    // The replace strips ' before the /^[\w\s\-'.]+$/ regex tests for it.
-    // O'Brien → OBrien (not null). This test documents current behaviour.
-    expect(ctx.sanitizeNickname("O'Brien")).toBe('OBrien');
+  it('preserves apostrophes (allowed by regex)', () => {
+    expect(ctx.sanitizeNickname("O'Brien")).toBe("O'Brien");
   });
 
   it('accepts alphanumeric with spaces and hyphens', () => {
