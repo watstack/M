@@ -1,8 +1,6 @@
 // Supabase client + helper functions.
 // CONFIG must be loaded before this script (js/config.js).
 
-if (!window.supabase) throw new Error('Supabase SDK missing — js/vendor/supabase.js did not load');
-if (!CONFIG.SUPABASE_URL) throw new Error('SUPABASE_URL not set in js/config.js');
 const supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 // ─── Tournament helpers ────────────────────────────────────────────────────────
