@@ -2,8 +2,11 @@
 // Generates js/config.js from Vercel environment variables at build time.
 // For local dev: copy js/config.example.js → js/config.js and fill in values.
 
-const fs = require('fs');
-const path = require('path');
+import { writeFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const url  = process.env.SUPABASE_URL      || '';
 const key  = process.env.SUPABASE_ANON_KEY || '';
@@ -19,5 +22,5 @@ const CONFIG = {
 };
 `;
 
-fs.writeFileSync(path.join(__dirname, 'js', 'config.js'), content, 'utf8');
+writeFileSync(join(__dirname, 'js', 'config.js'), content, 'utf8');
 console.log('✓ js/config.js written');
