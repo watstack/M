@@ -1,5 +1,4 @@
 js/config.js
-js/vendor/
 .DS_Store
 node_modules/
 _site/
