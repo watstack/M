@@ -891,8 +891,14 @@ async function init() {
 
   try {
     tournament = await getTournamentByCode(code);
-  } catch (_) {
-    document.getElementById('stateNotFound').classList.add('active');
+  } catch (err) {
+    console.error('getTournamentByCode failed:', err);
+    const nf = document.getElementById('stateNotFound');
+    nf.classList.add('active');
+    const dbg = document.createElement('p');
+    dbg.style.cssText = 'font-size:0.75rem;color:var(--muted);margin-top:8px;word-break:break-all';
+    dbg.textContent = String(err?.message || err);
+    nf.querySelector('.not-found').appendChild(dbg);
     return;
   }
 
