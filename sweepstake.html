@@ -175,6 +175,7 @@
   <div class="state active" id="stateLoading">
     <div style="text-align:center;padding:80px 20px">
       <p class="muted" style="font-size:1.1rem">Loading sweepstake…</p>
+      <p id="loadingStatus" class="muted" style="font-size:0.75rem;margin-top:8px;min-height:1.2em"></p>
     </div>
   </div>
 
@@ -978,7 +979,14 @@ function onAllocation(alloc) {
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
+function setLoadingStatus(msg) {
+  const el = document.getElementById('loadingStatus');
+  if (el) el.textContent = msg;
+}
+
 async function init() {
+  setLoadingStatus('Starting…');
+
   if (!code) {
     document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
     document.getElementById('stateNotFound').classList.add('active');
@@ -991,6 +999,7 @@ async function init() {
     document.getElementById('adminBar').style.display = 'flex';
   }
 
+  setLoadingStatus('Looking up tournament…');
   try {
     tournament = await withTimeout(getTournamentByCode(code), 12000);
   } catch (err) {
@@ -1005,6 +1014,7 @@ async function init() {
     return;
   }
 
+  setLoadingStatus('Loading participants…');
   try {
     myParticipantId = loadSession(code);
 
