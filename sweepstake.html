@@ -171,6 +171,13 @@
     </button>
   </div>
 
+  <!-- Loading (visible by default until init() completes) -->
+  <div class="state active" id="stateLoading">
+    <div style="text-align:center;padding:80px 20px">
+      <p class="muted" style="font-size:1.1rem">Loading sweepstake…</p>
+    </div>
+  </div>
+
   <!-- Not found -->
   <div class="state" id="stateNotFound">
     <div class="not-found">
@@ -531,6 +538,7 @@ function updateSlotCounter(participants, teamsPerPerson) {
 
 // ── STATE 1: Render join form ─────────────────────────────────────────────────
 function renderJoinState() {
+  document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
   document.getElementById('stateJoin').classList.add('active');
   document.getElementById('joinTourneyName').textContent = tournament.name;
 
@@ -956,6 +964,7 @@ function onAllocation(alloc) {
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 async function init() {
   if (!code) {
+    document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
     document.getElementById('stateNotFound').classList.add('active');
     return;
   }
@@ -970,6 +979,7 @@ async function init() {
     tournament = await getTournamentByCode(code);
   } catch (err) {
     console.error('getTournamentByCode failed:', err);
+    document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
     const nf = document.getElementById('stateNotFound');
     nf.classList.add('active');
     const dbg = document.createElement('p');
@@ -1019,6 +1029,7 @@ async function init() {
     }
   } catch (err) {
     console.error('sweepstake init error:', err);
+    document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
     const nf = document.getElementById('stateNotFound');
     nf.classList.add('active');
     const dbg = document.createElement('p');
