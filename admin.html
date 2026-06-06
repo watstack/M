@@ -175,7 +175,10 @@
 <script src="js/config.js?v=17807242" onerror="document.getElementById('toast').textContent='Failed to load: config.js';document.getElementById('toast').classList.add('show')"></script>
 <script src="js/vendor/supabase.js?v=17807242" onerror="document.getElementById('toast').textContent='Failed to load: vendor/supabase.js';document.getElementById('toast').classList.add('show')"></script>
 <script>
-  const _db = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+  let _db = null;
+  if (CONFIG.SUPABASE_URL) {
+    _db = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+  }
 
   function generateCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -183,6 +186,7 @@
   }
 
   async function createTournament(name, teamsPerPerson) {
+    if (!_db) throw new Error('Supabase not configured — GitHub Secrets SUPABASE_URL / SUPABASE_ANON_KEY are missing');
     const code = generateCode();
     const adminToken = crypto.randomUUID();
     const { data, error } = await _db
