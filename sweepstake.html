@@ -528,7 +528,7 @@ function renderWaitingState() {
   document.getElementById('stateWaiting').classList.add('active');
   document.getElementById('waitTourneyName').textContent = tournament.name;
 
-  const inviteUrl = `${window.location.origin}/s/${code}`;
+  const inviteUrl = `${window.location.origin}${window.location.pathname.replace(/\/[^/]*$/, '')}/sweepstake.html?code=${code}`;
   document.getElementById('waitShareUrl').textContent = inviteUrl;
   setupCopy('waitCopyBtn', inviteUrl);
 
