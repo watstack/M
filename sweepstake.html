@@ -178,13 +178,16 @@
     </div>
   </div>
 
-  <!-- Not found -->
+  <!-- Not found / error -->
   <div class="state" id="stateNotFound">
     <div class="not-found">
       <div class="not-found-icon">🤷</div>
       <h2 style="margin-bottom:8px">Sweepstake not found</h2>
       <p class="muted" style="margin-bottom:24px">Double-check the invite code and try again.</p>
-      <a href="index.html" class="btn">← Back to home</a>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn" onclick="location.reload()">↺ Retry</button>
+        <a href="index.html" class="btn">← Back to home</a>
+      </div>
     </div>
   </div>
 
@@ -341,6 +344,19 @@
 <script src="js/football.js?v=17807242"></script>
 <script src="js/draw.js?v=17807242"></script>
 <script>
+
+// ── Timeout helper (guards against Supabase cold-start hangs) ────────────────
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(
+        'Database is waking up — this can take up to 60s on a paused project. ' +
+        'Please wait a moment and refresh the page.'
+      )), ms)
+    ),
+  ]);
+}
 
 // ── Supabase client (inlined to avoid external-script load issues) ────────────
 let supabase = null;
@@ -976,7 +992,7 @@ async function init() {
   }
 
   try {
-    tournament = await getTournamentByCode(code);
+    tournament = await withTimeout(getTournamentByCode(code), 12000);
   } catch (err) {
     console.error('getTournamentByCode failed:', err);
     document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
@@ -993,10 +1009,10 @@ async function init() {
     myParticipantId = loadSession(code);
 
     // Load participants and allocations
-    [allParticipants, allAllocations] = await Promise.all([
+    [allParticipants, allAllocations] = await withTimeout(Promise.all([
       getParticipants(tournament.id),
       getAllocations(tournament.id),
-    ]);
+    ]), 12000);
 
     // Enrich allocations with participant data from allParticipants
     allAllocations = allAllocations.map(a => ({
