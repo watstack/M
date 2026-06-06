@@ -172,9 +172,9 @@
 
 <div id="toast"></div>
 
-<script src="js/config.js?v=17807242"></script>
-<script src="js/vendor/supabase.js?v=17807242"></script>
-<script src="js/supabase.js?v=17807242"></script>
+<script src="js/config.js?v=17807242" onerror="document.getElementById('toast').textContent='Failed to load: config.js';document.getElementById('toast').classList.add('show')"></script>
+<script src="js/vendor/supabase.js?v=17807242" onerror="document.getElementById('toast').textContent='Failed to load: vendor/supabase.js';document.getElementById('toast').classList.add('show')"></script>
+<script src="js/supabase.js?v=17807242" onerror="document.getElementById('toast').textContent='Failed to load: supabase.js';document.getElementById('toast').classList.add('show')"></script>
 <script>
   const nameInput    = document.getElementById('nameInput');
   const teamsInput   = document.getElementById('teamsInput');
