@@ -8,8 +8,9 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-const url  = process.env.SUPABASE_URL      || '';
-const key  = process.env.SUPABASE_ANON_KEY || '';
+const url   = process.env.SUPABASE_URL        || '';
+const key   = process.env.SUPABASE_ANON_KEY   || '';
+const token = process.env.FOOTBALL_API_TOKEN  || '';
 
 if (!url || !key) {
   console.warn('⚠  SUPABASE_URL or SUPABASE_ANON_KEY not set — js/config.js will have empty values.');
@@ -19,6 +20,7 @@ const content = `// Auto-generated at build time by build.js — do not edit man
 const CONFIG = {
   SUPABASE_URL: '${url}',
   SUPABASE_ANON_KEY: '${key}',
+  FOOTBALL_API_TOKEN: '${token}',
 };
 `;
 
@@ -34,7 +36,7 @@ console.log('✓ js/vendor/supabase.js written');
 
 // Cache-bust all local JS script tags in HTML files by appending ?v=<commit>.
 // This forces browsers to fetch fresh scripts after every deploy.
-const v = (process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString()).slice(0, 8);
+const v = (process.env.GITHUB_SHA || process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString()).slice(0, 8);
 for (const file of readdirSync(__dirname).filter(f => f.endsWith('.html'))) {
   const path = join(__dirname, file);
   const updated = readFileSync(path, 'utf8')
