@@ -36,7 +36,7 @@ console.log('✓ js/vendor/supabase.js written');
 
 // Cache-bust all local JS script tags in HTML files by appending ?v=<commit>.
 // This forces browsers to fetch fresh scripts after every deploy.
-const v = (process.env.GITHUB_SHA || process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString()).slice(0, 8);
+const v = (process.env.GITHUB_RUN_ID || process.env.GITHUB_SHA || process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString()).slice(0, 8);
 for (const file of readdirSync(__dirname).filter(f => f.endsWith('.html'))) {
   const path = join(__dirname, file);
   const updated = readFileSync(path, 'utf8')
