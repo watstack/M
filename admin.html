@@ -174,7 +174,26 @@
 
 <script src="js/config.js?v=17807242" onerror="document.getElementById('toast').textContent='Failed to load: config.js';document.getElementById('toast').classList.add('show')"></script>
 <script src="js/vendor/supabase.js?v=17807242" onerror="document.getElementById('toast').textContent='Failed to load: vendor/supabase.js';document.getElementById('toast').classList.add('show')"></script>
-<script src="js/supabase.js?v=17807242" onerror="document.getElementById('toast').textContent='Failed to load: supabase.js';document.getElementById('toast').classList.add('show')"></script>
+<script>
+  const _db = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+  function generateCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  }
+
+  async function createTournament(name, teamsPerPerson) {
+    const code = generateCode();
+    const adminToken = crypto.randomUUID();
+    const { data, error } = await _db
+      .from('tournaments')
+      .insert({ code, admin_token: adminToken, name, teams_per_person: teamsPerPerson })
+      .select()
+      .single();
+    if (error) throw error;
+    return { ...data, admin_token: adminToken };
+  }
+</script>
 <script>
   const nameInput    = document.getElementById('nameInput');
   const teamsInput   = document.getElementById('teamsInput');
