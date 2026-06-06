@@ -1,4 +1,6 @@
 {
+  "buildCommand": "node build.js",
+  "outputDirectory": ".",
   "rewrites": [
     { "source": "/s/:code", "destination": "/sweepstake.html?code=:code" }
   ]
