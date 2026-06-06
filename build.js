@@ -2,7 +2,7 @@
 // Generates js/config.js from Vercel environment variables at build time.
 // For local dev: copy js/config.example.js → js/config.js and fill in values.
 
-import { writeFileSync, readFileSync, mkdirSync } from 'fs';
+import { writeFileSync, readFileSync, mkdirSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -31,3 +31,14 @@ mkdirSync(vendorDir, { recursive: true });
 const supabaseSrc = join(__dirname, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd', 'supabase.js');
 writeFileSync(join(vendorDir, 'supabase.js'), readFileSync(supabaseSrc));
 console.log('✓ js/vendor/supabase.js written');
+
+// Cache-bust all local JS script tags in HTML files by appending ?v=<commit>.
+// This forces browsers to fetch fresh scripts after every deploy.
+const v = (process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString()).slice(0, 8);
+for (const file of readdirSync(__dirname).filter(f => f.endsWith('.html'))) {
+  const path = join(__dirname, file);
+  const updated = readFileSync(path, 'utf8')
+    .replace(/(<script src="(?:js\/[^"]+\.js))(?:\?v=[^"]*)?(")/g, `$1?v=${v}$2`);
+  writeFileSync(path, updated, 'utf8');
+}
+console.log(`✓ HTML script tags cache-busted with v=${v}`);
