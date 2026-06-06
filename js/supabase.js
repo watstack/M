@@ -2,7 +2,7 @@
 // CONFIG must be loaded before this script (js/config.js).
 
 let supabase = null;
-if (CONFIG.SUPABASE_URL) {
+if (window.supabase) {
   supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 }
 
