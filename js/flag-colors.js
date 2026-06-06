@@ -105,3 +105,23 @@ const FLAG_COLORS = {
 function getFlagColors(code) {
   return FLAG_COLORS[code] || FLAG_COLORS._DEFAULT;
 }
+
+// Exact 48 teams qualified for WC 2026.
+// Used as the draw fallback when the football API is unavailable.
+const WC_2026_TEAMS = [
+  // UEFA (16)
+  'ENG', 'GER', 'ESP', 'FRA', 'NED', 'POR', 'BEL', 'CRO',
+  'SUI', 'AUT', 'DEN', 'SRB', 'TUR', 'SCO', 'HUN', 'SVN',
+  // CONMEBOL (6)
+  'BRA', 'ARG', 'COL', 'URU', 'ECU', 'VEN',
+  // CAF (9)
+  'MAR', 'SEN', 'NGA', 'EGY', 'CIV', 'TUN', 'CMR', 'RSA', 'COD',
+  // AFC (8)
+  'JPN', 'KOR', 'IRN', 'AUS', 'KSA', 'IRQ', 'JOR', 'UZB',
+  // CONCACAF (6 — USA, MEX, CAN as hosts + 3 qualifiers)
+  'USA', 'MEX', 'CAN', 'HON', 'PAN', 'CRC',
+  // OFC (1)
+  'NZL',
+  // Inter-confederation playoffs (2)
+  'IDN', 'MLI',
+];

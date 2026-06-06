@@ -333,6 +333,7 @@
 <script src="js/avatars.js"></script>
 <script src="js/supabase.js"></script>
 <script src="js/football.js"></script>
+<script src="js/draw.js"></script>
 <script>
 
 // ── Globals ───────────────────────────────────────────────────────────────────
@@ -626,29 +627,14 @@ async function handleStartDraw() {
 
     // If API fails, fall back to FLAG_COLORS keys
     if (teams.length === 0) {
-      teams = Object.entries(FLAG_COLORS)
-        .filter(([k]) => k !== '_DEFAULT')
-        .map(([k, v]) => ({ tla: k, name: v.name, shortName: v.name }))
-        .slice(0, 48);
+      teams = WC_2026_TEAMS.map(code => {
+        const c = getFlagColors(code);
+        return { tla: code, name: c.name, shortName: c.name };
+      });
     }
 
-    // Build allocation list from participants × team_slots
-    const slots = [];
-    for (const p of allParticipants) {
-      for (let i = 0; i < p.team_slots; i++) slots.push(p.id);
-    }
-    // Pad or trim to 48
-    while (slots.length < 48 && slots.length > 0) {
-      slots.push(slots[Math.floor(Math.random() * slots.length)]);
-    }
-    const trimmedSlots = slots.slice(0, 48);
-
-    // Fisher-Yates shuffle of teams
-    const teamPool = teams.slice(0, 48);
-    for (let i = teamPool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [teamPool[i], teamPool[j]] = [teamPool[j], teamPool[i]];
-    }
+    const trimmedSlots = buildSlots(allParticipants);
+    const teamPool = shuffleTeams(teams.slice(0, 48));
 
     // Insert allocations one by one with animation delay
     for (let i = 0; i < teamPool.length; i++) {
