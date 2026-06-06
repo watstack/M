@@ -1,7 +1,10 @@
 // Supabase client + helper functions.
 // CONFIG must be loaded before this script (js/config.js).
 
-const supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+let supabase = null;
+if (CONFIG.SUPABASE_URL) {
+  supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+}
 
 // ─── Tournament helpers ────────────────────────────────────────────────────────
 
