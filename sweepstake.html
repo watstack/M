@@ -337,8 +337,12 @@
 
 // ── Supabase client (inlined to avoid external-script load issues) ────────────
 let supabase = null;
-if (CONFIG.SUPABASE_URL) {
-  supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+try {
+  if (CONFIG.SUPABASE_URL && window.supabase) {
+    supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+  }
+} catch (e) {
+  console.error('Supabase init failed:', e);
 }
 
 async function getTournamentByCode(code) {
@@ -975,43 +979,52 @@ async function init() {
     return;
   }
 
-  myParticipantId = loadSession(code);
+  try {
+    myParticipantId = loadSession(code);
 
-  // Load participants and allocations
-  [allParticipants, allAllocations] = await Promise.all([
-    getParticipants(tournament.id),
-    getAllocations(tournament.id),
-  ]);
+    // Load participants and allocations
+    [allParticipants, allAllocations] = await Promise.all([
+      getParticipants(tournament.id),
+      getAllocations(tournament.id),
+    ]);
 
-  // Fix: enrich allocations with participant data from allParticipants
-  allAllocations = allAllocations.map(a => ({
-    ...a,
-    participants: a.participants || allParticipants.find(p => p.id === a.participant_id),
-  }));
+    // Enrich allocations with participant data from allParticipants
+    allAllocations = allAllocations.map(a => ({
+      ...a,
+      participants: a.participants || allParticipants.find(p => p.id === a.participant_id),
+    }));
 
-  // Subscribe to real-time updates
-  subscribeToTournament(tournament.id, {
-    onTournamentUpdate,
-    onParticipantJoin,
-    onParticipantLeave,
-    onAllocation,
-  });
+    // Subscribe to real-time updates
+    subscribeToTournament(tournament.id, {
+      onTournamentUpdate,
+      onParticipantJoin,
+      onParticipantLeave,
+      onAllocation,
+    });
 
-  // Route to correct state
-  if (tournament.status === 'live') {
-    renderBracketState();
-  } else if (tournament.status === 'drawing') {
-    renderDrawState();
-    // Replay any already-inserted allocations
-    for (const a of allAllocations) revealDrawCard(a, allParticipants);
-  } else {
-    // 'open'
-    document.getElementById('adminBar').style.display = isAdmin ? 'flex' : 'none';
-    if (myParticipantId && allParticipants.find(p => p.id === myParticipantId)) {
-      renderWaitingState();
+    // Route to correct state
+    if (tournament.status === 'live') {
+      renderBracketState();
+    } else if (tournament.status === 'drawing') {
+      renderDrawState();
+      for (const a of allAllocations) revealDrawCard(a, allParticipants);
     } else {
-      renderJoinState();
+      // 'open'
+      document.getElementById('adminBar').style.display = isAdmin ? 'flex' : 'none';
+      if (myParticipantId && allParticipants.find(p => p.id === myParticipantId)) {
+        renderWaitingState();
+      } else {
+        renderJoinState();
+      }
     }
+  } catch (err) {
+    console.error('sweepstake init error:', err);
+    const nf = document.getElementById('stateNotFound');
+    nf.classList.add('active');
+    const dbg = document.createElement('p');
+    dbg.style.cssText = 'font-size:0.75rem;color:var(--muted);margin-top:8px;word-break:break-all';
+    dbg.textContent = 'Error: ' + String(err?.message || err);
+    nf.querySelector('.not-found').appendChild(dbg);
   }
 }
 
