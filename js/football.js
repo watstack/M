@@ -1,7 +1,6 @@
 // football-data.org API wrapper for WC 2026.
-// Calls /api/football (Vercel serverless proxy) — the API token stays server-side.
+// Calls api.football-data.org directly from the browser (CORS supported).
 // Free tier: 10 req/min. We cache aggressively and poll only when needed.
-// For local dev run: vercel dev
 
 const WC_CODE = 'WC';
 const CACHE_TTL_LIVE = 60_000;    // 60s when a match is live
@@ -19,7 +18,9 @@ async function footballFetch(path) {
     if (Date.now() - ts < ttl) return data;
   }
   const cleanPath = path.replace(/^\//, '');
-  const res = await fetch(`/api/football?path=${encodeURIComponent(cleanPath)}`);
+  const res = await fetch(`https://api.football-data.org/v4/${cleanPath}`, {
+    headers: { 'X-Auth-Token': CONFIG.FOOTBALL_API_TOKEN },
+  });
   if (!res.ok) throw new Error(`Football API error: ${res.status}`);
   const data = await res.json();
   sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));

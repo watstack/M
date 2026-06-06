@@ -218,8 +218,9 @@
       const tournament = await createTournament(name, teams);
 
       const origin = window.location.origin;
-      const inviteUrl = `${origin}/s/${tournament.code}`;
-      const adminUrl  = `${origin}/s/${tournament.code}#admin=${tournament.admin_token}`;
+      const base   = window.location.pathname.replace(/\/[^/]*$/, '');
+      const inviteUrl = `${origin}${base}/sweepstake.html?code=${tournament.code}`;
+      const adminUrl  = `${origin}${base}/sweepstake.html?code=${tournament.code}#admin=${tournament.admin_token}`;
 
       document.getElementById('inviteUrlDisplay').textContent = inviteUrl;
       document.getElementById('adminUrlDisplay').textContent  = adminUrl;
