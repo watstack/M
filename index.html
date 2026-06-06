@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kickoff — World Cup 2026 Sweepstake</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .hero {
+      text-align: center;
+      padding: 60px 0 48px;
+    }
+
+    .hero-eyebrow {
+      display: inline-block;
+      background: rgba(240,192,64,0.15);
+      color: var(--gold);
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      background: linear-gradient(135deg, #fff 0%, var(--gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1.15rem;
+      max-width: 520px;
+      margin: 0 auto 36px;
+      line-height: 1.6;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .hero-actions button {
+      font-size: 1.05rem;
+      padding: 14px 28px;
+      border-radius: 10px;
+    }
+
+    /* Steps */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      margin: 48px 0;
+    }
+
+    .step-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+    }
+
+    .step-num {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 0.95rem;
+      margin-bottom: 14px;
+    }
+
+    .step-card h3 { margin-bottom: 6px; }
+    .step-card p { color: var(--muted); font-size: 0.88rem; line-height: 1.5; }
+
+    .trophy { font-size: 3.5rem; margin-bottom: 12px; display: block; }
+
+    /* Join form */
+    .join-panel {
+      max-width: 420px;
+      margin: 0 auto;
+    }
+
+    .join-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="page">
+
+  <header class="site-header">
+    <div class="logo">⚽</div>
+    <span class="site-name">Kickoff</span>
+    <span style="flex:1"></span>
+    <span class="muted" style="font-size:0.8rem">WC 2026</span>
+  </header>
+
+  <section class="hero">
+    <span class="hero-eyebrow">World Cup 2026 · Sweepstake</span>
+    <h1>Pick your teams.<br>Follow the bracket.</h1>
+    <p>Create a sweepstake in seconds, share a link with your friends, and watch the live draw together.</p>
+    <div class="hero-actions">
+      <button class="btn-gold" onclick="window.location.href='admin.html'">
+        ⚽ Create a Sweepstake
+      </button>
+      <button class="btn-ghost" id="joinBtn">
+        🔗 Join with a code
+      </button>
+    </div>
+  </section>
+
+  <!-- Hidden join panel -->
+  <div id="joinPanel" style="display:none">
+    <div class="join-panel card">
+      <p class="join-title">Enter your invite code</p>
+      <div class="field">
+        <label for="codeInput">Invite code</label>
+        <input type="text" id="codeInput" placeholder="e.g. WC26AB" maxlength="6"
+               style="text-transform:uppercase;letter-spacing:0.15em;font-size:1.3rem;text-align:center"
+               autocomplete="off" autocapitalize="characters">
+        <div class="field-error" id="codeError">Tournament not found. Check the code and try again.</div>
+      </div>
+      <button class="btn-full btn-gold" id="goBtn">
+        Let's go →
+        <span class="spinner" id="goSpinner"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step-card">
+      <div class="step-num">1</div>
+      <h3>Create</h3>
+      <p>Name your sweepstake and set how many teams each player can claim.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">2</div>
+      <h3>Invite</h3>
+      <p>Share a single link. Friends pick a nickname and choose their avatar.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">3</div>
+      <h3>Draw</h3>
+      <p>When everyone's in, trigger the live draw and watch the teams get assigned.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">4</div>
+      <h3>Follow</h3>
+      <p>The bracket updates live with real WC results. Revisit any time.</p>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script src="js/config.js"></script>
+<script>
+  const joinBtn = document.getElementById('joinBtn');
+  const joinPanel = document.getElementById('joinPanel');
+  const codeInput = document.getElementById('codeInput');
+  const codeError = document.getElementById('codeError');
+  const goBtn = document.getElementById('goBtn');
+  const goSpinner = document.getElementById('goSpinner');
+
+  joinBtn.addEventListener('click', () => {
+    joinPanel.style.display = 'block';
+    joinPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => codeInput.focus(), 300);
+  });
+
+  codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') goBtn.click(); });
+
+  goBtn.addEventListener('click', async () => {
+    const code = codeInput.value.trim().toUpperCase();
+    if (!code || code.length < 4) {
+      codeError.classList.add('show');
+      codeInput.classList.add('error');
+      return;
+    }
+    codeError.classList.remove('show');
+    codeInput.classList.remove('error');
+    goBtn.disabled = true;
+    goSpinner.classList.add('show');
+
+    // Quick check via fetch — just follow the link; sweepstake.html handles errors
+    window.location.href = `/s/${code}`;
+  });
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>

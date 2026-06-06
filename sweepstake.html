@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sweepstake — Kickoff</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    /* ── State sections ── */
+    .state { display: none; }
+    .state.active { display: block; animation: fadeIn 0.4s ease; }
+
+    /* ── Join form ── */
+    .join-wrap { max-width: 540px; margin: 0 auto; }
+
+    .tourney-header {
+      text-align: center;
+      padding: 32px 0 24px;
+    }
+
+    .tourney-name {
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    .slots-info {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    /* ── Waiting room ── */
+    .waiting-wrap { max-width: 680px; margin: 0 auto; }
+
+    .waiting-header {
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    .participant-count {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    /* ── Draw state ── */
+    .draw-wrap { max-width: 900px; margin: 0 auto; }
+
+    .draw-header {
+      text-align: center;
+      padding: 24px 0 8px;
+    }
+
+    .draw-progress {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    /* ── Bracket state ── */
+    .bracket-nav {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .bracket-nav button {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.82rem;
+      padding: 8px 14px;
+      border-radius: 6px;
+    }
+
+    .bracket-nav button.active {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+
+    /* ── My teams panel ── */
+    .my-teams {
+      background: rgba(240,192,64,0.07);
+      border: 1px solid rgba(240,192,64,0.25);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+
+    .my-teams h3 {
+      color: var(--gold);
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .my-team-cards {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .my-team-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+
+    /* Group stage table */
+    .groups-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 16px;
+    }
+
+    /* Loading skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, var(--panel) 25%, var(--mid) 50%, var(--panel) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+      height: 18px;
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .not-found {
+      text-align: center;
+      padding: 80px 0;
+    }
+
+    .not-found-icon { font-size: 3rem; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+
+<div class="page wide" id="mainPage">
+
+  <header class="site-header">
+    <div class="logo">⚽</div>
+    <span class="site-name">Kickoff</span>
+    <span style="flex:1"></span>
+    <span id="liveIndicator" style="display:none">
+      <span class="live-badge"><span class="live-dot"></span>Live</span>
+    </span>
+    <a href="index.html" class="muted" style="font-size:0.85rem;margin-left:12px">← Home</a>
+  </header>
+
+  <!-- Admin bar (only shown if admin token present) -->
+  <div class="admin-bar" id="adminBar" style="display:none">
+    <span class="admin-bar-label">⚙ Admin controls</span>
+    <button class="btn-ghost" id="removeParticipantBtn" style="font-size:0.82rem;padding:7px 12px">Remove participant</button>
+    <button class="btn-danger" id="reopenBtn" style="font-size:0.82rem;padding:7px 12px;display:none">Reset draw</button>
+    <button class="btn-gold" id="startDrawBtn" style="display:none">
+      🎲 Start draw
+      <span class="spinner" id="drawSpinner"></span>
+    </button>
+  </div>
+
+  <!-- Not found -->
+  <div class="state" id="stateNotFound">
+    <div class="not-found">
+      <div class="not-found-icon">🤷</div>
+      <h2 style="margin-bottom:8px">Sweepstake not found</h2>
+      <p class="muted" style="margin-bottom:24px">Double-check the invite code and try again.</p>
+      <a href="index.html" class="btn">← Back to home</a>
+    </div>
+  </div>
+
+  <!-- STATE 1: Join form -->
+  <div class="state" id="stateJoin">
+    <div class="tourney-header">
+      <div class="tourney-name" id="joinTourneyName"></div>
+      <p class="slots-info" id="joinSlotsInfo"></p>
+    </div>
+
+    <div class="join-wrap">
+      <div class="card">
+        <h2 style="margin-bottom:20px">Join the sweepstake</h2>
+
+        <div class="field">
+          <label for="nicknameInput">Your nickname</label>
+          <input type="text" id="nicknameInput" placeholder="e.g. BigMatch Barry"
+                 maxlength="20" autocomplete="off" autocapitalize="words">
+          <div class="field-error" id="nicknameError"></div>
+        </div>
+
+        <div class="field">
+          <label>Choose your avatar</label>
+          <div class="avatar-grid" id="avatarGrid"></div>
+        </div>
+
+        <div class="field">
+          <label for="slotsSelect">How many teams do you want?</label>
+          <select id="slotsSelect"></select>
+          <p class="muted" style="font-size:0.78rem;margin-top:6px" id="slotsHint"></p>
+        </div>
+
+        <button class="btn-full btn-gold" id="joinBtn">
+          Join &amp; pick my teams →
+          <span class="spinner" id="joinSpinner"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE 2: Waiting room (pre-draw) -->
+  <div class="state" id="stateWaiting">
+    <div class="waiting-wrap">
+      <div class="waiting-header">
+        <div class="tourney-name" id="waitTourneyName"></div>
+        <p class="muted" style="margin-top:6px">Waiting for everyone to join...</p>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <h3 id="waitParticipantTitle">Participants</h3>
+          <span class="participant-count" id="waitParticipantCount"></span>
+        </div>
+
+        <div style="margin-bottom:16px">
+          <div class="slot-counter">
+            <div class="slot-bar-wrap">
+              <div class="slot-bar" id="slotBar"></div>
+            </div>
+            <span class="slot-label" id="slotLabel"></span>
+          </div>
+        </div>
+
+        <div class="participant-list" id="waitParticipantList"></div>
+      </div>
+
+      <div class="card card-sm" style="text-align:center">
+        <div class="waiting-icon">⏳</div>
+        <p class="muted" style="font-size:0.9rem" id="waitingMsg">
+          The admin will start the draw when everyone's in. Sit tight!
+        </p>
+      </div>
+
+      <div style="margin-top:16px">
+        <p class="muted" style="font-size:0.82rem">Share this link with your group:</p>
+        <div class="share-box" style="margin-top:8px">
+          <span class="share-url" id="waitShareUrl"></span>
+          <button class="copy-btn" id="waitCopyBtn">Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE 3: Live draw animation -->
+  <div class="state" id="stateDraw">
+    <div class="draw-wrap">
+      <div class="draw-header">
+        <h1>🎲 The Draw</h1>
+        <p class="draw-progress" id="drawProgress">Preparing...</p>
+      </div>
+      <div class="draw-grid" id="drawGrid"></div>
+    </div>
+  </div>
+
+  <!-- STATE 4: Live bracket -->
+  <div class="state" id="stateBracket">
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+      <h1 id="bracketTourneyName" style="font-size:1.8rem;flex:1"></h1>
+      <span id="bracketLiveTag" style="display:none">
+        <span class="live-badge"><span class="live-dot"></span>Live</span>
+      </span>
+    </div>
+
+    <div id="myTeamsPanel" class="my-teams" style="display:none">
+      <h3>Your teams</h3>
+      <div class="my-team-cards" id="myTeamCards"></div>
+    </div>
+
+    <div class="bracket-nav" id="bracketNav">
+      <button class="active" data-tab="groups" onclick="switchTab(this)">Group Stage</button>
+      <button data-tab="r32" onclick="switchTab(this)">Round of 32</button>
+      <button data-tab="r16" onclick="switchTab(this)">Round of 16</button>
+      <button data-tab="qf" onclick="switchTab(this)">Quarter-Finals</button>
+      <button data-tab="sf" onclick="switchTab(this)">Semi-Finals</button>
+      <button data-tab="final" onclick="switchTab(this)">Final</button>
+    </div>
+
+    <div id="tabGroups" class="bracket-tab">
+      <div class="groups-grid" id="groupsGrid"></div>
+    </div>
+
+    <div id="tabR32" class="bracket-tab" style="display:none">
+      <div class="knockout-rounds" id="roundR32"></div>
+    </div>
+
+    <div id="tabR16" class="bracket-tab" style="display:none">
+      <div class="knockout-rounds" id="roundR16"></div>
+    </div>
+
+    <div id="tabQf" class="bracket-tab" style="display:none">
+      <div class="knockout-rounds" id="roundQf"></div>
+    </div>
+
+    <div id="tabSf" class="bracket-tab" style="display:none">
+      <div class="knockout-rounds" id="roundSf"></div>
+    </div>
+
+    <div id="tabFinal" class="bracket-tab" style="display:none">
+      <div id="finalMatch"></div>
+    </div>
+
+    <p class="muted" style="font-size:0.78rem;margin-top:32px;text-align:center" id="apiUpdateTime"></p>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script src="js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/flag-colors.js"></script>
+<script src="js/avatars.js"></script>
+<script src="js/supabase.js"></script>
+<script src="js/football.js"></script>
+<script>
+
+// ── Globals ───────────────────────────────────────────────────────────────────
+let tournament = null;
+let myParticipantId = null;
+let isAdmin = false;
+let allParticipants = [];
+let allAllocations  = [];
+let allTeams        = [];
+let drawCards       = {};   // draw_order → card el
+let drawDone        = 0;
+
+const code = new URLSearchParams(window.location.search).get('code') || '';
+const adminToken = (() => {
+  const h = window.location.hash;
+  const m = h.match(/admin=([a-zA-Z0-9\-]+)/);
+  return m ? m[1] : null;
+})();
+
+// ── Show toast ────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── Copy helper ───────────────────────────────────────────────────────────────
+function setupCopy(btnId, text) {
+  document.getElementById(btnId)?.addEventListener('click', function() {
+    navigator.clipboard.writeText(text).then(() => {
+      this.textContent = 'Copied!';
+      this.classList.add('copied');
+      setTimeout(() => { this.textContent = 'Copy'; this.classList.remove('copied'); }, 2000);
+    });
+  });
+}
+
+// ── Country flag emoji from team code ─────────────────────────────────────────
+function teamFlagEmoji(tla) {
+  const flags = {
+    ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',GER:'🇩🇪',FRA:'🇫🇷',ESP:'🇪🇸',NED:'🇳🇱',POR:'🇵🇹',BEL:'🇧🇪',ITA:'🇮🇹',
+    POL:'🇵🇱',SUI:'🇨🇭',CRO:'🇭🇷',DEN:'🇩🇰',AUT:'🇦🇹',SRB:'🇷🇸',TUR:'🇹🇷',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+    HUN:'🇭🇺',SVN:'🇸🇮',BRA:'🇧🇷',ARG:'🇦🇷',COL:'🇨🇴',URU:'🇺🇾',CHI:'🇨🇱',ECU:'🇪🇨',
+    VEN:'🇻🇪',PAR:'🇵🇾',BOL:'🇧🇴',PER:'🇵🇪',MAR:'🇲🇦',SEN:'🇸🇳',CMR:'🇨🇲',NGA:'🇳🇬',
+    GHA:'🇬🇭',EGY:'🇪🇬',CIV:'🇨🇮',TUN:'🇹🇳',RSA:'🇿🇦',COD:'🇨🇩',MLI:'🇲🇱',AGO:'🇦🇴',
+    ZAM:'🇿🇲',ALG:'🇩🇿',BEN:'🇧🇯',MRT:'🇲🇷',COM:'🇰🇲',JPN:'🇯🇵',KOR:'🇰🇷',AUS:'🇦🇺',
+    IRN:'🇮🇷',KSA:'🇸🇦',QAT:'🇶🇦',UZB:'🇺🇿',IRQ:'🇮🇶',JOR:'🇯🇴',UAE:'🇦🇪',OMA:'🇴🇲',
+    BHR:'🇧🇭',KUW:'🇰🇼',CHN:'🇨🇳',TJK:'🇹🇯',KGZ:'🇰🇬',PAL:'🇵🇸',BAN:'🇧🇩',IND:'🇮🇳',
+    THA:'🇹🇭',IDN:'🇮🇩',PHI:'🇵🇭',USA:'🇺🇸',MEX:'🇲🇽',CAN:'🇨🇦',HON:'🇭🇳',PAN:'🇵🇦',
+    CRC:'🇨🇷',JAM:'🇯🇲',GUA:'🇬🇹',TRI:'🇹🇹',CUB:'🇨🇺',SLV:'🇸🇻',NCA:'🇳🇮',NZL:'🇳🇿',
+    FIJ:'🇫🇯',PNG:'🇵🇬',
+  };
+  return flags[tla] || '🏳';
+}
+
+// ── Switch bracket tabs ───────────────────────────────────────────────────────
+function switchTab(btn) {
+  document.querySelectorAll('.bracket-nav button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.bracket-tab').forEach(t => t.style.display = 'none');
+  btn.classList.add('active');
+  const map = { groups:'tabGroups', r32:'tabR32', r16:'tabR16', qf:'tabQf', sf:'tabSf', final:'tabFinal' };
+  const el = document.getElementById(map[btn.dataset.tab]);
+  if (el) el.style.display = 'block';
+}
+
+// ── Build allocation lookup (teamCode → participant) ──────────────────────────
+function buildAllocMap() {
+  const map = {};
+  for (const a of allAllocations) {
+    map[a.team_code] = a;
+  }
+  return map;
+}
+
+// ── Participant list rendering ────────────────────────────────────────────────
+function renderParticipantList(container, participants, showTeams = false) {
+  const allocMap = showTeams ? buildAllocMap() : {};
+  container.innerHTML = participants.map(p => {
+    const av = renderAvatar(p.avatar_type, null, 36);
+    const teams = showTeams
+      ? allAllocations
+          .filter(a => a.participant_id === p.id)
+          .map(a => {
+            const c = getFlagColors(a.team_code);
+            return `<span class="team-pill" style="background:${c.primary};color:${c.secondary || '#fff'}">${teamFlagEmoji(a.team_code)} ${a.team_name}</span>`;
+          }).join('')
+      : `<span class="p-slots">${p.team_slots} team${p.team_slots > 1 ? 's' : ''}</span>`;
+    const isMe = p.id === myParticipantId ? 'style="border-color:var(--gold)"' : '';
+    return `<div class="participant-row" ${isMe}>
+      ${av}
+      <span class="p-name">${esc(p.nickname)}</span>
+      <span class="p-teams">${teams}</span>
+      ${isAdmin && p.id !== myParticipantId ? `<button class="btn-ghost" onclick="handleRemove('${p.id}')" style="font-size:0.75rem;padding:4px 8px">✕</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Slot counter ──────────────────────────────────────────────────────────────
+function updateSlotCounter(participants, teamsPerPerson) {
+  const total = 48;
+  const claimed = totalSlots(participants);
+  const pct = Math.min(100, (claimed / total) * 100);
+  const bar = document.getElementById('slotBar');
+  const label = document.getElementById('slotLabel');
+  if (bar) {
+    bar.style.width = pct + '%';
+    bar.classList.toggle('full', claimed >= total);
+  }
+  if (label) label.textContent = `${claimed} / ${total} teams claimed`;
+  const cnt = document.getElementById('waitParticipantCount');
+  if (cnt) cnt.textContent = `${participants.length} player${participants.length !== 1 ? 's' : ''}`;
+}
+
+// ── STATE 1: Render join form ─────────────────────────────────────────────────
+function renderJoinState() {
+  document.getElementById('stateJoin').classList.add('active');
+  document.getElementById('joinTourneyName').textContent = tournament.name;
+
+  const claimed = totalSlots(allParticipants);
+  const remaining = 48 - claimed;
+  document.getElementById('joinSlotsInfo').textContent =
+    `${remaining} team${remaining !== 1 ? 's' : ''} remaining · max ${tournament.teams_per_person} per player`;
+
+  // Avatar grid
+  const grid = document.getElementById('avatarGrid');
+  let selectedAvatar = 1;
+  grid.innerHTML = AVATARS.map(a =>
+    `<div class="avatar-option${a.id === 1 ? ' selected' : ''}" data-av="${a.id}" onclick="selectAvatar(${a.id})">
+      ${renderAvatar(a.id, null, 52)}
+      <span class="avatar-option-label">${esc(a.label)}</span>
+    </div>`
+  ).join('');
+
+  window.selectAvatar = function(id) {
+    selectedAvatar = id;
+    document.querySelectorAll('.avatar-option').forEach(el => {
+      el.classList.toggle('selected', parseInt(el.dataset.av) === id);
+    });
+  };
+
+  // Slots select
+  const sel = document.getElementById('slotsSelect');
+  const max = Math.min(tournament.teams_per_person, 48 - claimed);
+  sel.innerHTML = '';
+  for (let i = 1; i <= max; i++) {
+    sel.innerHTML += `<option value="${i}">${i} team${i > 1 ? 's' : ''}</option>`;
+  }
+  sel.value = Math.min(tournament.teams_per_person, max);
+  document.getElementById('slotsHint').textContent =
+    `Max ${tournament.teams_per_person} teams per player · ${48 - claimed} of 48 still unclaimed`;
+
+  document.getElementById('joinBtn').addEventListener('click', async () => {
+    const nickname = document.getElementById('nicknameInput').value;
+    const slots = parseInt(sel.value, 10);
+    const errEl = document.getElementById('nicknameError');
+    errEl.classList.remove('show');
+
+    const sanitized = sanitizeNickname(nickname);
+    if (!sanitized) {
+      errEl.textContent = 'Please enter a nickname (2–20 chars, letters/numbers/spaces).';
+      errEl.classList.add('show');
+      return;
+    }
+
+    const spinner = document.getElementById('joinSpinner');
+    const btn = document.getElementById('joinBtn');
+    btn.disabled = true; spinner.classList.add('show');
+
+    try {
+      const participant = await joinTournament(tournament.id, sanitized, selectedAvatar, slots);
+      myParticipantId = participant.id;
+      saveSession(code, myParticipantId);
+      allParticipants.push(participant);
+      showToast('Welcome, ' + sanitized + '! 🎉');
+      transitionToWaiting();
+    } catch (err) {
+      errEl.textContent = err.message;
+      errEl.classList.add('show');
+      btn.disabled = false; spinner.classList.remove('show');
+    }
+  });
+}
+
+// ── STATE 2: Waiting room ─────────────────────────────────────────────────────
+function renderWaitingState() {
+  document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+  document.getElementById('stateWaiting').classList.add('active');
+  document.getElementById('waitTourneyName').textContent = tournament.name;
+
+  const inviteUrl = `${window.location.origin}/s/${code}`;
+  document.getElementById('waitShareUrl').textContent = inviteUrl;
+  setupCopy('waitCopyBtn', inviteUrl);
+
+  if (isAdmin) {
+    document.getElementById('startDrawBtn').style.display = 'inline-flex';
+    document.getElementById('startDrawBtn').addEventListener('click', handleStartDraw);
+  }
+
+  refreshWaitingRoom();
+}
+
+function transitionToWaiting() {
+  renderWaitingState();
+}
+
+function refreshWaitingRoom() {
+  updateSlotCounter(allParticipants, tournament.teams_per_person);
+  renderParticipantList(document.getElementById('waitParticipantList'), allParticipants);
+  document.getElementById('waitingMsg').textContent =
+    isAdmin
+      ? 'When everyone\'s in, click "Start draw" to begin the live draw!'
+      : 'The admin will start the draw when everyone\'s in. Sit tight!';
+}
+
+// ── STATE 3: Draw animation ───────────────────────────────────────────────────
+function renderDrawState() {
+  document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+  document.getElementById('stateDraw').classList.add('active');
+
+  const grid = document.getElementById('drawGrid');
+  grid.innerHTML = '';
+  drawCards = {};
+  drawDone  = 0;
+
+  // Create 48 face-down cards
+  for (let i = 0; i < 48; i++) {
+    const card = document.createElement('div');
+    card.className = 'draw-card';
+    card.innerHTML = `
+      <div class="draw-card-inner">
+        <div class="draw-card-front">⚽</div>
+        <div class="draw-card-back" id="drawCardBack${i}">
+          <span class="team-flag" id="drawCardFlag${i}"></span>
+          <span class="team-name" id="drawCardTeam${i}"></span>
+          <span class="owner-name" id="drawCardOwner${i}"></span>
+        </div>
+      </div>`;
+    drawCards[i] = card;
+    grid.appendChild(card);
+  }
+
+  document.getElementById('drawProgress').textContent = 'Waiting for draw...';
+}
+
+function revealDrawCard(allocation, participants) {
+  const order = allocation.draw_order;
+  if (order === undefined || order === null) return;
+  const card = drawCards[order];
+  if (!card) return;
+
+  const participant = participants.find(p => p.id === allocation.participant_id);
+  const colors = getFlagColors(allocation.team_code);
+
+  document.getElementById(`drawCardFlag${order}`).textContent = teamFlagEmoji(allocation.team_code);
+  document.getElementById(`drawCardTeam${order}`).textContent = allocation.team_name;
+  document.getElementById(`drawCardOwner${order}`).textContent = participant?.nickname || '';
+
+  const back = card.querySelector('.draw-card-back');
+  back.style.background = colors.primary;
+  back.style.color = colors.secondary || '#fff';
+
+  card.classList.add('flipped');
+  drawDone++;
+  document.getElementById('drawProgress').textContent = `${drawDone} / 48 teams drawn`;
+
+  if (drawDone >= 48) {
+    setTimeout(() => {
+      document.getElementById('drawProgress').textContent = '🏆 All teams drawn! Heading to the bracket...';
+      setTimeout(renderBracketState, 2000);
+    }, 800);
+  }
+}
+
+// ── Admin: run draw ───────────────────────────────────────────────────────────
+async function handleStartDraw() {
+  const btn = document.getElementById('startDrawBtn');
+  const spinner = document.getElementById('drawSpinner');
+  btn.disabled = true; spinner.classList.add('show');
+
+  try {
+    await startDraw(code, adminToken);
+
+    // Fetch the 48 teams from football API
+    let teams = [];
+    try { teams = await getTeams(); } catch (_) {}
+
+    // If API fails, fall back to FLAG_COLORS keys
+    if (teams.length === 0) {
+      teams = Object.entries(FLAG_COLORS)
+        .filter(([k]) => k !== '_DEFAULT')
+        .map(([k, v]) => ({ tla: k, name: v.name, shortName: v.name }))
+        .slice(0, 48);
+    }
+
+    // Build allocation list from participants × team_slots
+    const slots = [];
+    for (const p of allParticipants) {
+      for (let i = 0; i < p.team_slots; i++) slots.push(p.id);
+    }
+    // Pad or trim to 48
+    while (slots.length < 48 && slots.length > 0) {
+      slots.push(slots[Math.floor(Math.random() * slots.length)]);
+    }
+    const trimmedSlots = slots.slice(0, 48);
+
+    // Fisher-Yates shuffle of teams
+    const teamPool = teams.slice(0, 48);
+    for (let i = teamPool.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [teamPool[i], teamPool[j]] = [teamPool[j], teamPool[i]];
+    }
+
+    // Insert allocations one by one with animation delay
+    for (let i = 0; i < teamPool.length; i++) {
+      const t = teamPool[i];
+      const tla = normTeamCode(t.tla || t.id || '');
+      const name = t.shortName || t.name || tla;
+      await insertAllocation(tournament.id, trimmedSlots[i], tla, name, i);
+      await new Promise(r => setTimeout(r, 800));
+    }
+
+    await completeDraw(code, adminToken);
+
+  } catch (err) {
+    showToast('Draw failed: ' + err.message);
+    btn.disabled = false; spinner.classList.remove('show');
+  }
+}
+
+// ── Remove participant (admin) ────────────────────────────────────────────────
+window.handleRemove = async function(participantId) {
+  if (!confirm('Remove this participant?')) return;
+  try {
+    await removeParticipant(code, adminToken, participantId);
+    allParticipants = allParticipants.filter(p => p.id !== participantId);
+    refreshWaitingRoom();
+    showToast('Participant removed.');
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  }
+};
+
+// ── STATE 4: Live bracket ─────────────────────────────────────────────────────
+function renderBracketState() {
+  document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+  document.getElementById('stateBracket').classList.add('active');
+  document.getElementById('bracketTourneyName').textContent = tournament.name;
+
+  if (isAdmin) {
+    document.getElementById('reopenBtn').style.display = 'inline-flex';
+    document.getElementById('reopenBtn').addEventListener('click', async () => {
+      if (!confirm('This will reset the draw. Continue?')) return;
+      try {
+        await supabase.rpc('reopen_tournament', { p_code: code, p_admin_token: adminToken });
+        window.location.reload();
+      } catch (err) { showToast('Error: ' + err.message); }
+    });
+  }
+
+  // Show my teams panel
+  if (myParticipantId) {
+    const myTeams = allAllocations.filter(a => a.participant_id === myParticipantId);
+    if (myTeams.length > 0) {
+      const panel = document.getElementById('myTeamsPanel');
+      const cards = document.getElementById('myTeamCards');
+      panel.style.display = 'block';
+      cards.innerHTML = myTeams.map(a => {
+        const c = getFlagColors(a.team_code);
+        return `<div class="my-team-card" style="border-color:${c.primary}">
+          ${teamFlagEmoji(a.team_code)} ${esc(a.team_name)}
+        </div>`;
+      }).join('');
+    }
+  }
+
+  loadBracketData();
+}
+
+async function loadBracketData() {
+  try {
+    const data = await getAllMatchData();
+    allTeams = data.teams;
+    renderBracket(data);
+
+    // Live polling
+    startPolling(freshData => {
+      renderBracket(freshData);
+      const live = hasLiveMatch({ matches: freshData.matches });
+      document.getElementById('liveIndicator').style.display = live ? 'inline' : 'none';
+      document.getElementById('bracketLiveTag').style.display  = live ? 'inline' : 'none';
+      document.getElementById('apiUpdateTime').textContent =
+        'Last updated: ' + new Date().toLocaleTimeString();
+    });
+  } catch (err) {
+    document.getElementById('groupsGrid').innerHTML =
+      `<p class="muted" style="padding:20px">Could not load match data. Check your football API token in js/config.js. (${esc(err.message)})</p>`;
+  }
+}
+
+function renderBracket(data) {
+  const allocMap = buildAllocMap();
+  renderGroupStage(data.standings, allocMap);
+  renderKnockoutRound('roundR32',   data.matches.filter(m => m.stage === 'ROUND_OF_32'),   allocMap);
+  renderKnockoutRound('roundR16',   data.matches.filter(m => m.stage === 'ROUND_OF_16'),   allocMap);
+  renderKnockoutRound('roundQf',    data.matches.filter(m => m.stage === 'QUARTER_FINALS'), allocMap);
+  renderKnockoutRound('roundSf',    data.matches.filter(m => m.stage === 'SEMI_FINALS'),    allocMap);
+  renderFinalMatch(
+    data.matches.find(m => m.stage === 'FINAL'),
+    data.matches.find(m => m.stage === 'THIRD_PLACE'),
+    allocMap
+  );
+
+  const live = hasLiveMatch({ matches: data.matches });
+  document.getElementById('liveIndicator').style.display = live ? 'inline' : 'none';
+  document.getElementById('bracketLiveTag').style.display  = live ? 'inline' : 'none';
+  if (live) document.getElementById('apiUpdateTime').textContent = 'Updating live...';
+}
+
+function renderGroupStage(standings, allocMap) {
+  const grid = document.getElementById('groupsGrid');
+  if (!standings || standings.length === 0) {
+    grid.innerHTML = '<p class="muted" style="padding:16px">Group stage data not yet available.</p>';
+    return;
+  }
+
+  grid.innerHTML = standings.map(group => {
+    const groupName = group.group || group.stage || '';
+    const rows = (group.table || []).map((entry, idx) => {
+      const t   = entry.team;
+      const tla = normTeamCode(t.tla || '');
+      const alloc = allocMap[tla];
+      const qualified = idx < 2;
+      const flag = t.crest
+        ? `<img class="team-flag-img" src="${t.crest}" alt="${esc(t.shortName || t.name)}" loading="lazy">`
+        : `<span>${teamFlagEmoji(tla)}</span>`;
+      const ownerMini = alloc?.participants
+        ? `<span style="font-size:0.7rem;color:var(--muted)"> · ${esc(alloc.participants.nickname)}</span>` : '';
+      return `<tr class="${qualified ? 'qualified' : ''}">
+        <td><div class="team-name-cell">${flag}<span>${esc(t.shortName || t.name || tla)}</span>${ownerMini}</div></td>
+        <td>${entry.playedGames}</td>
+        <td>${entry.won}</td>
+        <td>${entry.draw}</td>
+        <td>${entry.lost}</td>
+        <td>${entry.goalsFor}:${entry.goalsAgainst}</td>
+        <td><strong>${entry.points}</strong></td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="group-card">
+      <div class="group-card-head">${esc(groupName)}</div>
+      <table class="group-table">
+        <thead><tr>
+          <th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+function renderKnockoutRound(containerId, matches, allocMap) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  if (matches.length === 0) {
+    container.innerHTML = '<p class="muted" style="padding:20px">Matches not yet scheduled.</p>';
+    return;
+  }
+  container.innerHTML = matches.map(m => renderKoMatch(m, allocMap)).join('');
+}
+
+function renderKoMatch(match, allocMap) {
+  const home = match.homeTeam;
+  const away = match.awayTeam;
+  const score = getScore(match);
+  const statusCls = matchStatusClass(match);
+  const liveBadge = statusCls === 'live' ? '<span class="live-badge" style="font-size:0.65rem;padding:1px 5px"><span class="live-dot"></span>LIVE</span>' : '';
+
+  function teamRow(team, scoreVal, isHome) {
+    if (!team) return `<div class="ko-team"><span class="ko-team-name muted">TBD</span></div>`;
+    const tla = normTeamCode(team.tla || '');
+    const alloc = allocMap[tla];
+    const isMine = alloc?.participant_id === myParticipantId;
+    const winner = score.home !== null && score.away !== null &&
+      ((isHome && score.home > score.away) || (!isHome && score.away > score.home));
+    const flag = team.crest
+      ? `<img class="team-flag-img" src="${team.crest}" alt="" style="width:16px;height:11px">`
+      : teamFlagEmoji(tla);
+    const ownerTag = alloc?.participants
+      ? `<span class="ko-owner">${renderAvatar(alloc.participants.avatar_type, tla, 18)}</span>` : '';
+    return `<div class="ko-team ${winner ? 'winner' : ''} ${isMine ? 'mine' : ''}">
+      <span style="margin-right:4px">${flag}</span>
+      <span class="ko-team-name">${esc(team.shortName || team.name || tla)}</span>
+      ${ownerTag}
+      <span class="ko-score">${scoreVal !== null ? scoreVal : '–'}</span>
+    </div>`;
+  }
+
+  return `<div class="ko-match-wrap">
+    <div class="ko-match ${statusCls}">
+      ${liveBadge ? `<div style="padding:4px 10px 0;text-align:right">${liveBadge}</div>` : ''}
+      ${teamRow(home, score.home, true)}
+      ${teamRow(away, score.away, false)}
+    </div>
+  </div>`;
+}
+
+function renderFinalMatch(finalMatch, thirdPlaceMatch, allocMap) {
+  const el = document.getElementById('finalMatch');
+  let html = '';
+  if (thirdPlaceMatch) {
+    html += `<h3 style="margin-bottom:12px;color:var(--muted)">Third-Place Play-off</h3>`;
+    html += renderKoMatch(thirdPlaceMatch, allocMap);
+    html += '<br>';
+  }
+  html += `<h3 style="margin-bottom:12px;color:var(--gold)">🏆 Final</h3>`;
+  html += finalMatch ? renderKoMatch(finalMatch, allocMap) : '<p class="muted">Final not yet scheduled.</p>';
+  el.innerHTML = html;
+}
+
+// ── Real-time subscription handlers ──────────────────────────────────────────
+function onTournamentUpdate(updated) {
+  tournament = { ...tournament, ...updated };
+  if (updated.status === 'drawing') {
+    renderDrawState();
+  } else if (updated.status === 'live') {
+    renderBracketState();
+  }
+}
+
+function onParticipantJoin(newP) {
+  if (!allParticipants.find(p => p.id === newP.id)) {
+    allParticipants.push(newP);
+  }
+  if (tournament.status === 'open') refreshWaitingRoom();
+}
+
+function onParticipantLeave(oldP) {
+  allParticipants = allParticipants.filter(p => p.id !== oldP.id);
+  if (tournament.status === 'open') refreshWaitingRoom();
+}
+
+function onAllocation(alloc) {
+  // Fetch participant info for the alloc
+  const p = allParticipants.find(x => x.id === alloc.participant_id);
+  if (p && !alloc.participants) alloc.participants = p;
+
+  allAllocations.push(alloc);
+  if (tournament.status === 'drawing') {
+    revealDrawCard(alloc, allParticipants);
+  }
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
+async function init() {
+  if (!code) {
+    document.getElementById('stateNotFound').classList.add('active');
+    return;
+  }
+
+  // Show admin bar if token present
+  if (adminToken) {
+    isAdmin = true;
+    document.getElementById('adminBar').style.display = 'flex';
+  }
+
+  try {
+    tournament = await getTournamentByCode(code);
+  } catch (_) {
+    document.getElementById('stateNotFound').classList.add('active');
+    return;
+  }
+
+  myParticipantId = loadSession(code);
+
+  // Load participants and allocations
+  [allParticipants, allAllocations] = await Promise.all([
+    getParticipants(tournament.id),
+    getAllocations(tournament.id),
+  ]);
+
+  // Fix: enrich allocations with participant data from allParticipants
+  allAllocations = allAllocations.map(a => ({
+    ...a,
+    participants: a.participants || allParticipants.find(p => p.id === a.participant_id),
+  }));
+
+  // Subscribe to real-time updates
+  subscribeToTournament(tournament.id, {
+    onTournamentUpdate,
+    onParticipantJoin,
+    onParticipantLeave,
+    onAllocation,
+  });
+
+  // Route to correct state
+  if (tournament.status === 'live') {
+    renderBracketState();
+  } else if (tournament.status === 'drawing') {
+    renderDrawState();
+    // Replay any already-inserted allocations
+    for (const a of allAllocations) revealDrawCard(a, allParticipants);
+  } else {
+    // 'open'
+    document.getElementById('adminBar').style.display = isAdmin ? 'flex' : 'none';
+    if (myParticipantId && allParticipants.find(p => p.id === myParticipantId)) {
+      renderWaitingState();
+    } else {
+      renderJoinState();
+    }
+  }
+}
+
+init();
+</script>
+</body>
+</html>
