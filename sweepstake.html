@@ -652,7 +652,7 @@ async function handleReopen() {
   } catch (err) { showToast('Error: ' + err.message); }
 }
 
-/ ── STATE 3: Draw animation ───────────────────────────────────────────────────
+// ── STATE 3: Draw animation ───────────────────────────────────────────────────
 function renderDrawState() {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
   document.getElementById('stateDraw').classList.add('active');
