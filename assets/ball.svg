@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240">
+  
+  <g transform="translate(120,120)" fill="none">
+    <circle r="100" stroke="#ff6a1f" stroke-width="2.6"></circle>
+    <ellipse rx="100" ry="36" stroke="#25d8d8" stroke-width="1.8"></ellipse>
+    <ellipse rx="36" ry="100" stroke="#25d8d8" stroke-width="1.8"></ellipse>
+    <polygon points="0,-40 38,-13 23,33 -23,33 -38,-13" stroke="#ff8a3d" stroke-width="2.2" fill="#ff6a1f" fill-opacity="0.1"></polygon>
+    <circle r="100" stroke="#ff6a1f" stroke-width="7" opacity="0.18"></circle>
+  </g>
+</svg>
