@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" width="960" height="540" shape-rendering="crispEdges">
+  <defs>
+    <!-- Stone brick pattern -->
+    <pattern id="bricks" x="0" y="0" width="32" height="16" patternUnits="userSpaceOnUse">
+      <rect width="32" height="16" fill="#302018"/>
+      <rect x="1" y="1" width="28" height="13" fill="#604840"/>
+    </pattern>
+    <pattern id="bricks2" x="16" y="0" width="32" height="16" patternUnits="userSpaceOnUse">
+      <rect width="32" height="16" fill="#302018"/>
+      <rect x="1" y="1" width="28" height="13" fill="#504030"/>
+    </pattern>
+    <!-- Arch glow -->
+    <radialGradient id="archGlow" cx="50%" cy="100%" r="60%" fx="50%" fy="100%">
+      <stop offset="0%" stop-color="rgba(240,192,64,0.6)"/>
+      <stop offset="40%" stop-color="rgba(240,160,32,0.2)"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <!-- Sky gradient -->
+    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#030614"/>
+      <stop offset="100%" stop-color="#0c1830"/>
+    </linearGradient>
+    <!-- Torch glow -->
+    <radialGradient id="torchL" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(255,160,32,0.7)"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <radialGradient id="torchR" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(255,160,32,0.7)"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Night sky -->
+  <rect width="960" height="540" fill="url(#skyGrad)"/>
+
+  <!-- Stars small -->
+  <rect x="42"  y="18"  width="2" height="2" fill="#f0f0c0"/>
+  <rect x="120" y="35"  width="2" height="2" fill="#d8d8b0"/>
+  <rect x="195" y="12"  width="2" height="2" fill="#f0f0c0"/>
+  <rect x="280" y="48"  width="2" height="2" fill="#e8e8c0"/>
+  <rect x="340" y="22"  width="2" height="2" fill="#d0d0b0"/>
+  <rect x="410" y="60"  width="2" height="2" fill="#f0f0c0"/>
+  <rect x="510" y="15"  width="2" height="2" fill="#e0e0b8"/>
+  <rect x="590" y="40"  width="2" height="2" fill="#f0f0c0"/>
+  <rect x="660" y="10"  width="2" height="2" fill="#d8d8b0"/>
+  <rect x="740" y="55"  width="2" height="2" fill="#f0f0c0"/>
+  <rect x="820" y="28"  width="2" height="2" fill="#e8e8c0"/>
+  <rect x="900" y="44"  width="2" height="2" fill="#f0f0c0"/>
+  <rect x="65"  y="80"  width="2" height="2" fill="#d8d8b0"/>
+  <rect x="155" y="95"  width="2" height="2" fill="#f0f0c0"/>
+  <rect x="230" y="72"  width="2" height="2" fill="#e0e0b8"/>
+  <rect x="315" y="100" width="2" height="2" fill="#f0f0c0"/>
+  <rect x="450" y="88"  width="2" height="2" fill="#d8d8b0"/>
+  <rect x="560" y="70"  width="2" height="2" fill="#f0f0c0"/>
+  <rect x="630" y="110" width="2" height="2" fill="#e8e8c0"/>
+  <rect x="710" y="82"  width="2" height="2" fill="#f0f0c0"/>
+  <rect x="790" y="105" width="2" height="2" fill="#d0d0b0"/>
+  <rect x="870" y="78"  width="2" height="2" fill="#f0f0c0"/>
+  <rect x="940" y="20"  width="2" height="2" fill="#e0e0b8"/>
+  <rect x="18"  y="130" width="2" height="2" fill="#f0f0c0"/>
+  <rect x="100" y="148" width="2" height="2" fill="#d8d8b0"/>
+  <rect x="185" y="120" width="2" height="2" fill="#f0f0c0"/>
+  <rect x="370" y="140" width="2" height="2" fill="#e8e8c0"/>
+  <rect x="488" y="125" width="2" height="2" fill="#f0f0c0"/>
+  <rect x="575" y="150" width="2" height="2" fill="#d0d0b0"/>
+  <rect x="680" y="130" width="2" height="2" fill="#f0f0c0"/>
+  <rect x="760" y="145" width="2" height="2" fill="#e0e0b8"/>
+  <rect x="845" y="118" width="2" height="2" fill="#f0f0c0"/>
+  <rect x="925" y="140" width="2" height="2" fill="#d8d8b0"/>
+
+  <!-- Stars bright -->
+  <rect x="78"  y="55"  width="4" height="4" fill="#ffffff"/>
+  <rect x="480" y="30"  width="4" height="4" fill="#fffff0"/>
+  <rect x="720" y="18"  width="4" height="4" fill="#ffffff"/>
+  <rect x="260" y="90"  width="3" height="3" fill="#fffff0"/>
+  <rect x="880" y="60"  width="3" height="3" fill="#ffffff"/>
+
+  <!-- Ground band (bottom 40%) -->
+  <rect y="324" width="960" height="216" fill="url(#bricks)"/>
+
+  <!-- Alternating brick row offset -->
+  <rect y="340" width="960" height="16" fill="url(#bricks2)"/>
+  <rect y="372" width="960" height="16" fill="url(#bricks2)"/>
+  <rect y="404" width="960" height="16" fill="url(#bricks2)"/>
+  <rect y="436" width="960" height="16" fill="url(#bricks2)"/>
+  <rect y="468" width="960" height="16" fill="url(#bricks2)"/>
+  <rect y="500" width="960" height="16" fill="url(#bricks2)"/>
+  <rect y="532" width="960" height="16" fill="url(#bricks2)"/>
+
+  <!-- Left pillar -->
+  <rect x="80" y="160" width="128" height="380" fill="#706050"/>
+  <!-- Left pillar highlight -->
+  <rect x="80" y="160" width="12" height="380" fill="#807060"/>
+  <!-- Left pillar crenellations -->
+  <rect x="80"  y="144" width="20" height="24" fill="#706050"/>
+  <rect x="112" y="144" width="20" height="24" fill="#706050"/>
+  <rect x="144" y="144" width="20" height="24" fill="#706050"/>
+  <rect x="176" y="144" width="20" height="24" fill="#706050"/>
+
+  <!-- Right pillar -->
+  <rect x="752" y="160" width="128" height="380" fill="#706050"/>
+  <!-- Right pillar highlight -->
+  <rect x="856" y="160" width="12" height="380" fill="#807060"/>
+  <!-- Right pillar crenellations -->
+  <rect x="752" y="144" width="20" height="24" fill="#706050"/>
+  <rect x="784" y="144" width="20" height="24" fill="#706050"/>
+  <rect x="816" y="144" width="20" height="24" fill="#706050"/>
+  <rect x="848" y="144" width="20" height="24" fill="#706050"/>
+
+  <!-- Arch glow from inside -->
+  <rect x="208" y="220" width="544" height="320" fill="url(#archGlow)"/>
+
+  <!-- Central arch opening (dark tunnel) -->
+  <rect x="240" y="200" width="480" height="340" fill="#020308"/>
+  <!-- Arch corners rounded manually -->
+  <rect x="240" y="200" width="40" height="40" fill="#706050"/>
+  <rect x="680" y="200" width="40" height="40" fill="#706050"/>
+  <!-- Arch curved top - approximate with rects -->
+  <rect x="280" y="180" width="400" height="40" fill="#020308"/>
+  <rect x="256" y="196" width="448" height="8" fill="#020308"/>
+  <!-- Arch trim -->
+  <rect x="240" y="196" width="480" height="8" fill="#504030"/>
+  <rect x="240" y="196" width="8" height="344" fill="#504030"/>
+  <rect x="712" y="196" width="8" height="344" fill="#504030"/>
+
+  <!-- Torch glow left -->
+  <ellipse cx="232" cy="290" rx="48" ry="48" fill="url(#torchL)"/>
+  <!-- Torch left -->
+  <rect x="220" y="276" width="8" height="20" fill="#8b4513"/>
+  <rect x="218" y="260" width="12" height="16" fill="#ff8c00"/>
+  <rect x="220" y="256" width="8" height="8" fill="#ffcc00"/>
+
+  <!-- Torch glow right -->
+  <ellipse cx="728" cy="290" rx="48" ry="48" fill="url(#torchR)"/>
+  <!-- Torch right -->
+  <rect x="732" y="276" width="8" height="20" fill="#8b4513"/>
+  <rect x="730" y="260" width="12" height="16" fill="#ff8c00"/>
+  <rect x="732" y="256" width="8" height="8" fill="#ffcc00"/>
+
+  <!-- Ground top line -->
+  <rect y="320" width="960" height="4" fill="#201408"/>
+
+  <!-- Overall dark overlay at bottom -->
+  <rect y="480" width="960" height="60" fill="rgba(0,0,0,0.3)"/>
+
+  <!-- Sky vignette -->
+  <rect width="960" height="540" fill="rgba(0,0,0,0)" opacity="1">
+    <animate attributeName="opacity" values="0;0" dur="0s" fill="freeze"/>
+  </rect>
+  <rect width="96" height="540" fill="rgba(0,0,0,0.4)"/>
+  <rect x="864" width="96" height="540" fill="rgba(0,0,0,0.4)"/>
+  <rect width="960" height="54" fill="rgba(0,0,0,0.3)"/>
+</svg>
