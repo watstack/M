@@ -23,6 +23,10 @@ const FLAG_COLORS = {
   SCO: { primary: '#003399', secondary: '#FFFFFF', name: 'Scotland' },
   HUN: { primary: '#CE2939', secondary: '#477050', name: 'Hungary' },
   SVN: { primary: '#003DA5', secondary: '#ED1C24', name: 'Slovenia' },
+  CZE: { primary: '#D7141A', secondary: '#11457E', name: 'Czech Republic' },
+  BIH: { primary: '#002395', secondary: '#FCDD09', name: 'Bosnia & Herzegovina' },
+  SWE: { primary: '#006AA7', secondary: '#FECC02', name: 'Sweden' },
+  NOR: { primary: '#EF2B2D', secondary: '#FFFFFF', name: 'Norway' },
 
   // CONMEBOL – South America
   BRA: { primary: '#009C3B', secondary: '#FFDF00', name: 'Brazil' },
@@ -92,6 +96,9 @@ const FLAG_COLORS = {
   CUB: { primary: '#003DA5', secondary: '#CF142B', name: 'Cuba' },
   SLV: { primary: '#0F47AF', secondary: '#FFFFFF', name: 'El Salvador' },
   NCA: { primary: '#3E6EB4', secondary: '#FFFFFF', name: 'Nicaragua' },
+  HAI: { primary: '#00209F', secondary: '#D21034', name: 'Haiti' },
+  CUW: { primary: '#002B7F', secondary: '#F9E300', name: 'Curaçao' },
+  CPV: { primary: '#003893', secondary: '#CF2027', name: 'Cape Verde' },
 
   // OFC – Oceania
   NZL: { primary: '#00247D', secondary: '#CC0000', name: 'New Zealand' },
@@ -111,35 +118,31 @@ function getFlagColors(code) {
 const WC_2026_TEAMS = [
   // UEFA (16)
   'ENG', 'GER', 'ESP', 'FRA', 'NED', 'POR', 'BEL', 'CRO',
-  'SUI', 'AUT', 'DEN', 'SRB', 'TUR', 'SCO', 'HUN', 'SVN',
+  'SUI', 'AUT', 'TUR', 'SCO', 'CZE', 'BIH', 'SWE', 'NOR',
   // CONMEBOL (6)
-  'BRA', 'ARG', 'COL', 'URU', 'ECU', 'VEN',
-  // CAF (9)
-  'MAR', 'SEN', 'NGA', 'EGY', 'CIV', 'TUN', 'CMR', 'RSA', 'COD',
-  // AFC (8)
-  'JPN', 'KOR', 'IRN', 'AUS', 'KSA', 'IRQ', 'JOR', 'UZB',
+  'BRA', 'ARG', 'COL', 'URU', 'ECU', 'PAR',
+  // CAF (9 + inter-conf)
+  'MAR', 'SEN', 'GHA', 'EGY', 'CIV', 'TUN', 'RSA', 'COD', 'CPV', 'ALG',
+  // AFC (8 + inter-conf)
+  'JPN', 'KOR', 'IRN', 'AUS', 'KSA', 'IRQ', 'JOR', 'UZB', 'QAT',
   // CONCACAF (6 — USA, MEX, CAN as hosts + 3 qualifiers)
-  'USA', 'MEX', 'CAN', 'HON', 'PAN', 'CRC',
+  'USA', 'MEX', 'CAN', 'HAI', 'PAN', 'CUW',
   // OFC (1)
   'NZL',
-  // Inter-confederation playoffs (2)
-  'IDN', 'MLI',
 ];
 
-// WC 2026 group assignments for all 48 teams.
-// Derived from the December 2024 FIFA draw (some placeholders where the
-// codebase team list differs from the actual qualified side, e.g. SVN/CZE).
+// WC 2026 group assignments — confirmed from the December 2024 FIFA draw.
 const WC_2026_GROUPS = {
-  A: ['MEX', 'RSA', 'KOR', 'SVN'],
-  B: ['CAN', 'SUI', 'SRB', 'HUN'],
-  C: ['BRA', 'MAR', 'SCO', 'HON'],
-  D: ['USA', 'VEN', 'AUS', 'TUR'],
-  E: ['GER', 'CIV', 'ECU', 'IDN'],
-  F: ['NED', 'JPN', 'TUN', 'DEN'],
+  A: ['MEX', 'RSA', 'KOR', 'CZE'],
+  B: ['CAN', 'SUI', 'BIH', 'QAT'],
+  C: ['BRA', 'MAR', 'SCO', 'HAI'],
+  D: ['USA', 'PAR', 'AUS', 'TUR'],
+  E: ['GER', 'CUW', 'CIV', 'ECU'],
+  F: ['NED', 'JPN', 'SWE', 'TUN'],
   G: ['BEL', 'EGY', 'IRN', 'NZL'],
-  H: ['ESP', 'KSA', 'URU', 'CMR'],
-  I: ['FRA', 'SEN', 'IRQ', 'CRC'],
-  J: ['ARG', 'AUT', 'JOR', 'MLI'],
+  H: ['ESP', 'CPV', 'KSA', 'URU'],
+  I: ['FRA', 'SEN', 'IRQ', 'NOR'],
+  J: ['ARG', 'ALG', 'AUT', 'JOR'],
   K: ['POR', 'COD', 'UZB', 'COL'],
-  L: ['ENG', 'CRO', 'PAN', 'NGA'],
+  L: ['ENG', 'CRO', 'GHA', 'PAN'],
 };
