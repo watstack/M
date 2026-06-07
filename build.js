@@ -40,7 +40,8 @@ const v = (process.env.GITHUB_RUN_ID || process.env.GITHUB_SHA || process.env.VE
 for (const file of readdirSync(__dirname).filter(f => f.endsWith('.html'))) {
   const path = join(__dirname, file);
   const updated = readFileSync(path, 'utf8')
-    .replace(/(<script src="(?:js\/[^"]+\.js))(?:\?v=[^"]*)?(")/g, `$1?v=${v}$2`);
+    .replace(/(<script src="(?:js\/[^"]+\.js))(?:\?v=[^"]*)?(")/g, `$1?v=${v}$2`)
+    .replace(/(<meta name="build" content=")[^"]*(")/g, `$1${v}$2`);
   writeFileSync(path, updated, 'utf8');
 }
 console.log(`✓ HTML script tags cache-busted with v=${v}`);
