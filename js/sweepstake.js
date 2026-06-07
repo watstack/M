@@ -102,7 +102,8 @@ let isAdmin = false;
 let allParticipants = [];
 let allAllocations  = [];
 let allTeams        = [];
-let drawCards       = {};
+let drawRevealQueue = [];
+let drawRevealing   = false;
 let drawDone        = 0;
 
 const code = new URLSearchParams(window.location.search).get('code') || '';
@@ -143,6 +144,7 @@ function teamFlagEmoji(tla) {
     THA:'🇹🇭',IDN:'🇮🇩',PHI:'🇵🇭',USA:'🇺🇸',MEX:'🇲🇽',CAN:'🇨🇦',HON:'🇭🇳',PAN:'🇵🇦',
     CRC:'🇨🇷',JAM:'🇯🇲',GUA:'🇬🇹',TRI:'🇹🇹',CUB:'🇨🇺',SLV:'🇸🇻',NCA:'🇳🇮',NZL:'🇳🇿',
     FIJ:'🇫🇯',PNG:'🇵🇬',
+    CZE:'🇨🇿',BIH:'🇧🇦',SWE:'🇸🇪',NOR:'🇳🇴',HAI:'🇭🇹',CUW:'🇨🇼',CPV:'🇨🇻',
   };
   return flags[tla] || '🏳';
 }
@@ -317,28 +319,22 @@ function renderDrawState() {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
   document.getElementById('stateDraw').classList.add('active');
 
-  const grid = document.getElementById('drawGrid');
-  grid.innerHTML = '';
-  drawCards = {};
-  drawDone  = 0;
+  drawRevealQueue = [];
+  drawRevealing   = false;
+  drawDone        = 0;
 
-  for (let i = 0; i < 48; i++) {
-    const card = document.createElement('div');
-    card.className = 'draw-card';
-    card.innerHTML = `
-      <div class="draw-card-inner">
-        <div class="draw-card-front">⚽</div>
-        <div class="draw-card-back" id="drawCardBack${i}">
-          <span class="team-flag" id="drawCardFlag${i}"></span>
-          <span class="team-name" id="drawCardTeam${i}"></span>
-          <span class="owner-name" id="drawCardOwner${i}"></span>
-        </div>
-      </div>`;
-    drawCards[i] = card;
-    grid.appendChild(card);
-  }
-
-  document.getElementById('drawProgress').textContent = 'Waiting for draw...';
+  document.getElementById('drawProgressNum').textContent = '0';
+  document.getElementById('drawFeed').innerHTML = '';
+  const spotlight = document.getElementById('drawSpotlight');
+  spotlight.classList.remove('revealed');
+  spotlight.style.removeProperty('--reveal-border');
+  spotlight.style.removeProperty('--reveal-glow');
+  document.getElementById('drawFlash').style.background = '';
+  document.getElementById('drawRevealOwner').style.display = 'none';
+  document.getElementById('drawGetsLabel').style.display = 'none';
+  document.getElementById('drawReelWrap').style.display = 'none';
+  document.getElementById('drawReelWrap').classList.remove('locked');
+  document.getElementById('drawStandby').style.display = 'block';
 
   if (isAdmin) {
     const btn = document.getElementById('reopenBtn');
@@ -347,33 +343,121 @@ function renderDrawState() {
   }
 }
 
-function revealDrawCard(allocation, participants) {
-  const order = allocation.draw_order;
-  if (order === undefined || order === null) return;
-  const card = drawCards[order];
-  if (!card) return;
+function hexToRgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
-  const participant = participants.find(p => p.id === allocation.participant_id);
-  const colors = getFlagColors(allocation.team_code);
+function playReveal(allocation, participants) {
+  return new Promise(resolve => {
+    const participant = participants.find(p => p.id === allocation.participant_id);
+    const tla = normTeamCode(allocation.team_code);
+    const colors = getFlagColors(tla);
 
-  document.getElementById(`drawCardFlag${order}`).textContent = teamFlagEmoji(allocation.team_code);
-  document.getElementById(`drawCardTeam${order}`).textContent = allocation.team_name;
-  document.getElementById(`drawCardOwner${order}`).textContent = participant?.nickname || '';
+    // Show owner
+    const ownerEl = document.getElementById('drawRevealOwner');
+    ownerEl.innerHTML = `
+      ${renderAvatar(participant?.avatar_type, null, 56)}
+      <span class="draw-owner-name">${esc(participant?.nickname || '?')}</span>`;
+    ownerEl.style.display = 'flex';
+    ownerEl.style.animation = 'none';
+    ownerEl.offsetHeight;
+    ownerEl.style.animation = '';
 
-  const back = card.querySelector('.draw-card-back');
-  back.style.background = colors.primary;
-  back.style.color = colors.secondary || '#fff';
+    document.getElementById('drawGetsLabel').style.display = 'block';
 
-  card.classList.add('flipped');
-  drawDone++;
-  document.getElementById('drawProgress').textContent = `${drawDone} / 48 teams drawn`;
+    // Show reel
+    const reelWrap = document.getElementById('drawReelWrap');
+    const reelFlag = document.getElementById('drawReelFlag');
+    const reelName = document.getElementById('drawReelName');
+    const spotlight = document.getElementById('drawSpotlight');
+    const flash = document.getElementById('drawFlash');
 
-  if (drawDone >= 48) {
-    setTimeout(() => {
-      document.getElementById('drawProgress').textContent = '🏆 All teams drawn! Heading to the bracket...';
-      setTimeout(renderBracketState, 2000);
-    }, 800);
+    reelWrap.style.display = 'flex';
+    reelWrap.classList.remove('locked');
+    reelWrap.style.removeProperty('--reel-color');
+    reelWrap.style.removeProperty('--reel-glow');
+    spotlight.classList.remove('revealed');
+    flash.style.background = '';
+    document.getElementById('drawStandby').style.display = 'none';
+
+    const allTLAs = WC_2026_TEAMS;
+    const steps = [
+      { until: 700,  gap: 55  },
+      { until: 1200, gap: 110 },
+      { until: 1650, gap: 200 },
+      { until: 1950, gap: 360 },
+      { until: 2150, gap: 580 },
+    ];
+
+    let stepIdx = 0;
+    const t0 = Date.now();
+
+    function tick() {
+      const elapsed = Date.now() - t0;
+      while (stepIdx < steps.length - 1 && elapsed >= steps[stepIdx].until) stepIdx++;
+
+      if (elapsed >= 2150) {
+        // Lock on real team
+        reelFlag.textContent = teamFlagEmoji(tla);
+        reelName.textContent = (allocation.team_name || tla).toUpperCase();
+
+        const primary = colors.primary || '#25d8d8';
+        reelWrap.style.setProperty('--reel-color', primary);
+        reelWrap.style.setProperty('--reel-glow', hexToRgba(primary, 0.4));
+        reelWrap.classList.add('locked');
+
+        flash.style.background = primary;
+        spotlight.style.setProperty('--reveal-border', primary);
+        spotlight.style.setProperty('--reveal-glow', hexToRgba(primary, 0.25));
+        spotlight.classList.add('revealed');
+
+        drawDone++;
+        document.getElementById('drawProgressNum').textContent = drawDone;
+
+        // Add feed pill after hold
+        setTimeout(() => {
+          const feed = document.getElementById('drawFeed');
+          const pill = document.createElement('div');
+          pill.className = 'draw-feed-pill';
+          pill.style.borderColor = hexToRgba(primary, 0.5);
+          pill.innerHTML = `<span class="pill-flag">${teamFlagEmoji(tla)}</span>`
+            + `<span class="pill-team">${esc(allocation.team_name || tla)}</span>`
+            + `<span class="pill-owner">→ ${esc(participant?.nickname || '?')}</span>`;
+          feed.prepend(pill);
+          resolve();
+        }, 850);
+        return;
+      }
+
+      const randTla = allTLAs[Math.floor(Math.random() * allTLAs.length)];
+      reelFlag.textContent = teamFlagEmoji(randTla);
+      reelName.textContent = (getFlagColors(randTla).name || randTla).toUpperCase();
+      setTimeout(tick, steps[stepIdx].gap);
+    }
+
+    tick();
+  });
+}
+
+async function consumeRevealQueue() {
+  if (drawRevealing) return;
+  drawRevealing = true;
+  while (drawRevealQueue.length > 0) {
+    const { allocation, participants } = drawRevealQueue.shift();
+    await playReveal(allocation, participants);
   }
+  drawRevealing = false;
+  if (drawDone >= 48) {
+    document.getElementById('drawRevealOwner').innerHTML =
+      `<span class="draw-owner-name" style="color:var(--gold)">🏆 All teams drawn!</span>`;
+    setTimeout(renderBracketState, 2500);
+  }
+}
+
+function revealDrawCard(allocation, participants) {
+  drawRevealQueue.push({ allocation, participants });
+  if (!drawRevealing) consumeRevealQueue();
 }
 
 // ── Admin: run draw ───────────────────────────────────────────────────────────
@@ -403,7 +487,7 @@ async function handleStartDraw() {
       const tla = normTeamCode(t.tla || t.id || '');
       const name = t.shortName || t.name || tla;
       await insertAllocation(tournament.id, trimmedSlots[i], tla, name, i);
-      await new Promise(r => setTimeout(r, 800));
+      await new Promise(r => setTimeout(r, 200));
     }
 
     await completeDraw(code, adminToken);
