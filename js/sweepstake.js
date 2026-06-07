@@ -102,9 +102,10 @@ let isAdmin = false;
 let allParticipants = [];
 let allAllocations  = [];
 let allTeams        = [];
-let drawRevealQueue = [];
-let drawRevealing   = false;
-let drawDone        = 0;
+let drawRevealQueue          = [];
+let drawRevealing            = false;
+let drawDone                 = 0;
+let drawCurrentParticipantId = null;
 
 const code = new URLSearchParams(window.location.search).get('code') || '';
 const adminToken = (() => {
@@ -319,22 +320,29 @@ function renderDrawState() {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
   document.getElementById('stateDraw').classList.add('active');
 
-  drawRevealQueue = [];
-  drawRevealing   = false;
-  drawDone        = 0;
+  drawRevealQueue          = [];
+  drawRevealing            = false;
+  drawDone                 = 0;
+  drawCurrentParticipantId = null;
 
   document.getElementById('drawProgressNum').textContent = '0';
-  document.getElementById('drawFeed').innerHTML = '';
-  const spotlight = document.getElementById('drawSpotlight');
-  spotlight.classList.remove('revealed');
-  spotlight.style.removeProperty('--reveal-border');
-  spotlight.style.removeProperty('--reveal-glow');
-  document.getElementById('drawFlash').style.background = '';
-  document.getElementById('drawRevealOwner').style.display = 'none';
-  document.getElementById('drawGetsLabel').style.display = 'none';
-  document.getElementById('drawReelWrap').style.display = 'none';
   document.getElementById('drawReelWrap').classList.remove('locked');
-  document.getElementById('drawStandby').style.display = 'block';
+  document.getElementById('drawReelWrap').style.removeProperty('--reel-color');
+  document.getElementById('drawReelWrap').style.removeProperty('--reel-glow');
+  document.getElementById('drawReelFlag').textContent = '⚽';
+  document.getElementById('drawReelName').textContent = 'STANDBY';
+  document.getElementById('arenaCurrentLabel').textContent = 'Waiting for the draw to begin…';
+
+  const grid = document.getElementById('arenaGrid');
+  grid.innerHTML = allParticipants.map(p => {
+    const slots = Array.from({ length: p.team_slots }, () =>
+      `<div class="arena-slot empty"></div>`).join('');
+    return `<div class="arena-p-card" id="arenaP_${p.id}">
+      ${renderAvatar(p.avatar_type, null, 40)}
+      <div class="arena-p-name">${esc(p.nickname)}</div>
+      <div class="arena-p-teams" id="arenaTeams_${p.id}">${slots}</div>
+    </div>`;
+  }).join('');
 
   if (isAdmin) {
     const btn = document.getElementById('reopenBtn');
@@ -353,33 +361,29 @@ function playReveal(allocation, participants) {
     const participant = participants.find(p => p.id === allocation.participant_id);
     const tla = normTeamCode(allocation.team_code);
     const colors = getFlagColors(tla);
+    const primary = colors.primary || '#25d8d8';
 
-    // Show owner
-    const ownerEl = document.getElementById('drawRevealOwner');
-    ownerEl.innerHTML = `
-      ${renderAvatar(participant?.avatar_type, null, 56)}
-      <span class="draw-owner-name">${esc(participant?.nickname || '?')}</span>`;
-    ownerEl.style.display = 'flex';
-    ownerEl.style.animation = 'none';
-    ownerEl.offsetHeight;
-    ownerEl.style.animation = '';
+    if (drawCurrentParticipantId !== allocation.participant_id) {
+      if (drawCurrentParticipantId) {
+        const prev = document.getElementById(`arenaP_${drawCurrentParticipantId}`);
+        prev?.classList.remove('active');
+        prev?.classList.add('done');
+      }
+      drawCurrentParticipantId = allocation.participant_id;
+      const card = document.getElementById(`arenaP_${drawCurrentParticipantId}`);
+      card?.classList.add('active');
+      card?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
 
-    document.getElementById('drawGetsLabel').style.display = 'block';
+    document.getElementById('arenaCurrentLabel').textContent =
+      `${participant?.nickname || '?'} is picking…`;
 
-    // Show reel
     const reelWrap = document.getElementById('drawReelWrap');
     const reelFlag = document.getElementById('drawReelFlag');
     const reelName = document.getElementById('drawReelName');
-    const spotlight = document.getElementById('drawSpotlight');
-    const flash = document.getElementById('drawFlash');
-
-    reelWrap.style.display = 'flex';
     reelWrap.classList.remove('locked');
     reelWrap.style.removeProperty('--reel-color');
     reelWrap.style.removeProperty('--reel-glow');
-    spotlight.classList.remove('revealed');
-    flash.style.background = '';
-    document.getElementById('drawStandby').style.display = 'none';
 
     const allTLAs = WC_2026_TEAMS;
     const steps = [
@@ -398,35 +402,27 @@ function playReveal(allocation, participants) {
       while (stepIdx < steps.length - 1 && elapsed >= steps[stepIdx].until) stepIdx++;
 
       if (elapsed >= 2150) {
-        // Lock on real team
         reelFlag.textContent = teamFlagEmoji(tla);
         reelName.textContent = (allocation.team_name || tla).toUpperCase();
-
-        const primary = colors.primary || '#25d8d8';
         reelWrap.style.setProperty('--reel-color', primary);
         reelWrap.style.setProperty('--reel-glow', hexToRgba(primary, 0.4));
         reelWrap.classList.add('locked');
 
-        flash.style.background = primary;
-        spotlight.style.setProperty('--reveal-border', primary);
-        spotlight.style.setProperty('--reveal-glow', hexToRgba(primary, 0.25));
-        spotlight.classList.add('revealed');
-
         drawDone++;
         document.getElementById('drawProgressNum').textContent = drawDone;
 
-        // Add feed pill after hold
         setTimeout(() => {
-          const feed = document.getElementById('drawFeed');
-          const pill = document.createElement('div');
-          pill.className = 'draw-feed-pill';
-          pill.style.borderColor = hexToRgba(primary, 0.5);
-          pill.innerHTML = `<span class="pill-flag">${teamFlagEmoji(tla)}</span>`
-            + `<span class="pill-team">${esc(allocation.team_name || tla)}</span>`
-            + `<span class="pill-owner">→ ${esc(participant?.nickname || '?')}</span>`;
-          feed.prepend(pill);
+          const teamsEl = document.getElementById(`arenaTeams_${allocation.participant_id}`);
+          const emptySlot = teamsEl?.querySelector('.arena-slot.empty');
+          if (emptySlot) {
+            emptySlot.classList.replace('empty', 'filled');
+            emptySlot.style.borderColor = hexToRgba(primary, 0.55);
+            emptySlot.innerHTML =
+              `<span class="slot-flag">${teamFlagEmoji(tla)}</span>`
+              + `<span class="slot-name">${esc(allocation.team_name || tla)}</span>`;
+          }
           resolve();
-        }, 850);
+        }, 750);
         return;
       }
 
@@ -449,9 +445,14 @@ async function consumeRevealQueue() {
   }
   drawRevealing = false;
   if (drawDone >= 48) {
-    document.getElementById('drawRevealOwner').innerHTML =
-      `<span class="draw-owner-name" style="color:var(--gold)">🏆 All teams drawn!</span>`;
-    setTimeout(renderBracketState, 2500);
+    if (drawCurrentParticipantId) {
+      document.getElementById(`arenaP_${drawCurrentParticipantId}`)?.classList.remove('active');
+      document.getElementById(`arenaP_${drawCurrentParticipantId}`)?.classList.add('done');
+    }
+    document.getElementById('arenaCurrentLabel').textContent = '🏆 All teams drawn!';
+    document.getElementById('drawReelFlag').textContent = '🏆';
+    document.getElementById('drawReelName').textContent = 'COMPLETE';
+    setTimeout(renderBracketState, 2800);
   }
 }
 
@@ -479,7 +480,7 @@ async function handleStartDraw() {
       });
     }
 
-    const trimmedSlots = buildSlots(allParticipants);
+    const trimmedSlots = buildSlotsGrouped(allParticipants);
     const teamPool = shuffleTeams(teams.slice(0, 48));
 
     for (let i = 0; i < teamPool.length; i++) {

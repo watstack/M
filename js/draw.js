@@ -20,6 +20,24 @@ function buildSlots(participants) {
 }
 
 /**
+ * Like buildSlots but groups all slots for each participant together,
+ * in a randomised participant order. This gives the thunderdome draw its
+ * participant-by-participant presentation: every team for person A is
+ * revealed before moving on to person B.
+ */
+function buildSlotsGrouped(participants) {
+  const shuffled = [...participants].sort(() => Math.random() - 0.5);
+  const slots = [];
+  for (const p of shuffled) {
+    for (let i = 0; i < p.team_slots; i++) slots.push(p.id);
+  }
+  while (slots.length < 48 && slots.length > 0) {
+    slots.push(slots[Math.floor(Math.random() * slots.length)]);
+  }
+  return slots.slice(0, 48);
+}
+
+/**
  * Fisher-Yates shuffle. Returns a new array; does not mutate the input.
  */
 function shuffleTeams(teams) {

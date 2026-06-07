@@ -334,117 +334,96 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
   white-space: nowrap;
 }
 
-/* ── Draw stage ──────────────────────────────────────────────────────────── */
-.draw-wrap {
-  max-width: 480px;
-  margin: 0 auto;
+/* ── Draw stage (Thunderdome Arena) ─────────────────────────────────────── */
+.draw-arena {
+  position: relative;
+  min-height: 80vh;
+  padding: 8px 0 32px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 28px;
-  padding: 20px 0 40px;
+  gap: 16px;
 }
 
-.draw-header { text-align: center; }
+/* Overhead orange spotlight + cyan floor fills */
+.draw-arena::before {
+  content: '';
+  position: absolute;
+  inset: -24px -16px;
+  background:
+    radial-gradient(ellipse 90% 35% at 50% -2%, rgba(255,106,31,.2) 0%, transparent 100%),
+    radial-gradient(ellipse 50% 50% at 8%  108%, rgba(37,216,216,.1) 0%, transparent 100%),
+    radial-gradient(ellipse 50% 50% at 92% 108%, rgba(37,216,216,.1) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Subtle arena pitch lines */
+.draw-arena::after {
+  content: '';
+  position: absolute;
+  inset: -24px -16px;
+  background-image:
+    linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.arena-header {
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
 
 .draw-counter {
   display: flex;
   align-items: baseline;
   justify-content: center;
-  gap: 6px;
-  margin-top: 10px;
+  gap: 5px;
+  margin-top: 6px;
   font-family: var(--font-mono);
   color: var(--muted);
-  font-size: 0.8rem;
-  letter-spacing: .08em;
+  font-size: 0.76rem;
+  letter-spacing: .1em;
   text-transform: uppercase;
 }
 
 .draw-counter-num {
   font-family: var(--font-display);
-  font-size: 2.2rem;
+  font-size: 1.9rem;
   color: var(--gold);
   line-height: 1;
   min-width: 2ch;
   text-align: right;
 }
 
-.draw-counter-total { font-size: 1.1rem; }
+.draw-counter-total { font-size: 1rem; }
 
-/* Main cinematic card */
-.draw-spotlight {
-  width: 100%;
-  max-width: 380px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 32px 28px 28px;
+/* Reel zone */
+.arena-reel-zone {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
-  min-height: 290px;
+  gap: 8px;
   position: relative;
-  overflow: hidden;
-  transition: border-color .45s, box-shadow .45s;
+  z-index: 1;
 }
 
-.draw-spotlight::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--grad-accent);
-}
-
-.draw-spotlight-flash {
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  opacity: 0;
-  transition: opacity .35s;
-  pointer-events: none;
-}
-
-.draw-spotlight.revealed .draw-spotlight-flash { opacity: .14; }
-.draw-spotlight.revealed {
-  border-color: var(--reveal-border, var(--gold));
-  box-shadow: 0 0 40px var(--reveal-glow, rgba(37,216,216,.3));
-}
-
-/* Owner */
-.draw-owner-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  animation: ownerIn .35s var(--ease) both;
-}
-
-@keyframes ownerIn {
-  from { opacity: 0; transform: translateY(-16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.draw-owner-name {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  letter-spacing: .04em;
+.arena-current-label {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--muted);
+  letter-spacing: .07em;
   text-transform: uppercase;
   text-align: center;
+  min-height: 1.1em;
 }
 
-.draw-gets-label {
-  font-size: 0.68rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .14em;
-}
-
-/* Reel / slot machine */
+/* Slot-machine reel */
 .draw-reel-wrap {
-  width: 100%;
-  height: 106px;
+  width: min(280px, 88vw);
+  height: 90px;
   background: var(--mid);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -452,7 +431,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 3px;
   overflow: hidden;
   position: relative;
   transition: border-color .35s, box-shadow .35s;
@@ -462,7 +441,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
 .draw-reel-wrap::after {
   content: '';
   position: absolute;
-  left: 0; right: 0; height: 22px;
+  left: 0; right: 0; height: 18px;
   z-index: 2; pointer-events: none;
 }
 
@@ -470,20 +449,18 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
 .draw-reel-wrap::after  { bottom: 0; background: linear-gradient(to top,   var(--mid), transparent); }
 
 .draw-reel-flag {
-  font-size: 2.8rem;
+  font-size: 2.4rem;
   line-height: 1;
   display: block;
-  transition: transform .06s, opacity .06s;
 }
 
 .draw-reel-name {
   font-family: var(--font-display);
-  font-size: 0.95rem;
+  font-size: 0.84rem;
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
   color: var(--text);
-  transition: transform .06s, opacity .06s;
 }
 
 .draw-reel-wrap.locked {
@@ -491,46 +468,112 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
   box-shadow: 0 0 28px var(--reel-glow, rgba(37,216,216,.35));
 }
 
-.draw-standby {
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  color: var(--muted);
-  text-align: center;
-  padding: 12px;
+/* Participant grid */
+.arena-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 9px;
+  position: relative;
+  z-index: 1;
 }
 
-/* Feed of revealed teams */
-.draw-feed {
-  width: 100%;
-  max-width: 480px;
+/* Participant card */
+.arena-p-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 9px 9px;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: center;
   gap: 6px;
-  justify-content: center;
-  max-height: 180px;
-  overflow-y: auto;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform .3s var(--ease), border-color .3s, box-shadow .3s, opacity .45s;
 }
 
-.draw-feed-pill {
+/* Top accent bar */
+.arena-p-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--grad-accent);
+  opacity: 0;
+  transition: opacity .3s;
+}
+
+.arena-p-card.active {
+  border-color: var(--green);
+  transform: scale(1.04) translateY(-2px);
+  animation: arenaGlow 1.4s ease-in-out infinite;
+}
+
+.arena-p-card.active::before { opacity: 1; }
+
+@keyframes arenaGlow {
+  0%, 100% { box-shadow: 0 0 18px rgba(255,106,31,.35); }
+  50%       { box-shadow: 0 0 38px rgba(255,106,31,.75), 0 6px 22px rgba(0,0,0,.5); }
+}
+
+.arena-p-card.done {
+  opacity: .55;
+  border-color: rgba(37,216,216,.2);
+}
+
+.arena-p-card.done::before {
+  background: var(--gold);
+  opacity: .5;
+}
+
+.arena-p-name {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.arena-p-teams {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.arena-slot {
+  width: 100%;
+  min-height: 21px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--panel);
-  font-size: 0.73rem;
-  animation: pillIn .3s var(--ease) both;
+  gap: 4px;
+  padding: 2px 5px;
+  font-size: 0.6rem;
+  font-family: var(--font-mono);
 }
 
-@keyframes pillIn {
-  from { opacity: 0; transform: scale(.75); }
-  to   { opacity: 1; transform: scale(1); }
+.arena-slot.empty {
+  border: 1px dashed rgba(255,255,255,.1);
 }
 
-.pill-flag  { font-size: 0.9rem; }
-.pill-team  { font-weight: 700; font-family: var(--font-mono); color: var(--text); }
-.pill-owner { color: var(--muted); }
+.arena-slot.filled {
+  border: 1px solid;
+  background: rgba(255,255,255,.04);
+  animation: slotReveal .45s var(--ease) both;
+}
+
+@keyframes slotReveal {
+  from { opacity: 0; transform: scaleX(.5); }
+  to   { opacity: 1; transform: scaleX(1); }
+}
+
+.slot-flag  { flex-shrink: 0; font-size: 0.78rem; }
+.slot-name  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-weight: 700; }
 
 /* ── Bracket ─────────────────────────────────────────────────────────────── */
 .bracket-section { margin-bottom: 40px; }
