@@ -478,7 +478,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
   align-items: center;
   gap: 8px;
   padding: 7px 10px;
-  min-height: 38px;
+  min-height: 54px;
 }
 
 .ko-team + .ko-team {
@@ -506,11 +506,41 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 .ko-owner {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.ko-owner-name {
+  font-size: 0.65rem;
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-body);
+}
+
+/* Group-stage owner chip */
+.team-name-owner {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.team-owner-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.team-owner-label {
   font-size: 0.7rem;
   color: var(--muted);
-  margin-left: 2px;
+  font-weight: 600;
+  font-family: var(--font-body);
 }
 
 /* connector lines between rounds */

@@ -859,10 +859,13 @@ function renderGroupStage(standings, allocMap) {
       const flag = t.crest
         ? `<img class="team-flag-img" src="${t.crest}" alt="${esc(t.shortName || t.name)}" loading="lazy">`
         : `<span>${teamFlagEmoji(tla)}</span>`;
-      const ownerMini = alloc?.participants
-        ? `<span style="font-size:0.7rem;color:var(--muted)"> · ${esc(alloc.participants.nickname)}</span>` : '';
+      const ownerChip = alloc?.participants
+        ? `<div class="team-owner-chip">
+            ${renderAvatar(alloc.participants.avatar_type, tla, 24)}
+            <span class="team-owner-label">${esc(alloc.participants.nickname)}</span>
+          </div>` : '';
       return `<tr class="${qualified ? 'qualified' : ''}">
-        <td><div class="team-name-cell">${flag}<span>${esc(t.shortName || t.name || tla)}</span>${ownerMini}</div></td>
+        <td><div class="team-name-cell">${flag}<div class="team-name-owner"><span>${esc(t.shortName || t.name || tla)}</span>${ownerChip}</div></div></td>
         <td>${entry.playedGames}</td>
         <td>${entry.won}</td>
         <td>${entry.draw}</td>
@@ -912,7 +915,10 @@ function renderKoMatch(match, allocMap) {
       ? `<img class="team-flag-img" src="${team.crest}" alt="" style="width:16px;height:11px">`
       : teamFlagEmoji(tla);
     const ownerTag = alloc?.participants
-      ? `<span class="ko-owner">${renderAvatar(alloc.participants.avatar_type, tla, 18)}</span>` : '';
+      ? `<div class="ko-owner">
+          ${renderAvatar(alloc.participants.avatar_type, tla, 36)}
+          <span class="ko-owner-name">${esc(alloc.participants.nickname)}</span>
+        </div>` : '';
     return `<div class="ko-team ${winner ? 'winner' : ''} ${isMine ? 'mine' : ''}">
       <span style="margin-right:4px">${flag}</span>
       <span class="ko-team-name">${esc(team.shortName || team.name || tla)}</span>
@@ -1043,8 +1049,12 @@ async function init() {
     if (tournament.status === 'live') {
       renderBracketState();
     } else if (tournament.status === 'drawing') {
-      renderDrawState();
-      for (const a of allAllocations) revealDrawCard(a, allParticipants);
+      if (allAllocations.length >= 48) {
+        renderBracketState();
+      } else {
+        renderDrawState();
+        for (const a of allAllocations) revealDrawCard(a, allParticipants);
+      }
     } else {
       document.getElementById('adminBar').style.display = isAdmin ? 'flex' : 'none';
       if (myParticipantId && allParticipants.find(p => p.id === myParticipantId)) {
