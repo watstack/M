@@ -1,166 +1,73 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" width="960" height="600" shape-rendering="crispEdges">
   <defs>
-    <!-- Two-tone sand tile 16x16 -->
     <pattern id="sand" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
       <rect width="16" height="8" fill="#d4a84a"/>
       <rect y="8" width="16" height="8" fill="#c09440"/>
     </pattern>
-    <!-- Stone wall tile 16x16 -->
     <pattern id="stone" x="0" y="0" width="32" height="16" patternUnits="userSpaceOnUse">
-      <rect width="32" height="16" fill="#706050"/>
-      <rect width="15" height="14" fill="#604840"/>
-      <rect x="17" width="15" height="14" fill="#604840"/>
-      <rect y="8" x="8" width="15" height="6" fill="#504030"/>
+      <rect width="32" height="16" fill="#504030"/>
+      <rect x="1" y="1" width="14" height="14" fill="#706050"/>
+      <rect x="17" y="1" width="14" height="14" fill="#604840"/>
     </pattern>
-    <!-- Pixel tree symbol -->
-    <symbol id="tree" width="32" height="44">
-      <!-- Trunk -->
-      <rect x="12" y="32" width="8" height="12" fill="#6b3a2a"/>
-      <!-- Canopy dark -->
-      <rect x="4" y="8" width="24" height="24" fill="#1a5e1a"/>
-      <!-- Canopy highlight -->
-      <rect x="4" y="8" width="12" height="8" fill="#3cb04a"/>
-      <!-- Shadow edge -->
-      <rect x="24" y="24" width="4" height="8" fill="#0f3a0f"/>
-      <!-- Ground shadow -->
-      <rect x="8" y="44" width="16" height="2" fill="rgba(0,0,0,0.3)"/>
-    </symbol>
-    <!-- Radial vignette -->
-    <radialGradient id="vignette" cx="50%" cy="50%" r="70%" fx="50%" fy="50%">
-      <stop offset="40%" stop-color="transparent"/>
-      <stop offset="100%" stop-color="rgba(0,0,0,0.6)"/>
+    <pattern id="stoneB" x="16" y="0" width="32" height="16" patternUnits="userSpaceOnUse">
+      <rect width="32" height="16" fill="#504030"/>
+      <rect x="1" y="1" width="14" height="14" fill="#604840"/>
+      <rect x="17" y="1" width="14" height="14" fill="#706050"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="65%">
+      <stop offset="35%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.67"/>
     </radialGradient>
-    <!-- Top spotlight -->
-    <radialGradient id="spotlight" cx="50%" cy="0%" r="60%" fx="50%" fy="0%">
-      <stop offset="0%" stop-color="rgba(255,150,50,0.18)"/>
-      <stop offset="100%" stop-color="transparent"/>
+    <radialGradient id="spotlight" cx="50%" cy="0%" r="70%">
+      <stop offset="0%" stop-color="#ff961e" stop-opacity="0.27"/>
+      <stop offset="100%" stop-color="#ff961e" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
-  <!-- Sand base -->
+  <!-- Sand ground -->
   <rect width="960" height="600" fill="url(#sand)"/>
 
-  <!-- Top stone wall strip -->
+  <!-- Left tree column — dark canopy block -->
+  <rect x="0"   y="24" width="128" height="552" fill="#1a5e1a"/>
+  <!-- Left column highlight streaks -->
+  <rect x="0"   y="24" width="32" height="552" fill="#236823"/>
+  <rect x="64"  y="24" width="16" height="552" fill="#1f6220"/>
+  <!-- Left column darker patches -->
+  <rect x="16"  y="24" width="16" height="552" fill="#154e15"/>
+  <rect x="80"  y="24" width="32" height="552" fill="#154e15"/>
+  <rect x="112" y="24" width="16" height="552" fill="#0f3a0f"/>
+  <!-- Tree trunk accents on left -->
+  <rect x="12"  y="536" width="8" height="16" fill="#6b3a2a"/>
+  <rect x="44"  y="536" width="8" height="16" fill="#6b3a2a"/>
+  <rect x="76"  y="536" width="8" height="16" fill="#6b3a2a"/>
+  <rect x="108" y="536" width="8" height="16" fill="#6b3a2a"/>
+
+  <!-- Right tree column — dark canopy block -->
+  <rect x="832" y="24" width="128" height="552" fill="#1a5e1a"/>
+  <!-- Right column highlight streaks -->
+  <rect x="928" y="24" width="32" height="552" fill="#236823"/>
+  <rect x="880" y="24" width="16" height="552" fill="#1f6220"/>
+  <!-- Right column darker patches -->
+  <rect x="912" y="24" width="16" height="552" fill="#154e15"/>
+  <rect x="848" y="24" width="32" height="552" fill="#154e15"/>
+  <rect x="832" y="24" width="16" height="552" fill="#0f3a0f"/>
+  <!-- Tree trunk accents on right -->
+  <rect x="836" y="536" width="8" height="16" fill="#6b3a2a"/>
+  <rect x="868" y="536" width="8" height="16" fill="#6b3a2a"/>
+  <rect x="900" y="536" width="8" height="16" fill="#6b3a2a"/>
+  <rect x="932" y="536" width="8" height="16" fill="#6b3a2a"/>
+
+  <!-- Top stone wall -->
   <rect width="960" height="24" fill="url(#stone)"/>
 
-  <!-- Bottom stone wall strip -->
-  <rect y="576" width="960" height="24" fill="url(#stone)"/>
+  <!-- Bottom stone wall -->
+  <rect y="576" width="960" height="24" fill="url(#stoneB)"/>
 
-  <!-- Left tree column shadow -->
-  <rect x="112" y="24" width="20" height="552" fill="rgba(0,0,0,0.18)"/>
+  <!-- Tree-line edge shadow on sand -->
+  <rect x="128" y="24" width="20" height="552" fill="#000000" fill-opacity="0.16"/>
+  <rect x="812" y="24" width="20" height="552" fill="#000000" fill-opacity="0.16"/>
 
-  <!-- Right tree column shadow -->
-  <rect x="828" y="24" width="20" height="552" fill="rgba(0,0,0,0.18)"/>
-
-  <!-- Left tree column -->
-  <use href="#tree" x="0"  y="24"/>
-  <use href="#tree" x="32" y="24"/>
-  <use href="#tree" x="64" y="24"/>
-  <use href="#tree" x="96" y="24"/>
-  <use href="#tree" x="0"  y="64"/>
-  <use href="#tree" x="32" y="64"/>
-  <use href="#tree" x="64" y="64"/>
-  <use href="#tree" x="96" y="64"/>
-  <use href="#tree" x="0"  y="104"/>
-  <use href="#tree" x="32" y="104"/>
-  <use href="#tree" x="64" y="104"/>
-  <use href="#tree" x="96" y="104"/>
-  <use href="#tree" x="0"  y="148"/>
-  <use href="#tree" x="32" y="148"/>
-  <use href="#tree" x="64" y="148"/>
-  <use href="#tree" x="96" y="148"/>
-  <use href="#tree" x="0"  y="192"/>
-  <use href="#tree" x="32" y="192"/>
-  <use href="#tree" x="64" y="192"/>
-  <use href="#tree" x="96" y="192"/>
-  <use href="#tree" x="0"  y="236"/>
-  <use href="#tree" x="32" y="236"/>
-  <use href="#tree" x="64" y="236"/>
-  <use href="#tree" x="96" y="236"/>
-  <use href="#tree" x="0"  y="280"/>
-  <use href="#tree" x="32" y="280"/>
-  <use href="#tree" x="64" y="280"/>
-  <use href="#tree" x="96" y="280"/>
-  <use href="#tree" x="0"  y="324"/>
-  <use href="#tree" x="32" y="324"/>
-  <use href="#tree" x="64" y="324"/>
-  <use href="#tree" x="96" y="324"/>
-  <use href="#tree" x="0"  y="368"/>
-  <use href="#tree" x="32" y="368"/>
-  <use href="#tree" x="64" y="368"/>
-  <use href="#tree" x="96" y="368"/>
-  <use href="#tree" x="0"  y="412"/>
-  <use href="#tree" x="32" y="412"/>
-  <use href="#tree" x="64" y="412"/>
-  <use href="#tree" x="96" y="412"/>
-  <use href="#tree" x="0"  y="456"/>
-  <use href="#tree" x="32" y="456"/>
-  <use href="#tree" x="64" y="456"/>
-  <use href="#tree" x="96" y="456"/>
-  <use href="#tree" x="0"  y="500"/>
-  <use href="#tree" x="32" y="500"/>
-  <use href="#tree" x="64" y="500"/>
-  <use href="#tree" x="96" y="500"/>
-  <use href="#tree" x="0"  y="544"/>
-  <use href="#tree" x="32" y="544"/>
-  <use href="#tree" x="64" y="544"/>
-  <use href="#tree" x="96" y="544"/>
-
-  <!-- Right tree column -->
-  <use href="#tree" x="832" y="24"/>
-  <use href="#tree" x="864" y="24"/>
-  <use href="#tree" x="896" y="24"/>
-  <use href="#tree" x="928" y="24"/>
-  <use href="#tree" x="832" y="64"/>
-  <use href="#tree" x="864" y="64"/>
-  <use href="#tree" x="896" y="64"/>
-  <use href="#tree" x="928" y="64"/>
-  <use href="#tree" x="832" y="104"/>
-  <use href="#tree" x="864" y="104"/>
-  <use href="#tree" x="896" y="104"/>
-  <use href="#tree" x="928" y="104"/>
-  <use href="#tree" x="832" y="148"/>
-  <use href="#tree" x="864" y="148"/>
-  <use href="#tree" x="896" y="148"/>
-  <use href="#tree" x="928" y="148"/>
-  <use href="#tree" x="832" y="192"/>
-  <use href="#tree" x="864" y="192"/>
-  <use href="#tree" x="896" y="192"/>
-  <use href="#tree" x="928" y="192"/>
-  <use href="#tree" x="832" y="236"/>
-  <use href="#tree" x="864" y="236"/>
-  <use href="#tree" x="896" y="236"/>
-  <use href="#tree" x="928" y="236"/>
-  <use href="#tree" x="832" y="280"/>
-  <use href="#tree" x="864" y="280"/>
-  <use href="#tree" x="896" y="280"/>
-  <use href="#tree" x="928" y="280"/>
-  <use href="#tree" x="832" y="324"/>
-  <use href="#tree" x="864" y="324"/>
-  <use href="#tree" x="896" y="324"/>
-  <use href="#tree" x="928" y="324"/>
-  <use href="#tree" x="832" y="368"/>
-  <use href="#tree" x="864" y="368"/>
-  <use href="#tree" x="896" y="368"/>
-  <use href="#tree" x="928" y="368"/>
-  <use href="#tree" x="832" y="412"/>
-  <use href="#tree" x="864" y="412"/>
-  <use href="#tree" x="896" y="412"/>
-  <use href="#tree" x="928" y="412"/>
-  <use href="#tree" x="832" y="456"/>
-  <use href="#tree" x="864" y="456"/>
-  <use href="#tree" x="896" y="456"/>
-  <use href="#tree" x="928" y="456"/>
-  <use href="#tree" x="832" y="500"/>
-  <use href="#tree" x="864" y="500"/>
-  <use href="#tree" x="896" y="500"/>
-  <use href="#tree" x="928" y="500"/>
-  <use href="#tree" x="832" y="544"/>
-  <use href="#tree" x="864" y="544"/>
-  <use href="#tree" x="896" y="544"/>
-  <use href="#tree" x="928" y="544"/>
-
-  <!-- Spotlight from above -->
+  <!-- Overhead spotlight -->
   <rect width="960" height="600" fill="url(#spotlight)"/>
 
   <!-- Vignette -->
