@@ -17,10 +17,10 @@ function withTimeout(promise, ms) {
 }
 
 // ── Supabase client ───────────────────────────────────────────────────────────
-let supabase = null;
+let db = null;
 try {
   if (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL && window.supabase) {
-    supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    db = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
   }
 } catch (e) {
   console.error('Supabase init failed:', e);
@@ -28,17 +28,17 @@ try {
 
 // ── Inlined Supabase helpers ──────────────────────────────────────────────────
 async function getTournamentByCode(code) {
-  const { data, error } = await supabase.from('tournaments').select('*').eq('code', code.toUpperCase()).single();
+  const { data, error } = await db.from('tournaments').select('*').eq('code', code.toUpperCase()).single();
   if (error) throw error;
   return data;
 }
 async function startDraw(tournCode, adminToken) {
-  const { data, error } = await supabase.rpc('start_draw', { p_code: tournCode, p_admin_token: adminToken });
+  const { data, error } = await db.rpc('start_draw', { p_code: tournCode, p_admin_token: adminToken });
   if (error) throw error;
   return data;
 }
 async function completeDraw(tournCode, adminToken) {
-  const { data, error } = await supabase.rpc('complete_draw', { p_code: tournCode, p_admin_token: adminToken });
+  const { data, error } = await db.rpc('complete_draw', { p_code: tournCode, p_admin_token: adminToken });
   if (error) throw error;
   return data;
 }
@@ -51,7 +51,7 @@ function sanitizeNickname(raw) {
 async function joinTournament(tournamentId, nickname, avatarType, teamSlots) {
   const sanitized = sanitizeNickname(nickname);
   if (!sanitized) throw new Error('Invalid nickname');
-  const { data, error } = await supabase.from('participants')
+  const { data, error } = await db.from('participants')
     .insert({ tournament_id: tournamentId, nickname: sanitized, avatar_type: avatarType, team_slots: teamSlots })
     .select().single();
   if (error) {
@@ -61,29 +61,29 @@ async function joinTournament(tournamentId, nickname, avatarType, teamSlots) {
   return data;
 }
 async function getParticipants(tournamentId) {
-  const { data, error } = await supabase.from('participants').select('*').eq('tournament_id', tournamentId).order('created_at', { ascending: true });
+  const { data, error } = await db.from('participants').select('*').eq('tournament_id', tournamentId).order('created_at', { ascending: true });
   if (error) throw error;
   return data;
 }
 async function removeParticipant(tournCode, adminToken, participantId) {
-  const { data, error } = await supabase.rpc('remove_participant', { p_tournament_code: tournCode, p_admin_token: adminToken, p_participant_id: participantId });
+  const { data, error } = await db.rpc('remove_participant', { p_tournament_code: tournCode, p_admin_token: adminToken, p_participant_id: participantId });
   if (error) throw error;
   return data;
 }
 async function insertAllocation(tournamentId, participantId, teamCode, teamName, drawOrder) {
-  const { data, error } = await supabase.from('allocations')
+  const { data, error } = await db.from('allocations')
     .insert({ tournament_id: tournamentId, participant_id: participantId, team_code: teamCode, team_name: teamName, draw_order: drawOrder })
     .select().single();
   if (error) throw error;
   return data;
 }
 async function getAllocations(tournamentId) {
-  const { data, error } = await supabase.from('allocations').select('*, participants(nickname, avatar_type)').eq('tournament_id', tournamentId).order('draw_order', { ascending: true });
+  const { data, error } = await db.from('allocations').select('*, participants(nickname, avatar_type)').eq('tournament_id', tournamentId).order('draw_order', { ascending: true });
   if (error) throw error;
   return data;
 }
 function subscribeToTournament(tournamentId, callbacks) {
-  return supabase.channel(`tournament:${tournamentId}`)
+  return db.channel(`tournament:${tournamentId}`)
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tournaments', filter: `id=eq.${tournamentId}` }, payload => callbacks.onTournamentUpdate?.(payload.new))
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'participants', filter: `tournament_id=eq.${tournamentId}` }, payload => callbacks.onParticipantJoin?.(payload.new))
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'participants', filter: `tournament_id=eq.${tournamentId}` }, payload => callbacks.onParticipantLeave?.(payload.old))
@@ -423,7 +423,7 @@ function renderBracketState() {
     document.getElementById('reopenBtn').addEventListener('click', async () => {
       if (!confirm('This will reset the draw. Continue?')) return;
       try {
-        await supabase.rpc('reopen_tournament', { p_code: code, p_admin_token: adminToken });
+        await db.rpc('reopen_tournament', { p_code: code, p_admin_token: adminToken });
         window.location.reload();
       } catch (err) { showToast('Error: ' + err.message); }
     });
@@ -637,7 +637,7 @@ async function init() {
   setLoadingStatus('Starting…');
 
   // Show a clear error if Supabase isn't configured (e.g. missing GitHub Secrets)
-  if (!supabase) {
+  if (!db) {
     showNotFound(
       typeof CONFIG !== 'undefined' && !CONFIG.SUPABASE_URL
         ? 'Database not configured — SUPABASE_URL is missing from GitHub Secrets.'
