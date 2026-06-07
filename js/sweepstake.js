@@ -490,11 +490,11 @@ async function loadBracketData() {
     const data = await getAllMatchData();
     allTeams = data.teams;
     if (data.standings.length) saveGroupCache(data.standings);
-    renderBracket(data);
+    renderBracketFull(data);
 
     startPolling(freshData => {
       if (freshData.standings.length) saveGroupCache(freshData.standings);
-      renderBracket(freshData);
+      renderBracketFull(freshData);
       const live = hasLiveMatch({ matches: freshData.matches });
       document.getElementById('liveIndicator').style.display = live ? 'inline' : 'none';
       document.getElementById('bracketLiveTag').style.display  = live ? 'inline' : 'none';
@@ -503,29 +503,158 @@ async function loadBracketData() {
     });
   } catch (err) {
     const standings = buildSyntheticStandings();
-    renderBracket({ teams: [], matches: [], standings });
+    renderBracketFull({ teams: [], matches: [], standings });
     document.getElementById('apiUpdateTime').textContent = standings.length
       ? 'Showing draw positions — live scores need a Football API token.'
       : 'No Football API configured — showing draw results.';
   }
 }
 
-function renderBracket(data) {
-  const allocMap = buildAllocMap();
-  renderGroupStage(data.standings, allocMap);
-  renderKnockoutRound('roundR32',   data.matches.filter(m => m.stage === 'ROUND_OF_32'),   allocMap);
-  renderKnockoutRound('roundR16',   data.matches.filter(m => m.stage === 'ROUND_OF_16'),   allocMap);
-  renderKnockoutRound('roundQf',    data.matches.filter(m => m.stage === 'QUARTER_FINALS'), allocMap);
-  renderKnockoutRound('roundSf',    data.matches.filter(m => m.stage === 'SEMI_FINALS'),    allocMap);
-  renderFinalMatch(
-    data.matches.find(m => m.stage === 'FINAL'),
-    data.matches.find(m => m.stage === 'THIRD_PLACE'),
-    allocMap
-  );
+// ── Bracket tree rendering ────────────────────────────────────────────────────
 
-  const live = hasLiveMatch({ matches: data.matches });
+function renderGroupMini(group, allocMap) {
+  const groupName = (group.group || group.stage || '').replace(/^GROUP_/i, 'Group ');
+  const hasStats = (group.table || []).some(r => r.playedGames > 0);
+  const rows = (group.table || []).map((entry, idx) => {
+    const t = entry.team;
+    const tla = normTeamCode(t.tla || '');
+    const alloc = allocMap[tla];
+    const qualified = hasStats && idx < 2;
+    const flag = t.crest
+      ? `<img src="${t.crest}" alt="" loading="lazy" style="width:14px;height:10px;object-fit:cover;border-radius:1px;flex-shrink:0">`
+      : `<span style="flex-shrink:0">${teamFlagEmoji(tla)}</span>`;
+    const owner = alloc?.participants
+      ? `<div class="b-owner">
+          ${renderAvatar(alloc.participants.avatar_type, tla, 20)}
+          <span class="b-owner-name">${esc(alloc.participants.nickname)}</span>
+        </div>` : '';
+    const pts = hasStats ? `<span class="b-team-pts">${entry.points}p</span>` : '';
+    return `<div class="b-team-row${qualified ? ' qualified' : ''}">
+      ${flag}
+      <span class="b-team-name">${esc(t.shortName || t.name || tla)}</span>
+      ${owner}${pts}
+    </div>`;
+  }).join('');
+  return `<div class="b-group-card"><div class="b-group-head">${esc(groupName)}</div>${rows}</div>`;
+}
+
+function renderBracketMatch(match, allocMap) {
+  if (!match) {
+    return `<div class="b-match">
+      <div class="b-match-team"><span class="b-match-name muted" style="color:var(--muted)">TBD</span></div>
+      <div class="b-match-team"><span class="b-match-name muted" style="color:var(--muted)">TBD</span></div>
+    </div>`;
+  }
+  const score = getScore(match);
+  const statusCls = matchStatusClass(match);
+  const liveBadge = statusCls === 'live'
+    ? `<div style="padding:2px 6px 0;text-align:right"><span class="live-badge" style="font-size:0.58rem;padding:1px 4px"><span class="live-dot"></span>LIVE</span></div>` : '';
+
+  function teamRow(team, scoreVal, isHome) {
+    if (!team) return `<div class="b-match-team"><span class="b-match-name" style="color:var(--muted)">TBD</span></div>`;
+    const tla = normTeamCode(team.tla || '');
+    const alloc = allocMap[tla];
+    const isMine = alloc?.participant_id === myParticipantId;
+    const won = score.home !== null && score.away !== null &&
+      ((isHome && score.home > score.away) || (!isHome && score.away > score.home));
+    const flag = team.crest
+      ? `<img src="${team.crest}" alt="" style="width:14px;height:10px;object-fit:cover;border-radius:1px;flex-shrink:0">`
+      : `<span style="flex-shrink:0">${teamFlagEmoji(tla)}</span>`;
+    const owner = alloc?.participants
+      ? `<div class="b-owner">
+          ${renderAvatar(alloc.participants.avatar_type, tla, 22)}
+          <span class="b-owner-name">${esc(alloc.participants.nickname)}</span>
+        </div>` : '';
+    return `<div class="b-match-team${won ? ' winner' : ''}${isMine ? ' mine' : ''}">
+      ${flag}
+      <span class="b-match-name">${esc(team.shortName || team.name || tla)}</span>
+      ${owner}
+      <span class="b-match-score">${scoreVal !== null ? scoreVal : '–'}</span>
+    </div>`;
+  }
+  return `<div class="b-match ${statusCls}">
+    ${liveBadge}
+    ${teamRow(match.homeTeam, score.home, true)}
+    ${teamRow(match.awayTeam, score.away, false)}
+  </div>`;
+}
+
+function renderBracketColumn(id, label, matches, allocMap, emptySlots) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const cards = matches.length
+    ? matches.map(m => renderBracketMatch(m, allocMap))
+    : Array.from({ length: emptySlots }, () => renderBracketMatch(null, allocMap));
+  el.innerHTML = `<div class="b-round-label">${esc(label)}</div>` + cards.join('');
+}
+
+function renderParticipantMini(allocs) {
+  const byPid = {};
+  for (const a of allocs) {
+    if (!byPid[a.participant_id]) byPid[a.participant_id] = { p: a.participants, teams: [] };
+    byPid[a.participant_id].teams.push(a);
+  }
+  return Object.values(byPid).map(({ p, teams }) => {
+    if (!p) return '';
+    const av = renderAvatar(p.avatar_type, teams[0]?.team_code || null, 24);
+    const pills = teams.map(t => {
+      const c = getFlagColors(t.team_code);
+      return `<span class="team-pill" style="background:${c.primary};color:${c.secondary||'#fff'};font-size:0.65rem;padding:2px 6px">${teamFlagEmoji(t.team_code)} ${esc(t.team_name)}</span>`;
+    }).join('');
+    return `<div class="b-group-card" style="padding:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">${av}<span style="font-weight:700;font-size:0.8rem">${esc(p.nickname)}</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:3px">${pills}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderBracketFull(data) {
+  const allocMap = buildAllocMap();
+  const standings = data.standings || [];
+  const matches   = data.matches   || [];
+
+  // Groups: first 6 = left (A–F), rest = right (G–L)
+  const leftGroups  = standings.slice(0, 6);
+  const rightGroups = standings.slice(6);
+
+  const bGL = document.getElementById('bGroupsLeft');
+  const bGR = document.getElementById('bGroupsRight');
+  if (bGL) bGL.innerHTML = leftGroups.length
+    ? leftGroups.map(g => renderGroupMini(g, allocMap)).join('')
+    : renderParticipantMini(allAllocations);
+  if (bGR) bGR.innerHTML = rightGroups.map(g => renderGroupMini(g, allocMap)).join('');
+
+  // Knockout rounds split into left/right halves
+  const r32 = matches.filter(m => m.stage === 'ROUND_OF_32');
+  const r16 = matches.filter(m => m.stage === 'ROUND_OF_16');
+  const qf  = matches.filter(m => m.stage === 'QUARTER_FINALS');
+  const sf  = matches.filter(m => m.stage === 'SEMI_FINALS');
+  const final3rd = matches.find(m => m.stage === 'THIRD_PLACE');
+  const finalM   = matches.find(m => m.stage === 'FINAL');
+
+  renderBracketColumn('bR32Left',  'Round of 32',    r32.slice(0, 8),  allocMap, 8);
+  renderBracketColumn('bR16Left',  'Round of 16',    r16.slice(0, 4),  allocMap, 4);
+  renderBracketColumn('bQFLeft',   'Quarter-Finals', qf.slice(0, 2),   allocMap, 2);
+  renderBracketColumn('bSFLeft',   'Semi-Finals',    sf.slice(0, 1),   allocMap, 1);
+
+  const bF = document.getElementById('bFinalCenter');
+  if (bF) {
+    const thirdHtml = final3rd
+      ? `<div class="b-round-label" style="margin-top:8px">3rd Place</div>${renderBracketMatch(final3rd, allocMap)}`
+      : '';
+    bF.innerHTML = `<div class="b-round-label" style="color:var(--gold)">🏆 Final</div>
+      <div class="b-final-card">${renderBracketMatch(finalM || null, allocMap).replace('class="b-match', 'class="b-match b-final-inner')}</div>
+      ${thirdHtml}`;
+  }
+
+  renderBracketColumn('bSFRight',  'Semi-Finals',    sf.slice(1, 2),   allocMap, 1);
+  renderBracketColumn('bQFRight',  'Quarter-Finals', qf.slice(2, 4),   allocMap, 2);
+  renderBracketColumn('bR16Right', 'Round of 16',    r16.slice(4, 8),  allocMap, 4);
+  renderBracketColumn('bR32Right', 'Round of 32',    r32.slice(8, 16), allocMap, 8);
+
+  const live = hasLiveMatch({ matches });
   document.getElementById('liveIndicator').style.display = live ? 'inline' : 'none';
-  document.getElementById('bracketLiveTag').style.display  = live ? 'inline' : 'none';
+  document.getElementById('bracketLiveTag').style.display = live ? 'inline' : 'none';
   if (live) document.getElementById('apiUpdateTime').textContent = 'Updating live...';
 }
 
