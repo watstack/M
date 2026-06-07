@@ -125,3 +125,21 @@ const WC_2026_TEAMS = [
   // Inter-confederation playoffs (2)
   'IDN', 'MLI',
 ];
+
+// WC 2026 group assignments for all 48 teams.
+// Derived from the December 2024 FIFA draw (some placeholders where the
+// codebase team list differs from the actual qualified side, e.g. SVN/CZE).
+const WC_2026_GROUPS = {
+  A: ['MEX', 'RSA', 'KOR', 'SVN'],
+  B: ['CAN', 'SUI', 'SRB', 'HUN'],
+  C: ['BRA', 'MAR', 'SCO', 'HON'],
+  D: ['USA', 'VEN', 'AUS', 'TUR'],
+  E: ['GER', 'CIV', 'ECU', 'IDN'],
+  F: ['NED', 'JPN', 'TUN', 'DEN'],
+  G: ['BEL', 'EGY', 'IRN', 'NZL'],
+  H: ['ESP', 'KSA', 'URU', 'CMR'],
+  I: ['FRA', 'SEN', 'IRQ', 'CRC'],
+  J: ['ARG', 'AUT', 'JOR', 'MLI'],
+  K: ['POR', 'COD', 'UZB', 'COL'],
+  L: ['ENG', 'CRO', 'PAN', 'NGA'],
+};

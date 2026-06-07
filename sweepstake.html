@@ -817,14 +817,22 @@ function loadGroupCache() {
 }
 
 function buildSyntheticStandings() {
+  // Prefer API-sourced group cache; fall back to hardcoded WC 2026 groups.
   const cache = loadGroupCache();
-  if (!cache) return [];
+  const groupMap = cache || (() => {
+    const m = {};
+    for (const [letter, tlas] of Object.entries(WC_2026_GROUPS))
+      for (const tla of tlas) m[tla] = letter;
+    return m;
+  })();
+
   const groups = {};
-  for (const [tla, letter] of Object.entries(cache)) {
-    if (!groups[letter]) groups[letter] = [];
+  for (const [tla, letter] of Object.entries(groupMap)) {
     const alloc = allAllocations.find(a => normTeamCode(a.team_code) === tla);
+    if (!alloc) continue;
+    if (!groups[letter]) groups[letter] = [];
     groups[letter].push({
-      team: { tla, shortName: alloc?.team_name || tla, name: alloc?.team_name || tla, crest: null },
+      team: { tla, shortName: alloc.team_name || tla, name: alloc.team_name || tla, crest: null },
       playedGames: 0, won: 0, draw: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0,
     });
   }
@@ -855,9 +863,8 @@ async function loadBracketData() {
   } catch (err) {
     const standings = buildSyntheticStandings();
     renderBracketFull({ teams: [], matches: [], standings });
-    document.getElementById('apiUpdateTime').textContent = standings.length
-      ? 'Showing draw positions — live scores need a Football API token.'
-      : 'No Football API configured — showing draw results.';
+    document.getElementById('apiUpdateTime').textContent =
+      'Showing group positions — scores will update once matches start.';
   }
 }
 
@@ -876,7 +883,7 @@ function renderGroupMini(group, allocMap) {
       : `<span style="flex-shrink:0">${teamFlagEmoji(tla)}</span>`;
     const owner = alloc?.participants
       ? `<div class="b-owner">
-          ${renderAvatar(alloc.participants.avatar_type, tla, 20)}
+          ${renderAvatar(alloc.participants.avatar_type, tla, 28)}
           <span class="b-owner-name">${esc(alloc.participants.nickname)}</span>
         </div>` : '';
     const pts = hasStats ? `<span class="b-team-pts">${entry.points}p</span>` : '';
