@@ -447,13 +447,53 @@ function renderBracketState() {
   loadBracketData();
 }
 
+function saveGroupCache(standings) {
+  if (!standings || !standings.length) return;
+  const map = {};
+  for (const g of standings) {
+    const letter = (g.group || '').replace(/^GROUP_/i, '').replace(/^Group /i, '');
+    for (const row of g.table || []) {
+      const tla = normTeamCode(row.team?.tla || '');
+      if (tla && letter) map[tla] = letter;
+    }
+  }
+  if (Object.keys(map).length) localStorage.setItem('wc26_groups', JSON.stringify(map));
+}
+
+function loadGroupCache() {
+  try { return JSON.parse(localStorage.getItem('wc26_groups') || 'null'); }
+  catch { return null; }
+}
+
+function buildSyntheticStandings() {
+  const cache = loadGroupCache();
+  if (!cache) return [];
+  const groups = {};
+  for (const [tla, letter] of Object.entries(cache)) {
+    if (!groups[letter]) groups[letter] = [];
+    const alloc = allAllocations.find(a => normTeamCode(a.team_code) === tla);
+    groups[letter].push({
+      team: { tla, shortName: alloc?.team_name || tla, name: alloc?.team_name || tla, crest: null },
+      playedGames: 0, won: 0, draw: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, points: 0,
+    });
+  }
+  return Object.entries(groups)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([letter, table]) => ({
+      group: `Group ${letter}`,
+      table: table.sort((a, b) => a.team.shortName.localeCompare(b.team.shortName)),
+    }));
+}
+
 async function loadBracketData() {
   try {
     const data = await getAllMatchData();
     allTeams = data.teams;
+    if (data.standings.length) saveGroupCache(data.standings);
     renderBracket(data);
 
     startPolling(freshData => {
+      if (freshData.standings.length) saveGroupCache(freshData.standings);
       renderBracket(freshData);
       const live = hasLiveMatch({ matches: freshData.matches });
       document.getElementById('liveIndicator').style.display = live ? 'inline' : 'none';
@@ -462,8 +502,11 @@ async function loadBracketData() {
         'Last updated: ' + new Date().toLocaleTimeString();
     });
   } catch (err) {
-    document.getElementById('groupsGrid').innerHTML =
-      `<p class="muted" style="padding:20px">Could not load match data. Check your football API token in js/config.js. (${esc(err.message)})</p>`;
+    const standings = buildSyntheticStandings();
+    renderBracket({ teams: [], matches: [], standings });
+    document.getElementById('apiUpdateTime').textContent = standings.length
+      ? 'Showing draw positions — live scores need a Football API token.'
+      : 'No Football API configured — showing draw results.';
   }
 }
 
@@ -489,17 +532,41 @@ function renderBracket(data) {
 function renderGroupStage(standings, allocMap) {
   const grid = document.getElementById('groupsGrid');
   if (!standings || standings.length === 0) {
-    grid.innerHTML = '<p class="muted" style="padding:16px">Group stage data not yet available.</p>';
+    if (!allAllocations.length) {
+      grid.innerHTML = '<p class="muted" style="padding:16px">Group stage data not yet available.</p>';
+      return;
+    }
+    // No API / no cache — show draw results grouped by participant
+    const byPid = {};
+    for (const a of allAllocations) {
+      if (!byPid[a.participant_id]) byPid[a.participant_id] = { p: a.participants, teams: [] };
+      byPid[a.participant_id].teams.push(a);
+    }
+    grid.innerHTML = Object.values(byPid).map(({ p, teams }) => {
+      if (!p) return '';
+      const av = renderAvatar(p.avatar_type, teams[0]?.team_code || null, 40);
+      const pills = teams.map(t => {
+        const c = getFlagColors(t.team_code);
+        return `<span class="team-pill" style="background:${c.primary};color:${c.secondary||'#fff'}">${teamFlagEmoji(t.team_code)} ${esc(t.team_name)}</span>`;
+      }).join('');
+      return `<div class="group-card" style="padding:16px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          ${av}<span style="font-weight:700;font-family:var(--font-body)">${esc(p.nickname)}</span>
+        </div>
+        <div class="p-teams">${pills}</div>
+      </div>`;
+    }).join('');
     return;
   }
 
   grid.innerHTML = standings.map(group => {
     const groupName = group.group || group.stage || '';
+    const hasStats = (group.table || []).some(r => r.playedGames > 0);
     const rows = (group.table || []).map((entry, idx) => {
       const t   = entry.team;
       const tla = normTeamCode(t.tla || '');
       const alloc = allocMap[tla];
-      const qualified = idx < 2;
+      const qualified = hasStats && idx < 2;
       const flag = t.crest
         ? `<img class="team-flag-img" src="${t.crest}" alt="${esc(t.shortName || t.name)}" loading="lazy">`
         : `<span>${teamFlagEmoji(tla)}</span>`;
