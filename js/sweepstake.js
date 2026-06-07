@@ -303,6 +303,15 @@ function refreshWaitingRoom() {
       : 'The admin will start the draw when everyone\'s in. Sit tight!';
 }
 
+// ── Admin: reset / reopen draw ────────────────────────────────────────────────
+async function handleReopen() {
+  if (!confirm('This will reset the draw. Continue?')) return;
+  try {
+    await db.rpc('reopen_tournament', { p_code: code, p_admin_token: adminToken });
+    window.location.reload();
+  } catch (err) { showToast('Error: ' + err.message); }
+}
+
 // ── STATE 3: Draw animation ───────────────────────────────────────────────────
 function renderDrawState() {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
@@ -330,6 +339,12 @@ function renderDrawState() {
   }
 
   document.getElementById('drawProgress').textContent = 'Waiting for draw...';
+
+  if (isAdmin) {
+    const btn = document.getElementById('reopenBtn');
+    btn.style.display = 'inline-flex';
+    btn.onclick = handleReopen;
+  }
 }
 
 function revealDrawCard(allocation, participants) {
@@ -419,14 +434,9 @@ function renderBracketState() {
   document.getElementById('bracketTourneyName').textContent = tournament.name;
 
   if (isAdmin) {
-    document.getElementById('reopenBtn').style.display = 'inline-flex';
-    document.getElementById('reopenBtn').addEventListener('click', async () => {
-      if (!confirm('This will reset the draw. Continue?')) return;
-      try {
-        await db.rpc('reopen_tournament', { p_code: code, p_admin_token: adminToken });
-        window.location.reload();
-      } catch (err) { showToast('Error: ' + err.message); }
-    });
+    const reopenEl = document.getElementById('reopenBtn');
+    reopenEl.style.display = 'inline-flex';
+    reopenEl.onclick = handleReopen;
   }
 
   if (myParticipantId) {
