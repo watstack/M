@@ -78,23 +78,27 @@
 
     .bracket-nav button {
       background: var(--panel);
-      border: 1px solid var(--border);
+      border: 2px solid #2c3e54;
       color: var(--text);
-      font-size: 0.82rem;
-      padding: 8px 14px;
-      border-radius: 6px;
+      font-family: var(--font-pixel);
+      font-size: 0.5rem;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+      box-shadow: 3px 3px 0 rgba(0,0,0,.6);
+      transition: transform .08s, box-shadow .08s;
     }
+    .bracket-nav button:hover { transform: translate(2px,2px); box-shadow: 1px 1px 0 rgba(0,0,0,.6); }
 
     .bracket-nav button.active {
       background: var(--green);
       border-color: var(--green);
-      color: #fff;
+      color: #0a0805;
     }
 
     /* ── My teams panel ── */
     .my-teams {
-      background: rgba(240,192,64,0.07);
-      border: 1px solid rgba(240,192,64,0.25);
+      background: rgba(255,154,208,0.07);
+      border: 1px solid rgba(255,154,208,0.25);
       border-radius: var(--radius);
       padding: 16px 20px;
       margin-bottom: 24px;
@@ -103,9 +107,9 @@
     .my-teams h3 {
       color: var(--gold);
       margin-bottom: 10px;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+      font-family: var(--font-pixel);
+      font-size: 0.5rem;
+      letter-spacing: .08em;
     }
 
     .my-team-cards {
@@ -331,7 +335,7 @@
   <div class="state" id="stateBracket">
 
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-      <h1 id="bracketTourneyName" style="font-size:1.5rem;flex:1"></h1>
+      <h1 id="bracketTourneyName" style="flex:1"></h1>
       <span id="bracketLiveTag" style="display:none">
         <span class="live-badge"><span class="live-dot"></span>Live</span>
       </span>
@@ -863,8 +867,8 @@ async function handleStartDraw() {
       });
     }
 
-    // Use grouped slots so each participant's teams are revealed together
-    const trimmedSlots = buildSlotsGrouped(allParticipants);
+    // Round-robin: each participant receives one team per pass through the group
+    const trimmedSlots = buildSlotsRoundRobin(allParticipants);
     const teamPool = shuffleTeams(teams.slice(0, 48));
 
     for (let i = 0; i < teamPool.length; i++) {
