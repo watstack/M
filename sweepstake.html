@@ -257,6 +257,17 @@
       letter-spacing: .04em;
     }
     .landing-splash .btn-gold:hover { transform: translate(2px,2px); box-shadow: 2px 2px 0 rgba(0,0,0,.7); }
+
+    /* ── Slot stepper ── */
+    .p-slots-edit { display: flex; align-items: center; gap: 6px; }
+    .slots-btn {
+      background: var(--mid); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      width: 24px; height: 24px; font-size: 1rem; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; padding: 0;
+    }
+    .slots-btn:hover { border-color: var(--gold); color: var(--gold); }
   </style>
 </head>
 <body>
@@ -555,6 +566,10 @@ async function joinTournament(tournamentId, nickname, avatarType, teamSlots) {
   }
   return data;
 }
+async function updateParticipantSlots(participantId, newSlots) {
+  const { error } = await db.from('participants').update({ team_slots: newSlots }).eq('id', participantId);
+  if (error) throw error;
+}
 async function getParticipants(tournamentId) {
   const { data, error } = await db.from('participants').select('*').eq('tournament_id', tournamentId).order('created_at', { ascending: true });
   if (error) throw error;
@@ -581,6 +596,7 @@ function subscribeToTournament(tournamentId, callbacks) {
   return db.channel(`tournament:${tournamentId}`)
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tournaments', filter: `id=eq.${tournamentId}` }, payload => callbacks.onTournamentUpdate?.(payload.new))
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'participants', filter: `tournament_id=eq.${tournamentId}` }, payload => callbacks.onParticipantJoin?.(payload.new))
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'participants', filter: `tournament_id=eq.${tournamentId}` }, payload => callbacks.onParticipantUpdate?.(payload.new))
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'participants', filter: `tournament_id=eq.${tournamentId}` }, payload => callbacks.onParticipantLeave?.(payload.old))
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'allocations', filter: `tournament_id=eq.${tournamentId}` }, payload => callbacks.onAllocation?.(payload.new))
     .subscribe();
@@ -603,9 +619,10 @@ let drawDone        = 0;
 
 const code = new URLSearchParams(window.location.search).get('code') || '';
 const adminToken = (() => {
-  const h = window.location.hash;
-  const m = h.match(/admin=([a-zA-Z0-9\-]+)/);
-  return m ? m[1] : null;
+  const m = window.location.hash.match(/admin=([a-zA-Z0-9\-]+)/);
+  const fromHash = m ? m[1] : null;
+  if (fromHash && code) localStorage.setItem(`wc26_admin_${code}`, fromHash);
+  return fromHash || (code ? localStorage.getItem(`wc26_admin_${code}`) : null);
 })();
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -670,7 +687,13 @@ function renderParticipantList(container, participants, showTeams = false) {
             const c = getFlagColors(a.team_code);
             return `<span class="team-pill" style="background:${c.primary};color:${c.secondary || '#fff'}">${teamFlagEmoji(a.team_code)} ${a.team_name}</span>`;
           }).join('')
-      : `<span class="p-slots">${p.team_slots} team${p.team_slots > 1 ? 's' : ''}</span>`;
+      : ((p.id === myParticipantId || isAdmin) && tournament.status === 'open')
+        ? `<span class="p-slots-edit">
+             <button class="slots-btn" onclick="handleAdminSlotsChange('${p.id}',-1)">−</button>
+             <span>${p.team_slots} team${p.team_slots > 1 ? 's' : ''}</span>
+             <button class="slots-btn" onclick="handleAdminSlotsChange('${p.id}',1)">+</button>
+           </span>`
+        : `<span class="p-slots">${p.team_slots} team${p.team_slots > 1 ? 's' : ''}</span>`;
     const isMe = p.id === myParticipantId ? 'style="border-color:var(--gold)"' : '';
     return `<div class="participant-row" ${isMe}>
       ${av}
@@ -1025,6 +1048,25 @@ async function handleStartDraw() {
     btn.disabled = false; spinner.classList.remove('show');
   }
 }
+
+// ── Change a participant's team slot count (pre-draw only) ───────────────────
+window.handleAdminSlotsChange = async function(participantId, delta) {
+  if (tournament.status !== 'open') return;
+  if (!isAdmin && participantId !== myParticipantId) return;
+  const p = allParticipants.find(x => x.id === participantId);
+  if (!p) return;
+  const othersSlots = totalSlots(allParticipants) - p.team_slots;
+  const maxAllowed = Math.min(tournament.teams_per_person, 48 - othersSlots);
+  const newSlots = Math.max(1, Math.min(maxAllowed, p.team_slots + delta));
+  if (newSlots === p.team_slots) return;
+  try {
+    await updateParticipantSlots(participantId, newSlots);
+    p.team_slots = newSlots;
+    refreshWaitingRoom();
+  } catch (err) {
+    showToast('Could not update: ' + err.message);
+  }
+};
 
 // ── Remove participant (admin) ────────────────────────────────────────────────
 window.handleRemove = async function(participantId) {
@@ -1382,6 +1424,11 @@ async function init() {
       onTournamentUpdate,
       onParticipantJoin,
       onParticipantLeave,
+      onParticipantUpdate(updated) {
+        const idx = allParticipants.findIndex(p => p.id === updated.id);
+        if (idx >= 0) allParticipants[idx] = { ...allParticipants[idx], ...updated };
+        if (tournament.status === 'open') refreshWaitingRoom();
+      },
       onAllocation,
     });
 
