@@ -163,6 +163,51 @@
 
     .not-found-icon { font-size: 3rem; margin-bottom: 16px; }
 
+    /* ── Bracket zoom ── */
+    .bracket-zoom-outer { position: relative; }
+
+    .bracket-viewport {
+      overflow: auto;
+      width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #bracketScaleOuter { position: relative; display: block; }
+    #bracketScaleInner { display: inline-block; transform-origin: top left; }
+
+    .bracket-zoom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .bracket-zoom-btn {
+      background: var(--panel);
+      border: 2px solid #2c3e54;
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-pixel);
+      font-size: 0.6rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 rgba(0,0,0,.6);
+      transition: transform .08s, box-shadow .08s;
+      line-height: 1;
+    }
+    .bracket-zoom-btn:hover { transform: translate(1px,1px); box-shadow: 2px 2px 0 rgba(0,0,0,.6); }
+    .bracket-zoom-btn:active { transform: translate(3px,3px); box-shadow: none; }
+
+    .bracket-zoom-level {
+      font-family: var(--font-pixel);
+      font-size: 0.38rem;
+      color: var(--muted);
+      min-width: 44px;
+      text-align: center;
+      user-select: none;
+    }
+
     /* ── Tournament landing splash ── */
     .landing-splash {
       display: flex;
@@ -407,19 +452,31 @@
     </div>
 
     <!-- Full bracket tree (groups → knockout → final) -->
-    <div class="bracket-scroll-wrap">
-      <div class="bracket-tree" id="bracketTree">
-        <div class="b-col b-groups-col" id="bGroupsLeft"></div>
-        <div class="b-col b-round-col" id="bR32Left"></div>
-        <div class="b-col b-round-col" id="bR16Left"></div>
-        <div class="b-col b-round-col" id="bQFLeft"></div>
-        <div class="b-col b-round-col" id="bSFLeft"></div>
-        <div class="b-col b-final-col" id="bFinalCenter"></div>
-        <div class="b-col b-round-col" id="bSFRight"></div>
-        <div class="b-col b-round-col" id="bQFRight"></div>
-        <div class="b-col b-round-col" id="bR16Right"></div>
-        <div class="b-col b-round-col" id="bR32Right"></div>
-        <div class="b-col b-groups-col" id="bGroupsRight"></div>
+    <div class="bracket-zoom-outer">
+      <div class="bracket-viewport" id="bracketViewport">
+        <div id="bracketScaleOuter">
+          <div id="bracketScaleInner">
+            <div class="bracket-tree" id="bracketTree">
+              <div class="b-col b-groups-col" id="bGroupsLeft"></div>
+              <div class="b-col b-round-col" id="bR32Left"></div>
+              <div class="b-col b-round-col" id="bR16Left"></div>
+              <div class="b-col b-round-col" id="bQFLeft"></div>
+              <div class="b-col b-round-col" id="bSFLeft"></div>
+              <div class="b-col b-final-col" id="bFinalCenter"></div>
+              <div class="b-col b-round-col" id="bSFRight"></div>
+              <div class="b-col b-round-col" id="bQFRight"></div>
+              <div class="b-col b-round-col" id="bR16Right"></div>
+              <div class="b-col b-round-col" id="bR32Right"></div>
+              <div class="b-col b-groups-col" id="bGroupsRight"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="bracket-zoom-bar">
+        <button class="bracket-zoom-btn" id="bzOut" aria-label="Zoom out">−</button>
+        <span class="bracket-zoom-level" id="bzLevel">100%</span>
+        <button class="bracket-zoom-btn" id="bzIn" aria-label="Zoom in">+</button>
+        <button class="bracket-zoom-btn" id="bzFit">Fit</button>
       </div>
     </div>
 
@@ -1011,7 +1068,7 @@ function renderBracketState() {
     }
   }
 
-  loadBracketData();
+  loadBracketData().then(() => setTimeout(BracketZoom.fit, 60));
 }
 
 function saveGroupCache(standings) {
@@ -1351,6 +1408,88 @@ async function init() {
     showNotFound('Error: ' + (err?.message || String(err)));
   }
 }
+
+// ── Bracket zoom controller ───────────────────────────────────────────────────
+const BracketZoom = (function () {
+  let _zoom = 1, _nw = 0, _nh = 0;
+  let _pinchDist0 = 0, _pinchZoom0 = 1;
+
+  function el(id) { return document.getElementById(id); }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  function measure() {
+    const inner = el('bracketScaleInner');
+    if (!inner) return;
+    const prev = inner.style.transform;
+    inner.style.transform = 'scale(1)';
+    _nw = inner.scrollWidth;
+    _nh = inner.scrollHeight;
+    inner.style.transform = prev;
+  }
+
+  function apply(z) {
+    if (!_nw) return;
+    _zoom = clamp(z, 0.1, 2);
+    const inner  = el('bracketScaleInner');
+    const sOuter = el('bracketScaleOuter');
+    const lvl    = el('bzLevel');
+    if (!inner || !sOuter || !lvl) return;
+    inner.style.transform       = `scale(${_zoom})`;
+    inner.style.transformOrigin = 'top left';
+    sOuter.style.width  = (_nw * _zoom) + 'px';
+    sOuter.style.height = (_nh * _zoom) + 'px';
+    lvl.textContent = Math.round(_zoom * 100) + '%';
+  }
+
+  function fit() {
+    measure();
+    if (!_nw) return;
+    const vp = el('bracketViewport');
+    if (!vp) return;
+    apply(vp.clientWidth / (_nw + 4));
+  }
+
+  function init() {
+    const vp = el('bracketViewport');
+    if (!vp) return;
+
+    el('bzOut').addEventListener('click', () => apply(_zoom / 1.25));
+    el('bzIn').addEventListener('click',  () => apply(_zoom * 1.25));
+    el('bzFit').addEventListener('click', fit);
+
+    vp.addEventListener('wheel', e => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      apply(_zoom * (e.deltaY > 0 ? 0.9 : 1.1));
+    }, { passive: false });
+
+    vp.addEventListener('touchstart', e => {
+      if (e.touches.length < 2) return;
+      _pinchDist0 = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      _pinchZoom0 = _zoom;
+    }, { passive: true });
+
+    vp.addEventListener('touchmove', e => {
+      if (e.touches.length < 2) return;
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      apply(_pinchZoom0 * dist / _pinchDist0);
+    }, { passive: true });
+
+    window.addEventListener('resize', () => {
+      if (el('stateBracket')?.classList.contains('active')) fit();
+    });
+  }
+
+  return { init, fit };
+})();
+
+BracketZoom.init();
 
 init();
 </script>
