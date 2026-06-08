@@ -269,46 +269,114 @@
     }
     .slots-btn:hover { border-color: var(--gold); color: var(--gold); }
 
-    /* ── Arena character idle dances ── */
+    /* ── Arena character idle dances ──────────────────────────────────────────
+       Each keyframe bakes in the 3s pause: motion occupies the first N% of
+       the total cycle (dance_duration / (dance_duration + 3s) * 100), then
+       holds still for the rest. The "fast" variants are pure motion for the
+       active (being-drawn) state in the draw arena.
+    ── */
+
+    /* Striker 0.65s → cycle 3.65s, motion 0-17.8% */
     @keyframes dance-striker {
+      0%,17.8%,100% { transform: translateY(0) rotate(0deg); }
+      5.3%           { transform: translateY(-7px) rotate(-4deg); }
+      11.6%          { transform: translateY(-2px) rotate(3deg); }
+    }
+    @keyframes dance-striker-fast {
       0%,100% { transform: translateY(0) rotate(0deg); }
       30%     { transform: translateY(-7px) rotate(-4deg); }
       65%     { transform: translateY(-2px) rotate(3deg); }
     }
+
+    /* Playmaker 1.20s → cycle 4.20s, motion 0-28.6% */
     @keyframes dance-playmaker {
+      0%,28.6%,100% { transform: translateX(0) rotate(0deg); }
+      7.2%           { transform: translateX(-6px) rotate(-5deg); }
+      21.5%          { transform: translateX(6px) rotate(5deg); }
+    }
+    @keyframes dance-playmaker-fast {
       0%,100% { transform: translateX(0) rotate(0deg); }
       25%     { transform: translateX(-6px) rotate(-5deg); }
       75%     { transform: translateX(6px) rotate(5deg); }
     }
+
+    /* Winger 0.48s → cycle 3.48s, motion 0-13.8% */
     @keyframes dance-winger {
+      0%,13.8%,100% { transform: translateX(0) scaleX(1); }
+      2.8%           { transform: translateX(-5px) scaleX(0.93); }
+      5.5%           { transform: translateX(5px) scaleX(1.07); }
+      8.3%           { transform: translateX(-3px) scaleX(0.96); }
+      11.0%          { transform: translateX(3px) scaleX(1.04); }
+    }
+    @keyframes dance-winger-fast {
       0%,100% { transform: translateX(0) scaleX(1); }
       20%     { transform: translateX(-5px) scaleX(0.93); }
       40%     { transform: translateX(5px) scaleX(1.07); }
       60%     { transform: translateX(-3px) scaleX(0.96); }
       80%     { transform: translateX(3px) scaleX(1.04); }
     }
+
+    /* Keeper 1.40s → cycle 4.40s, motion 0-31.8% */
     @keyframes dance-keeper {
+      0%,31.8%,100% { transform: translateX(0) scaleX(1); }
+      11.1%          { transform: translateX(-8px) scaleX(0.94); }
+      20.7%          { transform: translateX(8px) scaleX(0.94); }
+    }
+    @keyframes dance-keeper-fast {
       0%,100% { transform: translateX(0) scaleX(1); }
       35%     { transform: translateX(-8px) scaleX(0.94); }
       65%     { transform: translateX(8px) scaleX(0.94); }
     }
+
+    /* Captain 1.00s → cycle 4.00s, motion 0-25% */
     @keyframes dance-captain {
+      0%,25%,100% { transform: translateY(0) scaleY(1); }
+      10.0%        { transform: translateY(-5px) scaleY(1.04); }
+      17.5%        { transform: translateY(-2px) scaleY(1.01); }
+    }
+    @keyframes dance-captain-fast {
       0%,100% { transform: translateY(0) scaleY(1); }
       40%     { transform: translateY(-5px) scaleY(1.04); }
       70%     { transform: translateY(-2px) scaleY(1.01); }
     }
+
+    /* Manager 1.80s → cycle 4.80s, motion 0-37.5% */
     @keyframes dance-manager {
+      0%,37.5%,100% { transform: rotate(0deg) translateY(0); }
+      12.5%          { transform: rotate(-3deg) translateY(-2px); }
+      25.0%          { transform: rotate(3deg) translateY(-1px); }
+    }
+    @keyframes dance-manager-fast {
       0%,100% { transform: rotate(0deg) translateY(0); }
       33%     { transform: rotate(-3deg) translateY(-2px); }
       66%     { transform: rotate(3deg) translateY(-1px); }
     }
+
+    /* Commentator 0.44s → cycle 3.44s, motion 0-12.8% */
     @keyframes dance-commentator {
+      0%,12.8%,100% { transform: translateY(0) rotate(0deg); }
+      2.6%           { transform: translateY(-9px) rotate(-6deg); }
+      6.4%           { transform: translateY(-1px) rotate(1deg); }
+      9.0%           { transform: translateY(-6px) rotate(6deg); }
+    }
+    @keyframes dance-commentator-fast {
       0%,100% { transform: translateY(0) rotate(0deg); }
       20%     { transform: translateY(-9px) rotate(-6deg); }
       50%     { transform: translateY(-1px) rotate(1deg); }
       70%     { transform: translateY(-6px) rotate(6deg); }
     }
+
+    /* Ultra 0.38s → cycle 3.38s, motion 0-11.2% */
     @keyframes dance-ultra {
+      0%,11.2%,100% { transform: translateX(0) rotate(0deg); }
+      1.6%           { transform: translateX(-7px) rotate(-7deg); }
+      3.1%           { transform: translateX(7px) rotate(7deg); }
+      4.7%           { transform: translateX(-5px) rotate(-5deg); }
+      6.3%           { transform: translateX(5px) rotate(5deg); }
+      8.0%           { transform: translateX(-3px) rotate(-3deg); }
+      9.5%           { transform: translateX(3px) rotate(3deg); }
+    }
+    @keyframes dance-ultra-fast {
       0%,100% { transform: translateX(0) rotate(0deg); }
       14%     { transform: translateX(-7px) rotate(-7deg); }
       28%     { transform: translateX(7px) rotate(7deg); }
@@ -317,43 +385,70 @@
       71%     { transform: translateX(-3px) rotate(-3deg); }
       85%     { transform: translateX(3px) rotate(3deg); }
     }
+
+    /* Fan 0.70s → cycle 3.70s, motion 0-18.9% */
     @keyframes dance-fan {
+      0%,18.9%,100% { transform: translateY(0) rotate(0deg); }
+      3.8%           { transform: translateY(-8px) rotate(6deg); }
+      8.5%           { transform: translateY(-3px) rotate(-4deg); }
+      12.3%          { transform: translateY(-10px) rotate(5deg); }
+      16.2%          { transform: translateY(-2px) rotate(-2deg); }
+    }
+    @keyframes dance-fan-fast {
       0%,100% { transform: translateY(0) rotate(0deg); }
       20%     { transform: translateY(-8px) rotate(6deg); }
       45%     { transform: translateY(-3px) rotate(-4deg); }
       65%     { transform: translateY(-10px) rotate(5deg); }
       85%     { transform: translateY(-2px) rotate(-2deg); }
     }
+
+    /* Mascot 1.10s → cycle 4.10s, motion 0-26.8% */
     @keyframes dance-mascot {
+      0%,26.8%,100% { transform: rotate(0deg) scale(1); }
+      6.7%           { transform: rotate(12deg) scale(1.06); }
+      13.4%          { transform: rotate(0deg) scale(0.96); }
+      20.1%          { transform: rotate(-12deg) scale(1.06); }
+    }
+    @keyframes dance-mascot-fast {
       0%,100% { transform: rotate(0deg) scale(1); }
       25%     { transform: rotate(12deg) scale(1.06); }
       50%     { transform: rotate(0deg) scale(0.96); }
       75%     { transform: rotate(-12deg) scale(1.06); }
     }
 
-    /* Apply idle dance to every non-done card */
-    .arena-p-card:not(.done)[data-avatar="1"]  .avatar-sprite { animation: dance-striker     0.65s ease-in-out infinite; }
-    .arena-p-card:not(.done)[data-avatar="2"]  .avatar-sprite { animation: dance-playmaker   1.20s ease-in-out infinite; }
-    .arena-p-card:not(.done)[data-avatar="3"]  .avatar-sprite { animation: dance-winger      0.48s ease-in-out infinite; }
-    .arena-p-card:not(.done)[data-avatar="4"]  .avatar-sprite { animation: dance-keeper      1.40s ease-in-out infinite; }
-    .arena-p-card:not(.done)[data-avatar="5"]  .avatar-sprite { animation: dance-captain     1.00s ease-in-out infinite; }
-    .arena-p-card:not(.done)[data-avatar="6"]  .avatar-sprite { animation: dance-manager     1.80s ease-in-out infinite; }
-    .arena-p-card:not(.done)[data-avatar="7"]  .avatar-sprite { animation: dance-commentator 0.44s ease-in-out infinite; }
-    .arena-p-card:not(.done)[data-avatar="8"]  .avatar-sprite { animation: dance-ultra       0.38s ease-in-out infinite; }
-    .arena-p-card:not(.done)[data-avatar="9"]  .avatar-sprite { animation: dance-fan         0.70s ease-in-out infinite; }
-    .arena-p-card:not(.done)[data-avatar="10"] .avatar-sprite { animation: dance-mascot      1.10s ease-in-out infinite; }
+    /* Idle loop (arena cards + waiting room rows) — dance then 3s pause */
+    .arena-p-card:not(.done)[data-avatar="1"]  .avatar-sprite,
+    .participant-row[data-avatar="1"]  .avatar-sprite { animation: dance-striker     3.65s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="2"]  .avatar-sprite,
+    .participant-row[data-avatar="2"]  .avatar-sprite { animation: dance-playmaker   4.20s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="3"]  .avatar-sprite,
+    .participant-row[data-avatar="3"]  .avatar-sprite { animation: dance-winger      3.48s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="4"]  .avatar-sprite,
+    .participant-row[data-avatar="4"]  .avatar-sprite { animation: dance-keeper      4.40s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="5"]  .avatar-sprite,
+    .participant-row[data-avatar="5"]  .avatar-sprite { animation: dance-captain     4.00s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="6"]  .avatar-sprite,
+    .participant-row[data-avatar="6"]  .avatar-sprite { animation: dance-manager     4.80s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="7"]  .avatar-sprite,
+    .participant-row[data-avatar="7"]  .avatar-sprite { animation: dance-commentator 3.44s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="8"]  .avatar-sprite,
+    .participant-row[data-avatar="8"]  .avatar-sprite { animation: dance-ultra       3.38s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="9"]  .avatar-sprite,
+    .participant-row[data-avatar="9"]  .avatar-sprite { animation: dance-fan         3.70s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="10"] .avatar-sprite,
+    .participant-row[data-avatar="10"] .avatar-sprite { animation: dance-mascot      4.10s ease-in-out infinite; }
 
-    /* Speed up + exaggerate when card is active (being drawn) */
-    .arena-p-card.active[data-avatar="1"]  .avatar-sprite { animation-duration: 0.30s; }
-    .arena-p-card.active[data-avatar="2"]  .avatar-sprite { animation-duration: 0.55s; }
-    .arena-p-card.active[data-avatar="3"]  .avatar-sprite { animation-duration: 0.22s; }
-    .arena-p-card.active[data-avatar="4"]  .avatar-sprite { animation-duration: 0.60s; }
-    .arena-p-card.active[data-avatar="5"]  .avatar-sprite { animation-duration: 0.45s; }
-    .arena-p-card.active[data-avatar="6"]  .avatar-sprite { animation-duration: 0.75s; }
-    .arena-p-card.active[data-avatar="7"]  .avatar-sprite { animation-duration: 0.20s; }
-    .arena-p-card.active[data-avatar="8"]  .avatar-sprite { animation-duration: 0.18s; }
-    .arena-p-card.active[data-avatar="9"]  .avatar-sprite { animation-duration: 0.32s; }
-    .arena-p-card.active[data-avatar="10"] .avatar-sprite { animation-duration: 0.48s; }
+    /* Active card (being drawn) — continuous fast dance, no pause */
+    .arena-p-card.active[data-avatar="1"]  .avatar-sprite { animation: dance-striker-fast     0.30s ease-in-out infinite; }
+    .arena-p-card.active[data-avatar="2"]  .avatar-sprite { animation: dance-playmaker-fast   0.55s ease-in-out infinite; }
+    .arena-p-card.active[data-avatar="3"]  .avatar-sprite { animation: dance-winger-fast      0.22s ease-in-out infinite; }
+    .arena-p-card.active[data-avatar="4"]  .avatar-sprite { animation: dance-keeper-fast      0.60s ease-in-out infinite; }
+    .arena-p-card.active[data-avatar="5"]  .avatar-sprite { animation: dance-captain-fast     0.45s ease-in-out infinite; }
+    .arena-p-card.active[data-avatar="6"]  .avatar-sprite { animation: dance-manager-fast     0.75s ease-in-out infinite; }
+    .arena-p-card.active[data-avatar="7"]  .avatar-sprite { animation: dance-commentator-fast 0.20s ease-in-out infinite; }
+    .arena-p-card.active[data-avatar="8"]  .avatar-sprite { animation: dance-ultra-fast       0.18s ease-in-out infinite; }
+    .arena-p-card.active[data-avatar="9"]  .avatar-sprite { animation: dance-fan-fast         0.32s ease-in-out infinite; }
+    .arena-p-card.active[data-avatar="10"] .avatar-sprite { animation: dance-mascot-fast      0.48s ease-in-out infinite; }
   </style>
 </head>
 <body>
@@ -781,7 +876,7 @@ function renderParticipantList(container, participants, showTeams = false) {
            </span>`
         : `<span class="p-slots">${p.team_slots} team${p.team_slots > 1 ? 's' : ''}</span>`;
     const isMe = p.id === myParticipantId ? 'style="border-color:var(--gold)"' : '';
-    return `<div class="participant-row" ${isMe}>
+    return `<div class="participant-row" ${isMe} data-avatar="${p.avatar_type}">
       ${av}
       <span class="p-name">${esc(p.nickname)}</span>
       <span class="p-teams">${teams}</span>
