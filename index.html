@@ -27,14 +27,6 @@
       margin-bottom: 20px;
     }
 
-    .hero h1 {
-      background: linear-gradient(135deg, #fff 0%, var(--gold) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 16px;
-    }
-
     .hero p {
       color: var(--muted);
       font-size: 1.15rem;
@@ -48,12 +40,6 @@
       gap: 12px;
       justify-content: center;
       flex-wrap: wrap;
-    }
-
-    .hero-actions button {
-      font-size: 1.05rem;
-      padding: 14px 28px;
-      border-radius: 10px;
     }
 
     /* Steps */
@@ -86,8 +72,6 @@
     .step-card h3 { margin-bottom: 6px; }
     .step-card p { color: var(--muted); font-size: 0.88rem; line-height: 1.5; }
 
-    .trophy { font-size: 3.5rem; margin-bottom: 12px; display: block; }
-
     /* Join form */
     .join-panel {
       max-width: 420px;
@@ -102,29 +86,31 @@
     }
   </style>
 </head>
-<body class="page-entry">
+<body class="landing-screen">
 
+<div class="landing-bg">
 <div class="page">
 
   <header class="site-header">
-    <div class="logo">⚽</div>
-    <span class="site-name">Kickoff</span>
-    <span style="flex:1"></span>
-    <span class="muted" style="font-size:0.8rem">WC 2026</span>
+    <a class="site-home" href="index.html" aria-label="Go to Kickoff home">
+      <span class="logo">⚽</span>
+      <span class="site-name">Kickoff</span>
+    </a>
   </header>
 
   <section class="hero">
     <span class="hero-eyebrow">World Cup 2026 · Sweepstake</span>
-    <h1>Pick your teams.<br>Follow the bracket.</h1>
+    <h1>Pick your teams.<br><span class="l2">Follow the bracket.</span></h1>
     <p>Create a sweepstake in seconds, share a link with your friends, and watch the live draw together.</p>
     <div class="hero-actions">
       <button class="btn-gold" onclick="window.location.href='admin.html'">
-        ⚽ Create a Sweepstake
+        ▶ Create a sweepstake
       </button>
       <button class="btn-ghost" id="joinBtn">
-        🔗 Join with a code
+        Join with a code
       </button>
     </div>
+    <p class="start-blink">— insert coin to begin —</p>
   </section>
 
   <!-- Hidden join panel -->
@@ -169,6 +155,7 @@
   </div>
 
 </div>
+</div>
 
 <div id="toast"></div>
 
@@ -201,7 +188,6 @@
     goBtn.disabled = true;
     goSpinner.classList.add('show');
 
-    // Quick check via fetch — just follow the link; sweepstake.html handles errors
     window.location.href = `/s/${code}`;
   });
 

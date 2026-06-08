@@ -26,9 +26,13 @@
     }
 
     .tourney-name {
-      font-size: clamp(1.8rem, 5vw, 2.8rem);
-      font-weight: 900;
-      margin-bottom: 6px;
+      font-family: var(--font-pixel);
+      font-size: clamp(1rem, 3.4vw, 1.7rem);
+      font-weight: 400;
+      line-height: 1.5;
+      letter-spacing: .01em;
+      margin-bottom: 12px;
+      text-shadow: 3px 3px 0 var(--pixel-black), 0 0 18px rgba(255,106,31,.25);
     }
 
     .slots-info {
@@ -115,11 +119,12 @@
       align-items: center;
       gap: 8px;
       background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      border: 2px solid #2c3e54;
+      border-radius: 2px;
       padding: 8px 12px;
       font-size: 0.88rem;
       font-weight: 700;
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.4);
     }
 
     /* Group stage table */
@@ -288,6 +293,13 @@
   <!-- STATE 3: Live draw animation -->
   <div class="state" id="stateDraw">
     <div class="draw-arena">
+
+      <!-- Background scene -->
+      <div class="arena-scene" aria-hidden="true">
+        <img class="scene-bg" src="assets/arena-bg.svg" alt="">
+        <img class="scene-fg scene-fg-l" src="assets/arena-fg.svg" alt="">
+        <img class="scene-fg scene-fg-r" src="assets/arena-fg.svg" alt="">
+      </div>
 
       <!-- Header -->
       <div class="arena-header">
@@ -569,6 +581,7 @@ function updateSlotCounter(participants, teamsPerPerson) {
 function renderJoinState() {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
   document.getElementById('stateJoin').classList.add('active');
+  document.body.className = 'tunnel-screen';
   document.getElementById('joinTourneyName').textContent = tournament.name;
 
   const claimed = totalSlots(allParticipants);
@@ -638,6 +651,7 @@ function renderJoinState() {
 function renderWaitingState() {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
   document.getElementById('stateWaiting').classList.add('active');
+  document.body.className = 'tunnel-screen';
   document.getElementById('waitTourneyName').textContent = tournament.name;
 
   const inviteUrl = `${window.location.origin}${window.location.pathname.replace(/\/[^/]*$/, '')}/sweepstake.html?code=${code}`;
@@ -680,6 +694,7 @@ let drawCurrentParticipantId = null;
 function renderDrawState() {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
   document.getElementById('stateDraw').classList.add('active');
+  document.body.className = '';
 
   drawRevealQueue      = [];
   drawRevealing        = false;
@@ -885,6 +900,7 @@ window.handleRemove = async function(participantId) {
 function renderBracketState() {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
   document.getElementById('stateBracket').classList.add('active');
+  document.body.className = '';
   document.getElementById('bracketTourneyName').textContent = tournament.name;
 
   if (isAdmin) {
@@ -1154,6 +1170,7 @@ function onAllocation(alloc) {
 // ── Show error state ──────────────────────────────────────────────────────────
 function showNotFound(errMsg) {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+  document.body.className = '';
   const nf = document.getElementById('stateNotFound');
   nf.classList.add('active');
   if (errMsg) {
