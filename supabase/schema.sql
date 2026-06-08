@@ -72,6 +72,7 @@ DROP POLICY IF EXISTS "Public read participants"      ON participants;
 DROP POLICY IF EXISTS "Public read allocations"       ON allocations;
 DROP POLICY IF EXISTS "Anyone can create tournament"  ON tournaments;
 DROP POLICY IF EXISTS "Anyone can join"               ON participants;
+DROP POLICY IF EXISTS "Anyone can update own slots"   ON participants;
 DROP POLICY IF EXISTS "Anyone can insert allocations" ON allocations;
 
 -- Public reads (the invite code is the access gate)
@@ -84,6 +85,9 @@ CREATE POLICY "Anyone can create tournament" ON tournaments FOR INSERT WITH CHEC
 
 -- Anyone can join (nickname uniqueness enforced by UNIQUE constraint)
 CREATE POLICY "Anyone can join" ON participants FOR INSERT WITH CHECK (true);
+
+-- Participants can update their own slot count before the draw
+CREATE POLICY "Anyone can update own slots" ON participants FOR UPDATE USING (true) WITH CHECK (true);
 
 -- Allocations inserted during draw
 CREATE POLICY "Anyone can insert allocations" ON allocations FOR INSERT WITH CHECK (true);
