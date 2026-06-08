@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" width="960" height="600" shape-rendering="crispEdges">
+  <defs>
+    <pattern id="sand" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
+      <rect width="16" height="8" fill="#d4a84a"/>
+      <rect y="8" width="16" height="8" fill="#c09440"/>
+    </pattern>
+    <pattern id="stone" x="0" y="0" width="32" height="16" patternUnits="userSpaceOnUse">
+      <rect width="32" height="16" fill="#504030"/>
+      <rect x="1" y="1" width="14" height="14" fill="#706050"/>
+      <rect x="17" y="1" width="14" height="14" fill="#604840"/>
+    </pattern>
+    <pattern id="stoneB" x="16" y="0" width="32" height="16" patternUnits="userSpaceOnUse">
+      <rect width="32" height="16" fill="#504030"/>
+      <rect x="1" y="1" width="14" height="14" fill="#604840"/>
+      <rect x="17" y="1" width="14" height="14" fill="#706050"/>
+    </pattern>
+    <radialGradient id="vignette" cx="50%" cy="50%" r="65%">
+      <stop offset="35%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.67"/>
+    </radialGradient>
+    <radialGradient id="spotlight" cx="50%" cy="0%" r="70%">
+      <stop offset="0%" stop-color="#ff961e" stop-opacity="0.27"/>
+      <stop offset="100%" stop-color="#ff961e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Sand ground -->
+  <rect width="960" height="600" fill="url(#sand)"/>
+
+  <!-- Left tree column — dark canopy block -->
+  <rect x="0"   y="24" width="128" height="552" fill="#1a5e1a"/>
+  <!-- Left column highlight streaks -->
+  <rect x="0"   y="24" width="32" height="552" fill="#236823"/>
+  <rect x="64"  y="24" width="16" height="552" fill="#1f6220"/>
+  <!-- Left column darker patches -->
+  <rect x="16"  y="24" width="16" height="552" fill="#154e15"/>
+  <rect x="80"  y="24" width="32" height="552" fill="#154e15"/>
+  <rect x="112" y="24" width="16" height="552" fill="#0f3a0f"/>
+  <!-- Tree trunk accents on left -->
+  <rect x="12"  y="536" width="8" height="16" fill="#6b3a2a"/>
+  <rect x="44"  y="536" width="8" height="16" fill="#6b3a2a"/>
+  <rect x="76"  y="536" width="8" height="16" fill="#6b3a2a"/>
+  <rect x="108" y="536" width="8" height="16" fill="#6b3a2a"/>
+
+  <!-- Right tree column — dark canopy block -->
+  <rect x="832" y="24" width="128" height="552" fill="#1a5e1a"/>
+  <!-- Right column highlight streaks -->
+  <rect x="928" y="24" width="32" height="552" fill="#236823"/>
+  <rect x="880" y="24" width="16" height="552" fill="#1f6220"/>
+  <!-- Right column darker patches -->
+  <rect x="912" y="24" width="16" height="552" fill="#154e15"/>
+  <rect x="848" y="24" width="32" height="552" fill="#154e15"/>
+  <rect x="832" y="24" width="16" height="552" fill="#0f3a0f"/>
+  <!-- Tree trunk accents on right -->
+  <rect x="836" y="536" width="8" height="16" fill="#6b3a2a"/>
+  <rect x="868" y="536" width="8" height="16" fill="#6b3a2a"/>
+  <rect x="900" y="536" width="8" height="16" fill="#6b3a2a"/>
+  <rect x="932" y="536" width="8" height="16" fill="#6b3a2a"/>
+
+  <!-- Top stone wall -->
+  <rect width="960" height="24" fill="url(#stone)"/>
+
+  <!-- Bottom stone wall -->
+  <rect y="576" width="960" height="24" fill="url(#stoneB)"/>
+
+  <!-- Tree-line edge shadow on sand -->
+  <rect x="128" y="24" width="20" height="552" fill="#000000" fill-opacity="0.16"/>
+  <rect x="812" y="24" width="20" height="552" fill="#000000" fill-opacity="0.16"/>
+
+  <!-- Overhead spotlight -->
+  <rect width="960" height="600" fill="url(#spotlight)"/>
+
+  <!-- Vignette -->
+  <rect width="960" height="600" fill="url(#vignette)"/>
+</svg>

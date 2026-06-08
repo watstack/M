@@ -1,0 +1,155 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" width="960" height="600" shape-rendering="crispEdges">
+  <defs>
+    <pattern id="grass" x="0" y="0" width="48" height="600" patternUnits="userSpaceOnUse">
+      <rect width="24" height="600" fill="#268026"/>
+      <rect x="24" width="24" height="600" fill="#2d8a2d"/>
+    </pattern>
+  </defs>
+
+  <!-- Grass base -->
+  <rect width="960" height="600" fill="url(#grass)"/>
+
+  <!-- Crowd silhouette top -->
+  <rect y="0" width="960" height="32" fill="#14141e"/>
+  <rect x="0"   y="20" width="12" height="12" fill="#1e1e2e"/>
+  <rect x="16"  y="16" width="12" height="16" fill="#1a1a2a"/>
+  <rect x="32"  y="22" width="10" height="10" fill="#1e1e2e"/>
+  <rect x="48"  y="18" width="12" height="14" fill="#1a1a2a"/>
+  <rect x="64"  y="24" width="10" height="8"  fill="#1e1e2e"/>
+  <rect x="80"  y="17" width="12" height="15" fill="#1a1a2a"/>
+  <rect x="96"  y="21" width="10" height="11" fill="#1e1e2e"/>
+  <rect x="112" y="19" width="12" height="13" fill="#1a1a2a"/>
+  <rect x="128" y="23" width="10" height="9"  fill="#1e1e2e"/>
+  <rect x="144" y="16" width="12" height="16" fill="#1a1a2a"/>
+  <rect x="160" y="20" width="10" height="12" fill="#1e1e2e"/>
+  <rect x="176" y="18" width="12" height="14" fill="#1a1a2a"/>
+  <rect x="192" y="24" width="10" height="8"  fill="#1e1e2e"/>
+  <rect x="208" y="15" width="12" height="17" fill="#1a1a2a"/>
+  <rect x="224" y="22" width="10" height="10" fill="#1e1e2e"/>
+  <rect x="240" y="19" width="12" height="13" fill="#1a1a2a"/>
+  <rect x="256" y="25" width="10" height="7"  fill="#1e1e2e"/>
+  <rect x="272" y="17" width="12" height="15" fill="#1a1a2a"/>
+  <rect x="288" y="21" width="10" height="11" fill="#1e1e2e"/>
+  <rect x="304" y="16" width="12" height="16" fill="#1a1a2a"/>
+  <rect x="320" y="23" width="10" height="9"  fill="#1e1e2e"/>
+  <rect x="336" y="18" width="12" height="14" fill="#1a1a2a"/>
+  <rect x="352" y="20" width="10" height="12" fill="#1e1e2e"/>
+  <rect x="368" y="15" width="12" height="17" fill="#1a1a2a"/>
+  <rect x="384" y="22" width="10" height="10" fill="#1e1e2e"/>
+  <rect x="400" y="19" width="12" height="13" fill="#1a1a2a"/>
+  <rect x="416" y="24" width="10" height="8"  fill="#1e1e2e"/>
+  <rect x="432" y="16" width="12" height="16" fill="#1a1a2a"/>
+  <rect x="448" y="21" width="10" height="11" fill="#1e1e2e"/>
+  <rect x="464" y="18" width="12" height="14" fill="#1a1a2a"/>
+  <rect x="480" y="23" width="10" height="9"  fill="#1e1e2e"/>
+  <rect x="496" y="15" width="12" height="17" fill="#1a1a2a"/>
+  <rect x="512" y="20" width="10" height="12" fill="#1e1e2e"/>
+  <rect x="528" y="17" width="12" height="15" fill="#1a1a2a"/>
+  <rect x="544" y="25" width="10" height="7"  fill="#1e1e2e"/>
+  <rect x="560" y="19" width="12" height="13" fill="#1a1a2a"/>
+  <rect x="576" y="22" width="10" height="10" fill="#1e1e2e"/>
+  <rect x="592" y="16" width="12" height="16" fill="#1a1a2a"/>
+  <rect x="608" y="23" width="10" height="9"  fill="#1e1e2e"/>
+  <rect x="624" y="18" width="12" height="14" fill="#1a1a2a"/>
+  <rect x="640" y="21" width="10" height="11" fill="#1e1e2e"/>
+  <rect x="656" y="15" width="12" height="17" fill="#1a1a2a"/>
+  <rect x="672" y="24" width="10" height="8"  fill="#1e1e2e"/>
+  <rect x="688" y="17" width="12" height="15" fill="#1a1a2a"/>
+  <rect x="704" y="20" width="10" height="12" fill="#1e1e2e"/>
+  <rect x="720" y="16" width="12" height="16" fill="#1a1a2a"/>
+  <rect x="736" y="23" width="10" height="9"  fill="#1e1e2e"/>
+  <rect x="752" y="18" width="12" height="14" fill="#1a1a2a"/>
+  <rect x="768" y="21" width="10" height="11" fill="#1e1e2e"/>
+  <rect x="784" y="15" width="12" height="17" fill="#1a1a2a"/>
+  <rect x="800" y="24" width="10" height="8"  fill="#1e1e2e"/>
+  <rect x="816" y="18" width="12" height="14" fill="#1a1a2a"/>
+  <rect x="832" y="20" width="10" height="12" fill="#1e1e2e"/>
+  <rect x="848" y="16" width="12" height="16" fill="#1a1a2a"/>
+  <rect x="864" y="23" width="10" height="9"  fill="#1e1e2e"/>
+  <rect x="880" y="17" width="12" height="15" fill="#1a1a2a"/>
+  <rect x="896" y="21" width="10" height="11" fill="#1e1e2e"/>
+  <rect x="912" y="15" width="12" height="17" fill="#1a1a2a"/>
+  <rect x="928" y="22" width="10" height="10" fill="#1e1e2e"/>
+  <rect x="944" y="18" width="12" height="14" fill="#1a1a2a"/>
+
+  <!-- Pitch boundary -->
+  <rect x="40" y="48" width="880" height="504" fill="none" stroke="#ffffff" stroke-width="4"/>
+
+  <!-- Halfway line -->
+  <rect x="40" y="298" width="880" height="4" fill="#ffffff"/>
+
+  <!-- Centre circle (pixel approx) -->
+  <rect x="380" y="216" width="200" height="4" fill="#ffffff"/>
+  <rect x="380" y="380" width="200" height="4" fill="#ffffff"/>
+  <rect x="380" y="220" width="4"   height="160" fill="#ffffff"/>
+  <rect x="576" y="220" width="4"   height="160" fill="#ffffff"/>
+  <!-- rounded corners of centre circle -->
+  <rect x="396" y="208" width="168" height="4" fill="#ffffff"/>
+  <rect x="396" y="388" width="168" height="4" fill="#ffffff"/>
+  <rect x="392" y="212" width="4"   height="8"  fill="#ffffff"/>
+  <rect x="564" y="212" width="4"   height="8"  fill="#ffffff"/>
+  <rect x="392" y="380" width="4"   height="8"  fill="#ffffff"/>
+  <rect x="564" y="380" width="4"   height="8"  fill="#ffffff"/>
+
+  <!-- Centre spot -->
+  <rect x="478" y="298" width="4" height="4" fill="#ffffff"/>
+
+  <!-- Penalty box top -->
+  <rect x="244" y="48" width="472" height="120" fill="none" stroke="#ffffff" stroke-width="4"/>
+  <!-- Penalty box bottom -->
+  <rect x="244" y="432" width="472" height="120" fill="none" stroke="#ffffff" stroke-width="4"/>
+
+  <!-- 6-yard box top -->
+  <rect x="372" y="48" width="216" height="48" fill="none" stroke="#ffffff" stroke-width="4"/>
+  <!-- 6-yard box bottom -->
+  <rect x="372" y="504" width="216" height="48" fill="none" stroke="#ffffff" stroke-width="4"/>
+
+  <!-- Penalty spots -->
+  <rect x="478" y="134" width="4" height="4" fill="#ffffff"/>
+  <rect x="478" y="462" width="4" height="4" fill="#ffffff"/>
+
+  <!-- Corner arcs top-left -->
+  <rect x="40" y="64" width="16" height="4" fill="#ffffff"/>
+  <rect x="40" y="68" width="12" height="4" fill="#ffffff"/>
+  <rect x="56" y="48" width="4"  height="16" fill="#ffffff"/>
+  <rect x="60" y="48" width="4"  height="12" fill="#ffffff"/>
+  <!-- Corner arcs top-right -->
+  <rect x="904" y="64" width="16" height="4" fill="#ffffff"/>
+  <rect x="908" y="68" width="12" height="4" fill="#ffffff"/>
+  <rect x="900" y="48" width="4"  height="16" fill="#ffffff"/>
+  <rect x="896" y="48" width="4"  height="12" fill="#ffffff"/>
+  <!-- Corner arcs bottom-left -->
+  <rect x="40"  y="532" width="16" height="4" fill="#ffffff"/>
+  <rect x="40"  y="528" width="12" height="4" fill="#ffffff"/>
+  <rect x="56"  y="536" width="4"  height="16" fill="#ffffff"/>
+  <rect x="60"  y="540" width="4"  height="12" fill="#ffffff"/>
+  <!-- Corner arcs bottom-right -->
+  <rect x="904" y="532" width="16" height="4" fill="#ffffff"/>
+  <rect x="908" y="528" width="12" height="4" fill="#ffffff"/>
+  <rect x="900" y="536" width="4"  height="16" fill="#ffffff"/>
+  <rect x="896" y="540" width="4"  height="12" fill="#ffffff"/>
+
+  <!-- Worn dirt patches -->
+  <rect x="160"  y="200" width="24" height="16" fill="#c8a254" fill-opacity="0.5"/>
+  <rect x="320"  y="100" width="16" height="12" fill="#c8a254" fill-opacity="0.45"/>
+  <rect x="480"  y="290" width="20" height="8"  fill="#c8a254" fill-opacity="0.5"/>
+  <rect x="600"  y="420" width="24" height="12" fill="#c8a254" fill-opacity="0.45"/>
+  <rect x="760"  y="350" width="16" height="16" fill="#c8a254" fill-opacity="0.4"/>
+  <rect x="100"  y="440" width="20" height="12" fill="#c8a254" fill-opacity="0.45"/>
+  <rect x="840"  y="180" width="16" height="12" fill="#c8a254" fill-opacity="0.4"/>
+  <rect x="440"  y="140" width="24" height="8"  fill="#c8a254" fill-opacity="0.45"/>
+  <rect x="560"  y="470" width="16" height="16" fill="#c8a254" fill-opacity="0.4"/>
+  <rect x="200"  y="320" width="12" height="12" fill="#c8a254" fill-opacity="0.5"/>
+  <rect x="700"  y="520" width="20" height="8"  fill="#c8a254" fill-opacity="0.4"/>
+  <rect x="380"  y="380" width="16" height="12" fill="#c8a254" fill-opacity="0.45"/>
+
+  <!-- Goalpost tops -->
+  <rect x="440" y="44"  width="80" height="8" fill="#ffffff" fill-opacity="0.6"/>
+  <rect x="440" y="548" width="80" height="8" fill="#ffffff" fill-opacity="0.6"/>
+
+  <!-- Edge vignette -->
+  <rect width="80"  height="600" fill="#000000" fill-opacity="0.35"/>
+  <rect x="880" width="80"  height="600" fill="#000000" fill-opacity="0.35"/>
+  <rect width="960" height="48" fill="#000000" fill-opacity="0.3"/>
+  <rect y="552" width="960" height="48" fill="#000000" fill-opacity="0.3"/>
+</svg>

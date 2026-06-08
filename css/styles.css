@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@700;800&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@700;800&family=Share+Tech+Mono&display=swap');
 
 /* ── Reset & base ────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,6 +25,15 @@
   --font-body:    'DM Sans', system-ui, sans-serif;
   --font-mono:    'Share Tech Mono', monospace;
   --font-display: 'Chakra Petch', sans-serif;
+  --font-pixel:   'Press Start 2P', monospace;
+  /* — 8-bit pixel palette — */
+  --pixel-sand:    #e8c97a;
+  --pixel-sand-dk: #b8954a;
+  --pixel-green:   #3cb04a;
+  --pixel-dark:    #1a5e1a;
+  --pixel-sky:     #6888c8;
+  --pixel-stone:   #807060;
+  --pixel-black:   #0a0808;
   /* — gradients — */
   --grad-accent:  linear-gradient(180deg, #ff9a4d, #ff6a1f);
   --grad-duotone: linear-gradient(135deg, #ff6a1f, #25d8d8);
@@ -44,6 +53,23 @@ body {
   font-family: var(--font-body);
   min-height: 100vh;
   line-height: 1.5;
+}
+
+/* Scanline CRT overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: repeating-linear-gradient(
+    transparent, transparent 3px, rgba(0,0,0,.06) 3px, rgba(0,0,0,.06) 4px
+  );
+}
+
+/* Entry / Title Screen background */
+body.page-entry {
+  background: url('../assets/entry-bg.svg') center/cover no-repeat fixed, var(--dark);
 }
 
 a { color: var(--gold); text-decoration: none; }
@@ -342,33 +368,20 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: url('../assets/arena-bg.svg') center/cover no-repeat, var(--dark);
 }
 
-/* Overhead orange spotlight + cyan floor fills */
+/* Overhead orange flood-light */
 .draw-arena::before {
   content: '';
   position: absolute;
-  inset: -24px -16px;
-  background:
-    radial-gradient(ellipse 90% 35% at 50% -2%, rgba(255,106,31,.2) 0%, transparent 100%),
-    radial-gradient(ellipse 50% 50% at 8%  108%, rgba(37,216,216,.1) 0%, transparent 100%),
-    radial-gradient(ellipse 50% 50% at 92% 108%, rgba(37,216,216,.1) 0%, transparent 100%);
+  inset: 0;
+  background: radial-gradient(ellipse 70% 30% at 50% 0%, rgba(255,106,31,.25) 0%, transparent 100%);
   pointer-events: none;
   z-index: 0;
 }
 
-/* Subtle arena pitch lines */
-.draw-arena::after {
-  content: '';
-  position: absolute;
-  inset: -24px -16px;
-  background-image:
-    linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.022) 1px, transparent 1px);
-  background-size: 48px 48px;
-  pointer-events: none;
-  z-index: 0;
-}
+.draw-arena::after { display: none; }
 
 .arena-header {
   text-align: center;
@@ -390,8 +403,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
 }
 
 .draw-counter-num {
-  font-family: var(--font-display);
-  font-size: 1.9rem;
+  font-family: var(--font-pixel);
+  font-size: 1.4rem;
   color: var(--gold);
   line-height: 1;
   min-width: 2ch;
@@ -411,8 +424,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
 }
 
 .arena-current-label {
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
+  font-family: var(--font-pixel);
+  font-size: 0.5rem;
   color: var(--muted);
   letter-spacing: .07em;
   text-transform: uppercase;
@@ -1120,4 +1133,42 @@ button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: no
 .draw-header h1 { font-family: var(--font-display); letter-spacing: .08em; text-align: center; }
 
 /* ── Site name ───────────────────────────────────────────────────────────── */
-.site-name { font-family: var(--font-display); letter-spacing: .04em; }
+.site-name { font-family: var(--font-pixel); font-size: 0.6rem; letter-spacing: .04em; }
+
+/* ── 8-bit pixel art theme ───────────────────────────────────────────────── */
+
+/* Bracket battlefield background */
+#stateBracket {
+  background: url('../assets/pitch-bg.svg') center/cover no-repeat fixed, var(--dark);
+  position: relative;
+}
+#stateBracket::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(ellipse 100% 100% at 50% 50%, transparent 50%, rgba(0,0,0,.6) 100%);
+}
+
+/* Arena "THE DRAW" heading in pixel font */
+.arena-header h1 {
+  font-family: var(--font-pixel);
+  font-size: clamp(0.7rem, 2.5vw, 1.1rem);
+  letter-spacing: .08em;
+}
+
+/* Bracket headers */
+.b-round-label { font-family: var(--font-pixel); font-size: 0.38rem; }
+.b-group-head  { font-family: var(--font-pixel); font-size: 0.42rem; }
+
+/* 8-bit game-action button */
+.btn-pixel {
+  border-radius: 2px;
+  font-family: var(--font-pixel);
+  font-size: 0.55rem;
+  box-shadow: 4px 4px 0 rgba(0,0,0,.8);
+  transition: transform .1s, box-shadow .1s;
+}
+.btn-pixel:hover  { transform: translate(2px,2px); box-shadow: 2px 2px 0 rgba(0,0,0,.8); }
+.btn-pixel:active { transform: translate(4px,4px); box-shadow: none; }
