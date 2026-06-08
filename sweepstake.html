@@ -162,6 +162,56 @@
     }
 
     .not-found-icon { font-size: 3rem; margin-bottom: 16px; }
+
+    /* ── Tournament landing splash ── */
+    .landing-splash {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 70vh;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .landing-splash-eyebrow {
+      display: inline-block;
+      background: rgba(255,154,208,0.12);
+      color: var(--gold);
+      font-family: var(--font-pixel);
+      font-size: 0.42rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border: 1px solid rgba(255,154,208,0.25);
+      border-radius: var(--radius);
+      margin-bottom: 28px;
+    }
+
+    .landing-splash-name {
+      font-family: var(--font-pixel);
+      font-size: clamp(1.1rem, 4vw, 2rem);
+      font-weight: 400;
+      line-height: 1.5;
+      letter-spacing: .01em;
+      margin-bottom: 16px;
+      text-shadow: 4px 4px 0 var(--pixel-black), 0 0 24px rgba(255,106,31,.3);
+    }
+
+    .landing-splash-meta {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 40px;
+    }
+
+    .landing-splash .btn-gold {
+      font-family: var(--font-pixel);
+      font-size: 0.55rem;
+      padding: 14px 28px;
+      box-shadow: 4px 4px 0 rgba(0,0,0,.7);
+      letter-spacing: .04em;
+    }
+    .landing-splash .btn-gold:hover { transform: translate(2px,2px); box-shadow: 2px 2px 0 rgba(0,0,0,.7); }
   </style>
 </head>
 <body>
@@ -211,6 +261,16 @@
         <button class="btn" onclick="location.reload()">↺ Retry</button>
         <a href="index.html" class="btn">← Back to home</a>
       </div>
+    </div>
+  </div>
+
+  <!-- STATE 0: Tournament landing (non-admin entry point) -->
+  <div class="state" id="stateLanding">
+    <div class="landing-splash">
+      <span class="landing-splash-eyebrow">World Cup 2026 · Sweepstake</span>
+      <div class="landing-splash-name" id="landingTourneyName"></div>
+      <p class="landing-splash-meta" id="landingMeta"></p>
+      <button class="btn-gold" id="landingEnterBtn">Enter →</button>
     </div>
   </div>
 
@@ -581,6 +641,23 @@ function updateSlotCounter(participants, teamsPerPerson) {
   if (label) label.textContent = `${claimed} / ${total} teams claimed`;
   const cnt = document.getElementById('waitParticipantCount');
   if (cnt) cnt.textContent = `${participants.length} player${participants.length !== 1 ? 's' : ''}`;
+}
+
+// ── STATE 0: Tournament landing ───────────────────────────────────────────────
+function renderLandingState() {
+  document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
+  document.getElementById('stateLanding').classList.add('active');
+  document.body.className = 'landing-screen';
+  Music.play('matchday');
+
+  document.getElementById('landingTourneyName').textContent = tournament.name;
+
+  const claimed = totalSlots(allParticipants);
+  const remaining = 48 - claimed;
+  document.getElementById('landingMeta').textContent =
+    `${allParticipants.length} player${allParticipants.length !== 1 ? 's' : ''} joined · ${remaining} team${remaining !== 1 ? 's' : ''} remaining`;
+
+  document.getElementById('landingEnterBtn').onclick = renderJoinState;
 }
 
 // ── STATE 1: Join form ────────────────────────────────────────────────────────
@@ -1264,8 +1341,10 @@ async function init() {
       document.getElementById('adminBar').style.display = isAdmin ? 'flex' : 'none';
       if (myParticipantId && allParticipants.find(p => p.id === myParticipantId)) {
         renderWaitingState();
-      } else {
+      } else if (isAdmin) {
         renderJoinState();
+      } else {
+        renderLandingState();
       }
     }
   } catch (err) {
