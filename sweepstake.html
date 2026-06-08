@@ -687,11 +687,11 @@ function renderParticipantList(container, participants, showTeams = false) {
             const c = getFlagColors(a.team_code);
             return `<span class="team-pill" style="background:${c.primary};color:${c.secondary || '#fff'}">${teamFlagEmoji(a.team_code)} ${a.team_name}</span>`;
           }).join('')
-      : (p.id === myParticipantId && tournament.status === 'open')
+      : ((p.id === myParticipantId || isAdmin) && tournament.status === 'open')
         ? `<span class="p-slots-edit">
-             <button class="slots-btn" onclick="handleSlotsChange(-1)">−</button>
+             <button class="slots-btn" onclick="handleAdminSlotsChange('${p.id}',-1)">−</button>
              <span>${p.team_slots} team${p.team_slots > 1 ? 's' : ''}</span>
-             <button class="slots-btn" onclick="handleSlotsChange(1)">+</button>
+             <button class="slots-btn" onclick="handleAdminSlotsChange('${p.id}',1)">+</button>
            </span>`
         : `<span class="p-slots">${p.team_slots} team${p.team_slots > 1 ? 's' : ''}</span>`;
     const isMe = p.id === myParticipantId ? 'style="border-color:var(--gold)"' : '';
@@ -1049,18 +1049,19 @@ async function handleStartDraw() {
   }
 }
 
-// ── Change own team slot count (pre-draw only) ───────────────────────────────
-window.handleSlotsChange = async function(delta) {
+// ── Change a participant's team slot count (pre-draw only) ───────────────────
+window.handleAdminSlotsChange = async function(participantId, delta) {
   if (tournament.status !== 'open') return;
-  const me = allParticipants.find(p => p.id === myParticipantId);
-  if (!me) return;
-  const othersSlots = totalSlots(allParticipants) - me.team_slots;
+  if (!isAdmin && participantId !== myParticipantId) return;
+  const p = allParticipants.find(x => x.id === participantId);
+  if (!p) return;
+  const othersSlots = totalSlots(allParticipants) - p.team_slots;
   const maxAllowed = Math.min(tournament.teams_per_person, 48 - othersSlots);
-  const newSlots = Math.max(1, Math.min(maxAllowed, me.team_slots + delta));
-  if (newSlots === me.team_slots) return;
+  const newSlots = Math.max(1, Math.min(maxAllowed, p.team_slots + delta));
+  if (newSlots === p.team_slots) return;
   try {
-    await updateParticipantSlots(myParticipantId, newSlots);
-    me.team_slots = newSlots;
+    await updateParticipantSlots(participantId, newSlots);
+    p.team_slots = newSlots;
     refreshWaitingRoom();
   } catch (err) {
     showToast('Could not update: ' + err.message);
