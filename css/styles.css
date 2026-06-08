@@ -266,7 +266,7 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 .draw-arena {
   position: relative;
   min-height: 600px;
-  padding: 8px 0 32px;
+  padding: 8px 16px 32px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -321,9 +321,10 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 /* Slot-machine reel */
 .draw-reel-wrap {
   width: min(280px, 88vw); height: 90px; background: var(--mid);
-  border: 1px solid var(--border); border-radius: var(--radius);
+  border: 2px solid #2c3e54; border-radius: var(--radius);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 3px; overflow: hidden; position: relative;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.5), 4px 4px 0 rgba(0,0,0,.6);
   transition: border-color .35s, box-shadow .35s;
 }
 .draw-reel-wrap::before,
@@ -350,9 +351,10 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
   gap: 9px; position: relative; z-index: 1;
 }
 .arena-p-card {
-  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--panel); border: 2px solid #2c3e54; border-radius: var(--radius);
   padding: 10px 9px 9px; display: flex; flex-direction: column; align-items: center;
   gap: 6px; text-align: center; position: relative; overflow: hidden;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.06), inset -2px -2px 0 rgba(0,0,0,.5), 3px 3px 0 rgba(0,0,0,.5);
   transition: transform .3s var(--ease), border-color .3s, box-shadow .3s, opacity .45s;
 }
 .arena-p-card::before {
@@ -404,8 +406,9 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
   text-align: center; padding-bottom: 4px; flex-shrink: 0;
 }
 .b-group-card {
-  background: var(--panel); border: 1px solid var(--border);
+  background: var(--panel); border: 2px solid #2c3e54;
   border-radius: var(--radius); overflow: hidden; flex-shrink: 0;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.4), 3px 3px 0 rgba(0,0,0,.5);
 }
 .b-group-head {
   background: var(--mid); padding: 5px 10px; font-family: var(--font-pixel);
@@ -429,10 +432,11 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 }
 
 .b-match {
-  background: var(--panel); border: 1px solid var(--border);
+  background: var(--panel); border: 2px solid #2c3e54;
   border-radius: var(--radius); overflow: hidden; flex-shrink: 0;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.4), 3px 3px 0 rgba(0,0,0,.5);
 }
-.b-match.live     { border-color: var(--live-pulse); box-shadow: 0 0 0 1px var(--live-pulse); }
+.b-match.live     { border-color: var(--live-pulse); box-shadow: 0 0 0 1px var(--live-pulse), 0 0 14px rgba(255,154,208,.2); }
 .b-match.finished { border-color: var(--border); }
 .b-match-team {
   display: flex; align-items: center; gap: 5px; padding: 5px 8px; min-height: 44px;
@@ -446,8 +450,9 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 .b-match-tbd   { padding: 12px 8px; color: var(--muted); font-size: 0.72rem; text-align: center; font-family: var(--font-mono); }
 
 .b-final-card {
-  background: rgba(255,154,208,0.04); border: 1px solid rgba(255,154,208,0.3);
-  border-radius: var(--radius); overflow: hidden; box-shadow: var(--glow-cyan);
+  background: rgba(255,154,208,0.04); border: 2px solid rgba(255,154,208,0.4);
+  border-radius: var(--radius); overflow: hidden;
+  box-shadow: var(--glow-cyan), inset 1px 1px 0 rgba(255,255,255,.08), inset -2px -2px 0 rgba(0,0,0,.4), 4px 4px 0 rgba(0,0,0,.6);
 }
 .b-final-head {
   background: rgba(255,154,208,0.1); padding: 6px 10px;
@@ -461,7 +466,7 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
 }
-.group-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.group-card { background: var(--panel); border: 2px solid #2c3e54; border-radius: var(--radius); overflow: hidden; box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.4), 3px 3px 0 rgba(0,0,0,.5); }
 .group-card-head {
   background: var(--mid); padding: 10px 14px; font-family: var(--font-display);
   font-weight: 800; font-size: 0.82rem; letter-spacing: 0.07em;
@@ -481,8 +486,8 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 .knockout-round  { display: flex; flex-direction: column; justify-content: space-around; flex-shrink: 0; min-width: 200px; }
 .round-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: center; padding: 4px 8px 12px; }
 .ko-match-wrap { display: flex; align-items: center; }
-.ko-match { flex: 1; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 4px 6px; transition: border-color 0.2s; }
-.ko-match.live     { border-color: var(--live-pulse); box-shadow: 0 0 0 1px var(--live-pulse); }
+.ko-match { flex: 1; background: var(--panel); border: 2px solid #2c3e54; border-radius: var(--radius); overflow: hidden; margin: 4px 6px; box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.4), 3px 3px 0 rgba(0,0,0,.5); transition: border-color 0.2s; }
+.ko-match.live     { border-color: var(--live-pulse); box-shadow: 0 0 0 1px var(--live-pulse), 0 0 14px rgba(255,154,208,.2); }
 .ko-match.finished { border-color: var(--border); }
 .ko-team { display: flex; align-items: center; gap: 8px; padding: 7px 10px; min-height: 54px; }
 .ko-team + .ko-team { border-top: 1px solid var(--border); }
@@ -574,6 +579,15 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 
 /* ── Arena heading pixel font ────────────────────────────────────────────── */
 .arena-header h1 { font-family: var(--font-pixel); font-size: clamp(0.7rem, 2.5vw, 1.1rem); letter-spacing: .08em; }
+
+/* ── Bracket tournament title ─────────────────────────────────────────────── */
+#bracketTourneyName {
+  font-family: var(--font-pixel);
+  font-size: clamp(0.65rem, 2.5vw, 1rem);
+  font-weight: 400; line-height: 1.5;
+  letter-spacing: .01em; flex: 1;
+  text-shadow: 2px 2px 0 var(--pixel-black);
+}
 
 /* ── 8-bit game-action button ────────────────────────────────────────────── */
 .btn-pixel {
@@ -672,6 +686,16 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 .landing-screen .step-card p { font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); line-height: 1.55; }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
+
+/* Tablet */
+@media (max-width: 768px) {
+  .b-groups-col { width: 170px; }
+  .b-round-col  { width: 148px; }
+  .b-final-col  { width: 168px; }
+  .arena-grid   { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
+}
+
+/* Phone */
 @media (max-width: 560px) {
   .page { padding: 18px 14px 56px; }
 
@@ -694,14 +718,29 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
   .admin-bar-label { flex-basis: 100%; }
   .admin-bar button { flex: 1; justify-content: center; }
   .arena-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .arena-p-card { padding: 8px 7px 7px; }
+  .arena-p-name { font-size: 0.62rem; }
   .draw-arena { min-height: 480px; }
   .scene-fg { height: 40%; max-width: 30%; }
   .scene-fg-r { height: 34%; }
 
   /* Bracket */
   .bracket-scroll-wrap { margin: 0 -14px; padding: 0 14px 16px; }
+  .b-groups-col { width: 155px; }
+  .b-round-col  { width: 136px; }
+  .b-final-col  { width: 155px; }
   .knockout-rounds { gap: 0; }
   .knockout-round  { min-width: 150px; }
   .ko-team-name    { font-size: 0.75rem; }
   .my-team-cards   { gap: 8px; }
+}
+
+/* Small phone */
+@media (max-width: 400px) {
+  .draw-arena     { min-height: 360px; padding: 6px 8px 20px; }
+  .scene-fg       { height: 32%; max-width: 28%; }
+  .scene-fg-r     { height: 26%; }
+  .arena-grid     { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .avatar-grid    { grid-template-columns: repeat(2, 1fr); }
+  .draw-reel-wrap { height: 76px; }
 }
