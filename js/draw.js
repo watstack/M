@@ -38,6 +38,29 @@ function buildSlotsGrouped(participants) {
 }
 
 /**
+ * Round-robin allocation: one team per participant per pass, skipping
+ * participants who have already received all their requested slots.
+ * Participants are shuffled once to set a random rotation order.
+ * Pads to 48 by cycling the earned sequence if total slots < 48.
+ */
+function buildSlotsRoundRobin(participants) {
+  if (!participants || participants.length === 0) return [];
+  const order = [...participants].sort(() => Math.random() - 0.5);
+  const rem   = order.map(p => ({ id: p.id, left: Math.max(0, p.team_slots || 0) }));
+  const slots = [];
+  while (rem.some(r => r.left > 0)) {
+    for (const r of rem) {
+      if (r.left > 0) { slots.push(r.id); r.left--; }
+    }
+  }
+  if (slots.length > 0 && slots.length < 48) {
+    const base = slots.slice();
+    while (slots.length < 48) slots.push(base[slots.length % base.length]);
+  }
+  return slots.slice(0, 48);
+}
+
+/**
  * Fisher-Yates shuffle. Returns a new array; does not mutate the input.
  */
 function shuffleTeams(teams) {
