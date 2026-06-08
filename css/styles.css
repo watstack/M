@@ -725,7 +725,6 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
   .scene-fg-r { height: 34%; }
 
   /* Bracket */
-  .bracket-scroll-wrap { margin: 0 -14px; padding: 0 14px 16px; }
   .b-groups-col { width: 155px; }
   .b-round-col  { width: 136px; }
   .b-final-col  { width: 155px; }
