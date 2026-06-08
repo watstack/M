@@ -368,6 +368,7 @@
 
 </div>
 
+<button id="muteBtn" class="mute-btn" aria-label="Toggle music">🔊</button>
 <div id="toast"></div>
 
 <script src="js/config.js?v=17807242" onerror="document.getElementById('loadingStatus').textContent='Failed to load config — please refresh.'"></script>
@@ -376,6 +377,7 @@
 <script src="js/avatars.js?v=17807242" onerror="document.getElementById('loadingStatus').textContent='Error loading avatars — please refresh.'"></script>
 <script src="js/football.js?v=17807242" onerror="document.getElementById('loadingStatus').textContent='Error loading football data — please refresh.'"></script>
 <script src="js/draw.js?v=17807242" onerror="document.getElementById('loadingStatus').textContent='Error loading draw logic — please refresh.'"></script>
+<script src="js/music.js?v=17807242"></script>
 <script>
 // ── Timeout helper ────────────────────────────────────────────────────────────
 function withTimeout(promise, ms) {
@@ -586,6 +588,7 @@ function renderJoinState() {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
   document.getElementById('stateJoin').classList.add('active');
   document.body.className = 'tunnel-screen';
+  Music.play('matchday');
   document.getElementById('joinTourneyName').textContent = tournament.name;
 
   const claimed = totalSlots(allParticipants);
@@ -656,6 +659,7 @@ function renderWaitingState() {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
   document.getElementById('stateWaiting').classList.add('active');
   document.body.className = 'tunnel-screen';
+  Music.play('zelda');
   document.getElementById('waitTourneyName').textContent = tournament.name;
 
   const inviteUrl = `${window.location.origin}${window.location.pathname.replace(/\/[^/]*$/, '')}/sweepstake.html?code=${code}`;
@@ -699,6 +703,7 @@ function renderDrawState() {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
   document.getElementById('stateDraw').classList.add('active');
   document.body.className = '';
+  Music.play('mortal');
 
   drawRevealQueue      = [];
   drawRevealing        = false;
@@ -905,6 +910,7 @@ function renderBracketState() {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
   document.getElementById('stateBracket').classList.add('active');
   document.body.className = '';
+  Music.play('mortal');
   document.getElementById('bracketTourneyName').textContent = tournament.name;
 
   if (isAdmin) {

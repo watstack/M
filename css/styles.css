@@ -744,3 +744,17 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
   .avatar-grid    { grid-template-columns: repeat(2, 1fr); }
   .draw-reel-wrap { height: 76px; }
 }
+
+/* ── Mute button ─────────────────────────────────────────────────────────── */
+.mute-btn {
+  position: fixed; bottom: 20px; right: 20px; z-index: 9997;
+  width: 44px; height: 44px; padding: 0;
+  background: var(--mid); border: 2px solid #2c3e54;
+  border-radius: var(--radius); font-size: 1.1rem; line-height: 1;
+  box-shadow: 3px 3px 0 rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .08s, box-shadow .08s;
+  cursor: pointer;
+}
+.mute-btn:hover { transform: translate(1px,1px); box-shadow: 2px 2px 0 rgba(0,0,0,.6); filter: none; }
+.mute-btn.muted { opacity: 0.45; }
