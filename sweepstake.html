@@ -603,9 +603,10 @@ let drawDone        = 0;
 
 const code = new URLSearchParams(window.location.search).get('code') || '';
 const adminToken = (() => {
-  const h = window.location.hash;
-  const m = h.match(/admin=([a-zA-Z0-9\-]+)/);
-  return m ? m[1] : null;
+  const m = window.location.hash.match(/admin=([a-zA-Z0-9\-]+)/);
+  const fromHash = m ? m[1] : null;
+  if (fromHash && code) localStorage.setItem(`wc26_admin_${code}`, fromHash);
+  return fromHash || (code ? localStorage.getItem(`wc26_admin_${code}`) : null);
 })();
 
 // ── Utilities ─────────────────────────────────────────────────────────────────

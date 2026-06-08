@@ -265,6 +265,12 @@
       document.getElementById('copyAdminBtn').addEventListener('click', () =>
         copyToClipboard(adminUrl, document.getElementById('copyAdminBtn')));
 
+      // Persist admin access so the browser remembers without needing the bookmark
+      localStorage.setItem(`wc26_admin_${tournament.code}`, tournament.admin_token);
+      const _saved = JSON.parse(localStorage.getItem('wc26_my_tournaments') || '[]');
+      _saved.unshift({ code: tournament.code, name: tournament.name, adminToken: tournament.admin_token, createdAt: Date.now() });
+      localStorage.setItem('wc26_my_tournaments', JSON.stringify(_saved));
+
       createForm.style.display = 'none';
       resultPanel.classList.add('show');
       window.scrollTo({ top: 0, behavior: 'smooth' });
