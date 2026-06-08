@@ -268,6 +268,92 @@
       cursor: pointer; padding: 0;
     }
     .slots-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* ── Arena character idle dances ── */
+    @keyframes dance-striker {
+      0%,100% { transform: translateY(0) rotate(0deg); }
+      30%     { transform: translateY(-7px) rotate(-4deg); }
+      65%     { transform: translateY(-2px) rotate(3deg); }
+    }
+    @keyframes dance-playmaker {
+      0%,100% { transform: translateX(0) rotate(0deg); }
+      25%     { transform: translateX(-6px) rotate(-5deg); }
+      75%     { transform: translateX(6px) rotate(5deg); }
+    }
+    @keyframes dance-winger {
+      0%,100% { transform: translateX(0) scaleX(1); }
+      20%     { transform: translateX(-5px) scaleX(0.93); }
+      40%     { transform: translateX(5px) scaleX(1.07); }
+      60%     { transform: translateX(-3px) scaleX(0.96); }
+      80%     { transform: translateX(3px) scaleX(1.04); }
+    }
+    @keyframes dance-keeper {
+      0%,100% { transform: translateX(0) scaleX(1); }
+      35%     { transform: translateX(-8px) scaleX(0.94); }
+      65%     { transform: translateX(8px) scaleX(0.94); }
+    }
+    @keyframes dance-captain {
+      0%,100% { transform: translateY(0) scaleY(1); }
+      40%     { transform: translateY(-5px) scaleY(1.04); }
+      70%     { transform: translateY(-2px) scaleY(1.01); }
+    }
+    @keyframes dance-manager {
+      0%,100% { transform: rotate(0deg) translateY(0); }
+      33%     { transform: rotate(-3deg) translateY(-2px); }
+      66%     { transform: rotate(3deg) translateY(-1px); }
+    }
+    @keyframes dance-commentator {
+      0%,100% { transform: translateY(0) rotate(0deg); }
+      20%     { transform: translateY(-9px) rotate(-6deg); }
+      50%     { transform: translateY(-1px) rotate(1deg); }
+      70%     { transform: translateY(-6px) rotate(6deg); }
+    }
+    @keyframes dance-ultra {
+      0%,100% { transform: translateX(0) rotate(0deg); }
+      14%     { transform: translateX(-7px) rotate(-7deg); }
+      28%     { transform: translateX(7px) rotate(7deg); }
+      42%     { transform: translateX(-5px) rotate(-5deg); }
+      56%     { transform: translateX(5px) rotate(5deg); }
+      71%     { transform: translateX(-3px) rotate(-3deg); }
+      85%     { transform: translateX(3px) rotate(3deg); }
+    }
+    @keyframes dance-fan {
+      0%,100% { transform: translateY(0) rotate(0deg); }
+      20%     { transform: translateY(-8px) rotate(6deg); }
+      45%     { transform: translateY(-3px) rotate(-4deg); }
+      65%     { transform: translateY(-10px) rotate(5deg); }
+      85%     { transform: translateY(-2px) rotate(-2deg); }
+    }
+    @keyframes dance-mascot {
+      0%,100% { transform: rotate(0deg) scale(1); }
+      25%     { transform: rotate(12deg) scale(1.06); }
+      50%     { transform: rotate(0deg) scale(0.96); }
+      75%     { transform: rotate(-12deg) scale(1.06); }
+    }
+
+    /* Apply idle dance to every non-done card */
+    .arena-p-card:not(.done)[data-avatar="1"]  .avatar-sprite { animation: dance-striker     0.65s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="2"]  .avatar-sprite { animation: dance-playmaker   1.20s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="3"]  .avatar-sprite { animation: dance-winger      0.48s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="4"]  .avatar-sprite { animation: dance-keeper      1.40s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="5"]  .avatar-sprite { animation: dance-captain     1.00s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="6"]  .avatar-sprite { animation: dance-manager     1.80s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="7"]  .avatar-sprite { animation: dance-commentator 0.44s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="8"]  .avatar-sprite { animation: dance-ultra       0.38s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="9"]  .avatar-sprite { animation: dance-fan         0.70s ease-in-out infinite; }
+    .arena-p-card:not(.done)[data-avatar="10"] .avatar-sprite { animation: dance-mascot      1.10s ease-in-out infinite; }
+
+    /* Speed up + exaggerate when card is active (being drawn) */
+    .arena-p-card.active[data-avatar="1"]  .avatar-sprite { animation-duration: 0.30s; }
+    .arena-p-card.active[data-avatar="2"]  .avatar-sprite { animation-duration: 0.55s; }
+    .arena-p-card.active[data-avatar="3"]  .avatar-sprite { animation-duration: 0.22s; }
+    .arena-p-card.active[data-avatar="4"]  .avatar-sprite { animation-duration: 0.60s; }
+    .arena-p-card.active[data-avatar="5"]  .avatar-sprite { animation-duration: 0.45s; }
+    .arena-p-card.active[data-avatar="6"]  .avatar-sprite { animation-duration: 0.75s; }
+    .arena-p-card.active[data-avatar="7"]  .avatar-sprite { animation-duration: 0.20s; }
+    .arena-p-card.active[data-avatar="8"]  .avatar-sprite { animation-duration: 0.18s; }
+    .arena-p-card.active[data-avatar="9"]  .avatar-sprite { animation-duration: 0.32s; }
+    .arena-p-card.active[data-avatar="10"] .avatar-sprite { animation-duration: 0.48s; }
   </style>
 </head>
 <body>
@@ -880,7 +966,7 @@ function renderDrawState() {
   grid.innerHTML = allParticipants.map(p => {
     const slots = Array.from({ length: p.team_slots }, () =>
       `<div class="arena-slot empty"></div>`).join('');
-    return `<div class="arena-p-card" id="arenaP_${p.id}">
+    return `<div class="arena-p-card" id="arenaP_${p.id}" data-avatar="${p.avatar_type}">
       ${renderAvatar(p.avatar_type, null, 40)}
       <div class="arena-p-name">${esc(p.nickname)}</div>
       <div class="arena-p-teams" id="arenaTeams_${p.id}">${slots}</div>
