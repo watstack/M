@@ -121,6 +121,23 @@ BEGIN
   RETURN FOUND;
 END; $$;
 
+CREATE OR REPLACE FUNCTION update_participant_slots(
+  p_code            text,
+  p_admin_token     text,
+  p_participant_id  uuid,
+  p_new_slots       int
+)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v_tournament_id uuid;
+BEGIN
+  SELECT id INTO v_tournament_id FROM tournaments
+  WHERE code = p_code AND admin_token = p_admin_token AND status = 'open';
+  IF v_tournament_id IS NULL THEN RETURN false; END IF;
+  UPDATE participants SET team_slots = p_new_slots
+  WHERE id = p_participant_id AND tournament_id = v_tournament_id;
+  RETURN FOUND;
+END; $$;
+
 CREATE OR REPLACE FUNCTION remove_participant(
   p_tournament_code text,
   p_admin_token     text,
