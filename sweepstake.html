@@ -981,6 +981,11 @@ function renderJoinState() {
       const participant = await joinTournament(tournament.id, sanitized, selectedAvatar, slots);
       myParticipantId = participant.id;
       saveSession(code, myParticipantId);
+      const _joined = JSON.parse(localStorage.getItem('wc26_my_joined') || '[]');
+      if (!_joined.find(t => t.code === code)) {
+        _joined.unshift({ code, name: tournament.name, joinedAt: Date.now() });
+        localStorage.setItem('wc26_my_joined', JSON.stringify(_joined));
+      }
       allParticipants.push(participant);
       showToast('Welcome, ' + sanitized + '! 🎉');
       transitionToWaiting();

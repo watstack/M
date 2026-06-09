@@ -161,6 +161,12 @@
     <div id="myTourneysList"></div>
   </div>
 
+  <!-- Sweepstakes joined as a participant -->
+  <div id="myJoinedPanel" style="display:none;margin-bottom:40px">
+    <h2 style="margin-bottom:16px">Sweepstakes you've joined</h2>
+    <div id="myJoinedList"></div>
+  </div>
+
   <div class="steps">
     <div class="step-card">
       <div class="step-num">1</div>
@@ -238,6 +244,29 @@
         <span class="my-tourney-name">${t.name.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>
         <span class="my-tourney-code">${t.code}</span>
         <a href="${url}" class="btn btn-ghost">Manage →</a>
+      </div>`;
+    }).join('');
+    panel.style.display = 'block';
+  })();
+
+  // Render sweepstakes joined as a participant
+  (function renderMyJoined() {
+    const list = JSON.parse(localStorage.getItem('wc26_my_joined') || '[]');
+    if (!list.length) return;
+    const adminCodes = new Set(
+      JSON.parse(localStorage.getItem('wc26_my_tournaments') || '[]').map(t => t.code)
+    );
+    const joined = list.filter(t => !adminCodes.has(t.code));
+    if (!joined.length) return;
+    const panel = document.getElementById('myJoinedPanel');
+    const container = document.getElementById('myJoinedList');
+    const base = window.location.pathname.replace(/\/[^/]*$/, '');
+    container.innerHTML = joined.map(t => {
+      const url = `${window.location.origin}${base}/sweepstake.html?code=${t.code}`;
+      return `<div class="my-tourney-card">
+        <span class="my-tourney-name">${t.name.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>
+        <span class="my-tourney-code">${t.code}</span>
+        <a href="${url}" class="btn btn-ghost">View →</a>
       </div>`;
     }).join('');
     panel.style.display = 'block';
