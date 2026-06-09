@@ -73,6 +73,7 @@
       display: flex;
       gap: 8px;
       margin-bottom: 16px;
+      flex-wrap: wrap;
     }
     .bracket-filter-btn {
       background: var(--panel);
@@ -90,6 +91,73 @@
     .bracket-filter-btn.active {
       background: var(--green); border-color: var(--green);
       color: #0a0805; box-shadow: 2px 2px 0 rgba(0,0,0,.5);
+    }
+
+    /* ── Players grid view ── */
+    #playerView { display: none; padding-bottom: 40px; }
+    #playerView.show {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+    .pv-card {
+      background: var(--panel);
+      border: 2px solid #2c3e54;
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,.05),
+                  inset -2px -2px 0 rgba(0,0,0,.4),
+                  3px 3px 0 rgba(0,0,0,.5);
+    }
+    .pv-card.pv-mine {
+      border-color: var(--gold);
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,.08),
+                  inset -2px -2px 0 rgba(0,0,0,.4),
+                  3px 3px 0 rgba(0,0,0,.5),
+                  0 0 14px rgba(255,154,208,.2);
+    }
+    .pv-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .pv-name { font-weight: 700; font-size: 0.88rem; }
+    .pv-count {
+      margin-left: auto;
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+    .pv-team-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 0;
+      font-size: 0.82rem;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .pv-team-row:last-child { border-bottom: none; }
+    .pv-group-badge {
+      font-family: var(--font-pixel);
+      font-size: 0.38rem;
+      background: var(--mid);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 2px 4px;
+      color: var(--muted);
+      flex-shrink: 0;
+      min-width: 18px;
+      text-align: center;
+    }
+    .pv-pts {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--muted);
     }
 
     /* ── Bracket state ── */
@@ -751,6 +819,7 @@
     <div class="bracket-filter" id="bracketFilter">
       <button class="bracket-filter-btn active" data-filter="current" onclick="setBracketFilter('current')">Current stage</button>
       <button class="bracket-filter-btn" data-filter="all" onclick="setBracketFilter('all')">All</button>
+      <button class="bracket-filter-btn" data-filter="players" onclick="setBracketFilter('players')">Players</button>
     </div>
 
     <!-- Full bracket tree (groups → knockout → final) -->
@@ -783,6 +852,10 @@
     </div>
 
     <p class="muted" style="font-size:0.78rem;margin-top:12px;text-align:center" id="apiUpdateTime"></p>
+
+    <!-- Players grid view (shown instead of bracket when filter = 'players') -->
+    <div id="playerView"></div>
+
   </div>
 
 </div>
@@ -1460,6 +1533,9 @@ function renderBracketState() {
   }
 
   _bracketFilter = 'current';
+  _lastStandings = [];
+  document.getElementById('playerView').classList.remove('show');
+  document.querySelector('.bracket-zoom-outer').style.display = '';
   document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'current'));
   loadBracketData().then(() => setTimeout(BracketZoom.fit, 60));
 }
@@ -1512,6 +1588,7 @@ function buildSyntheticStandings() {
 
 let _currentBracketStage = 'groups';
 let _bracketFilter = 'current';
+let _lastStandings = [];
 
 function detectBracketStage(matches) {
   const order = ['r32', 'r16', 'qf', 'sf', 'final'];
@@ -1533,10 +1610,80 @@ function applyBracketFilter() {
   setTimeout(BracketZoom.fit, 30);
 }
 
+function renderPlayerView() {
+  const container = document.getElementById('playerView');
+  if (!container) return;
+
+  // Build tla → group letter map from standings or cache
+  const groupMap = {};
+  const standings = _lastStandings.length ? _lastStandings : buildSyntheticStandings();
+  for (const g of standings) {
+    const letter = (g.group || g.stage || '').replace(/^GROUP_/i, '').replace(/^Group /i, '');
+    for (const row of g.table || []) {
+      const tla = normTeamCode(row.team?.tla || '');
+      if (tla) groupMap[tla] = { letter, points: row.points ?? null, played: row.playedGames ?? 0 };
+    }
+  }
+
+  // Group allocations by participant, preserving participant order
+  const seen = new Set();
+  const order = allParticipants.map(p => p.id);
+  const byPid = {};
+  for (const a of allAllocations) {
+    if (!byPid[a.participant_id]) byPid[a.participant_id] = { p: allParticipants.find(x => x.id === a.participant_id) || a.participants, teams: [] };
+    byPid[a.participant_id].teams.push(a);
+  }
+
+  const cards = order
+    .filter(pid => byPid[pid])
+    .map(pid => {
+      const { p, teams } = byPid[pid];
+      if (!p) return '';
+      const isMine = p.id === myParticipantId;
+      const teamRows = teams.map(t => {
+        const tla = normTeamCode(t.team_code);
+        const gInfo = groupMap[tla];
+        const groupBadge = gInfo
+          ? `<span class="pv-group-badge">${gInfo.letter}</span>`
+          : '';
+        const pts = gInfo?.played > 0
+          ? `<span class="pv-pts">${gInfo.points}pt</span>`
+          : '';
+        return `<div class="pv-team-row">
+          ${groupBadge}
+          <span>${teamFlagEmoji(tla)}</span>
+          <span style="flex:1">${esc(t.team_name)}</span>
+          ${pts}
+        </div>`;
+      }).join('');
+      return `<div class="pv-card${isMine ? ' pv-mine' : ''}">
+        <div class="pv-header">
+          ${renderAvatar(p.avatar_type, null, 44)}
+          <span class="pv-name">${esc(p.nickname)}</span>
+          <span class="pv-count">${teams.length} team${teams.length !== 1 ? 's' : ''}</span>
+        </div>
+        ${teamRows}
+      </div>`;
+    }).join('');
+
+  container.innerHTML = cards || '<p style="color:var(--muted)">No allocations yet.</p>';
+}
+
 window.setBracketFilter = function(filter) {
   _bracketFilter = filter;
   document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
-  applyBracketFilter();
+  const bracketOuter = document.querySelector('.bracket-zoom-outer');
+  const apiTime      = document.getElementById('apiUpdateTime');
+  const playerView   = document.getElementById('playerView');
+  const isPlayers    = filter === 'players';
+  bracketOuter.style.display = isPlayers ? 'none' : '';
+  if (apiTime) apiTime.style.display = isPlayers ? 'none' : '';
+  playerView.classList.toggle('show', isPlayers);
+  if (isPlayers) {
+    renderPlayerView();
+  } else {
+    applyBracketFilter();
+  }
 };
 
 async function loadBracketData() {
@@ -1586,7 +1733,7 @@ function renderGroupMini(group, allocMap) {
           <span class="b-owner-name">${esc(alloc.participants.nickname)}</span>
         </div>` : '';
     const pts = hasStats ? `<span class="b-team-pts">${entry.points}p</span>` : '';
-    return `<div class="b-team-row${qualified ? ' qualified' : ''}">
+    return `<div class="b-team-row${qualified ? ' qualified' : ''}" data-tla="${tla}">
       ${flag}
       <span class="b-team-name">${esc(t.shortName || t.name || tla)}</span>
       ${owner}${pts}
@@ -1622,7 +1769,7 @@ function renderBracketMatch(match, allocMap) {
           ${renderAvatar(alloc.participants.avatar_type, tla, 22)}
           <span class="b-owner-name">${esc(alloc.participants.nickname)}</span>
         </div>` : '';
-    return `<div class="b-match-team${won ? ' winner' : ''}${isMine ? ' mine' : ''}">
+    return `<div class="b-match-team${won ? ' winner' : ''}${isMine ? ' mine' : ''}" data-tla="${tla}">
       ${flag}
       <span class="b-match-name">${esc(team.shortName || team.name || tla)}</span>
       ${owner}
@@ -1669,6 +1816,7 @@ function renderBracketFull(data) {
   const allocMap = buildAllocMap();
   const standings = data.standings || [];
   const matches   = data.matches   || [];
+  if (standings.length) _lastStandings = standings;
 
   const leftGroups  = standings.slice(0, 6);
   const rightGroups = standings.slice(6);
