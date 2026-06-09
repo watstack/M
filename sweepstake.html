@@ -72,7 +72,8 @@
     .bracket-filter {
       display: flex;
       gap: 8px;
-      margin-bottom: 16px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
     }
     .bracket-filter-btn {
       background: var(--panel);
@@ -90,6 +91,37 @@
     .bracket-filter-btn.active {
       background: var(--green); border-color: var(--green);
       color: #0a0805; box-shadow: 2px 2px 0 rgba(0,0,0,.5);
+    }
+    .bracket-filter-players {
+      display: none;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+    .bracket-filter-players.show { display: flex; }
+    .bracket-player-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--panel);
+      border: 2px solid #2c3e54;
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 5px 10px 5px 6px;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 rgba(0,0,0,.6);
+      transition: transform .08s, box-shadow .08s;
+    }
+    .bracket-player-btn:hover { transform: translate(1px,1px); box-shadow: 2px 2px 0 rgba(0,0,0,.6); color: var(--text); }
+    .bracket-player-btn.active { background: var(--gold); border-color: var(--gold); color: #0a0805; box-shadow: 2px 2px 0 rgba(0,0,0,.5); }
+    /* team rows that don't belong to the selected player */
+    [data-tla].dim { opacity: 0.15; }
+    [data-tla].highlight {
+      outline: 2px solid var(--gold);
+      outline-offset: 1px;
+      border-radius: 2px;
     }
 
     /* ── Bracket state ── */
@@ -751,7 +783,9 @@
     <div class="bracket-filter" id="bracketFilter">
       <button class="bracket-filter-btn active" data-filter="current" onclick="setBracketFilter('current')">Current stage</button>
       <button class="bracket-filter-btn" data-filter="all" onclick="setBracketFilter('all')">All</button>
+      <button class="bracket-filter-btn" data-filter="player" onclick="setBracketFilter('player')">By player</button>
     </div>
+    <div class="bracket-filter-players" id="bracketPlayerBtns"></div>
 
     <!-- Full bracket tree (groups → knockout → final) -->
     <div class="bracket-zoom-outer">
@@ -1460,6 +1494,8 @@ function renderBracketState() {
   }
 
   _bracketFilter = 'current';
+  _bracketPlayer = null;
+  document.getElementById('bracketPlayerBtns').classList.remove('show');
   document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'current'));
   loadBracketData().then(() => setTimeout(BracketZoom.fit, 60));
 }
@@ -1512,6 +1548,7 @@ function buildSyntheticStandings() {
 
 let _currentBracketStage = 'groups';
 let _bracketFilter = 'current';
+let _bracketPlayer = null;
 
 function detectBracketStage(matches) {
   const order = ['r32', 'r16', 'qf', 'sf', 'final'];
@@ -1526,16 +1563,52 @@ function detectBracketStage(matches) {
 }
 
 function applyBracketFilter() {
+  // Column visibility — player mode shows all columns
   const stage = _bracketFilter === 'current' ? _currentBracketStage : null;
   document.querySelectorAll('#bracketTree .b-col').forEach(col => {
     col.style.display = (!stage || col.dataset.stage === stage) ? '' : 'none';
   });
+
+  // Player highlight — dim teams not belonging to selected player
+  const playerTeams = (_bracketFilter === 'player' && _bracketPlayer)
+    ? new Set(allAllocations.filter(a => a.participant_id === _bracketPlayer).map(a => normTeamCode(a.team_code)))
+    : null;
+  document.querySelectorAll('[data-tla]').forEach(el => {
+    const mine = playerTeams ? playerTeams.has(el.dataset.tla) : false;
+    el.classList.toggle('dim', !!playerTeams && !mine);
+    el.classList.toggle('highlight', !!playerTeams && mine);
+  });
+
   setTimeout(BracketZoom.fit, 30);
+}
+
+function renderPlayerFilterBtns() {
+  const container = document.getElementById('bracketPlayerBtns');
+  if (!container) return;
+  container.innerHTML = allParticipants.map(p =>
+    `<button class="bracket-player-btn${_bracketPlayer === p.id ? ' active' : ''}" onclick="setBracketPlayer('${p.id}')">
+      ${renderAvatar(p.avatar_type, null, 22)}${esc(p.nickname)}
+    </button>`
+  ).join('');
 }
 
 window.setBracketFilter = function(filter) {
   _bracketFilter = filter;
   document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
+  const playerPanel = document.getElementById('bracketPlayerBtns');
+  if (filter === 'player') {
+    if (!_bracketPlayer && allParticipants.length) _bracketPlayer = allParticipants[0].id;
+    renderPlayerFilterBtns();
+    playerPanel.classList.add('show');
+  } else {
+    playerPanel.classList.remove('show');
+  }
+  applyBracketFilter();
+};
+
+window.setBracketPlayer = function(pid) {
+  _bracketPlayer = pid;
+  renderPlayerFilterBtns();
   applyBracketFilter();
 };
 
@@ -1586,7 +1659,7 @@ function renderGroupMini(group, allocMap) {
           <span class="b-owner-name">${esc(alloc.participants.nickname)}</span>
         </div>` : '';
     const pts = hasStats ? `<span class="b-team-pts">${entry.points}p</span>` : '';
-    return `<div class="b-team-row${qualified ? ' qualified' : ''}">
+    return `<div class="b-team-row${qualified ? ' qualified' : ''}" data-tla="${tla}">
       ${flag}
       <span class="b-team-name">${esc(t.shortName || t.name || tla)}</span>
       ${owner}${pts}
@@ -1622,7 +1695,7 @@ function renderBracketMatch(match, allocMap) {
           ${renderAvatar(alloc.participants.avatar_type, tla, 22)}
           <span class="b-owner-name">${esc(alloc.participants.nickname)}</span>
         </div>` : '';
-    return `<div class="b-match-team${won ? ' winner' : ''}${isMine ? ' mine' : ''}">
+    return `<div class="b-match-team${won ? ' winner' : ''}${isMine ? ' mine' : ''}" data-tla="${tla}">
       ${flag}
       <span class="b-match-name">${esc(team.shortName || team.name || tla)}</span>
       ${owner}
