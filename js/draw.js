@@ -41,7 +41,8 @@ function buildSlotsGrouped(participants) {
  * Round-robin allocation: one team per participant per pass, skipping
  * participants who have already received all their requested slots.
  * Participants are shuffled once to set a random rotation order.
- * Pads to 48 by cycling the earned sequence if total slots < 48.
+ * Pads to 48 by cycling equally through all participants so spare
+ * teams are distributed fairly regardless of each player's slot count.
  */
 function buildSlotsRoundRobin(participants) {
   if (!participants || participants.length === 0) return [];
@@ -54,8 +55,11 @@ function buildSlotsRoundRobin(participants) {
     }
   }
   if (slots.length > 0 && slots.length < 48) {
-    const base = slots.slice();
-    while (slots.length < 48) slots.push(base[slots.length % base.length]);
+    let si = 0;
+    while (slots.length < 48) {
+      slots.push(order[si % order.length].id);
+      si++;
+    }
   }
   return slots.slice(0, 48);
 }
