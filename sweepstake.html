@@ -1483,6 +1483,10 @@ async function consumeRevealQueue() {
     document.getElementById('drawReelFlag').textContent = '🏆';
     document.getElementById('drawReelName').textContent = 'COMPLETE';
     setTimeout(renderBracketState, 2800);
+  } else if (tournament.status === 'live') {
+    // Realtime delivered 'live' before all allocation events arrived; some were
+    // silently dropped before the fix above. Transition rather than hanging.
+    setTimeout(renderBracketState, 1000);
   }
 }
 
@@ -2024,7 +2028,11 @@ function onAllocation(alloc) {
   const p = allParticipants.find(x => x.id === alloc.participant_id);
   if (p && !alloc.participants) alloc.participants = p;
   allAllocations.push(alloc);
-  if (tournament.status === 'drawing') revealDrawCard(alloc, allParticipants);
+  // Check draw screen visibility, not tournament.status: the 'live' status Realtime
+  // event can race ahead of allocation events, causing late ones to be silently dropped.
+  if (document.getElementById('stateDraw').classList.contains('active')) {
+    revealDrawCard(alloc, allParticipants);
+  }
 }
 
 // ── Show error state ──────────────────────────────────────────────────────────
