@@ -952,9 +952,13 @@ async function joinTournament(tournamentId, nickname, avatarType, teamSlots) {
   }
   return data;
 }
-async function updateParticipantSlots(participantId, newSlots) {
-  const { error } = await db.from('participants').update({ team_slots: newSlots }).eq('id', participantId);
+async function updateParticipantSlotsAdmin(participantId, newSlots) {
+  const { data, error } = await db.rpc('update_participant_slots', {
+    p_code: code, p_admin_token: adminToken,
+    p_participant_id: participantId, p_new_slots: newSlots,
+  });
   if (error) throw error;
+  if (!data) throw new Error('Update rejected — check admin token and tournament status.');
 }
 async function getParticipants(tournamentId) {
   const { data, error } = await db.from('participants').select('*').eq('tournament_id', tournamentId).order('created_at', { ascending: true });
@@ -1537,7 +1541,7 @@ window.handleSaveSlots = async function(participantId) {
   const saveBtn = stepperEl?.querySelector('.slots-save-btn');
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '…'; }
   try {
-    await updateParticipantSlots(participantId, newSlots);
+    await updateParticipantSlotsAdmin(participantId, newSlots);
     p.team_slots = newSlots;
     delete _pendingSlots[participantId];
     refreshWaitingRoom();
