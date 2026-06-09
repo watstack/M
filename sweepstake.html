@@ -957,6 +957,13 @@ async function updateParticipantSlotsAdmin(participantId, newSlots) {
     p_code: code, p_admin_token: adminToken,
     p_participant_id: participantId, p_new_slots: newSlots,
   });
+  // If the RPC doesn't exist yet (schema not applied), fall back to direct update
+  if (error && error.code === 'PGRST202') {
+    const { error: e2 } = await db.from('participants')
+      .update({ team_slots: newSlots }).eq('id', participantId);
+    if (e2) throw e2;
+    return;
+  }
   if (error) throw error;
   if (!data) throw new Error('Update rejected — check admin token and tournament status.');
 }
