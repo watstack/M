@@ -160,6 +160,73 @@
       color: var(--muted);
     }
 
+    /* ── Players grid view ── */
+    #playerView { display: none; padding-bottom: 40px; }
+    #playerView.show {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+    .pv-card {
+      background: var(--panel);
+      border: 2px solid #2c3e54;
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,.05),
+                  inset -2px -2px 0 rgba(0,0,0,.4),
+                  3px 3px 0 rgba(0,0,0,.5);
+    }
+    .pv-card.pv-mine {
+      border-color: var(--gold);
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,.08),
+                  inset -2px -2px 0 rgba(0,0,0,.4),
+                  3px 3px 0 rgba(0,0,0,.5),
+                  0 0 14px rgba(255,154,208,.2);
+    }
+    .pv-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .pv-name { font-weight: 700; font-size: 0.88rem; }
+    .pv-count {
+      margin-left: auto;
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+    .pv-team-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 0;
+      font-size: 0.82rem;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .pv-team-row:last-child { border-bottom: none; }
+    .pv-group-badge {
+      font-family: var(--font-pixel);
+      font-size: 0.38rem;
+      background: var(--mid);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 2px 4px;
+      color: var(--muted);
+      flex-shrink: 0;
+      min-width: 18px;
+      text-align: center;
+    }
+    .pv-pts {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
     /* ── Bracket state ── */
     .bracket-nav {
       display: flex;
@@ -1013,6 +1080,7 @@ let allTeams        = [];
 let drawRevealQueue = [];
 let drawRevealing   = false;
 let drawDone        = 0;
+let _drawRunning    = false; // admin is animating directly; Realtime queue skipped
 const _pendingSlots = {};
 
 const code = new URLSearchParams(window.location.search).get('code') || '';
@@ -1401,21 +1469,32 @@ function playReveal(allocation, participants) {
 async function consumeRevealQueue() {
   if (drawRevealing) return;
   drawRevealing = true;
+  // Phase boundary for viewers: earned slots total tells us when randomiser round starts
+  const earnedTotal = allParticipants.reduce((s, p) => s + Math.max(0, p.team_slots || 0), 0);
   while (drawRevealQueue.length > 0) {
     const { allocation, participants } = drawRevealQueue.shift();
     await playReveal(allocation, participants);
+    if (earnedTotal > 0 && drawDone === earnedTotal && drawRevealQueue.length > 0) {
+      document.getElementById('arenaCurrentLabel').textContent = '🎲 Randomiser Round — spare teams!';
+      document.getElementById('drawReelWrap').classList.remove('locked');
+      document.getElementById('drawReelFlag').textContent = '🎲';
+      document.getElementById('drawReelName').textContent  = 'RANDOMISER';
+      await new Promise(r => setTimeout(r, 2500));
+    }
   }
   drawRevealing = false;
   if (drawDone >= 48) {
-    // Mark final participant done
     if (drawCurrentParticipantId) {
       document.getElementById(`arenaP_${drawCurrentParticipantId}`)?.classList.remove('active');
       document.getElementById(`arenaP_${drawCurrentParticipantId}`)?.classList.add('done');
     }
     document.getElementById('arenaCurrentLabel').textContent = '🏆 All teams drawn!';
     document.getElementById('drawReelFlag').textContent = '🏆';
-    document.getElementById('drawReelName').textContent = 'COMPLETE';
+    document.getElementById('drawReelName').textContent  = 'COMPLETE';
     setTimeout(renderBracketState, 2800);
+  } else if (tournament.status === 'live') {
+    // Fallback: Realtime missed some allocation events — transition rather than hang.
+    setTimeout(renderBracketState, 1000);
   }
 }
 
@@ -1468,40 +1547,85 @@ function playCinematicCountdown() {
 
 // ── Admin: run draw ───────────────────────────────────────────────────────────
 async function handleStartDraw() {
-  const btn = document.getElementById('startDrawBtn');
+  const btn     = document.getElementById('startDrawBtn');
   const spinner = document.getElementById('drawSpinner');
   btn.disabled = true; spinner.classList.add('show');
+  _drawRunning = true;
 
   try {
     await startDraw(code, adminToken);
+    // Drive countdown + draw state directly; Realtime 'drawing' event is suppressed
+    // for this browser via _drawRunning so there's no double-countdown.
+    await playCinematicCountdown();
+    renderDrawState();
 
     let teams = [];
     try { teams = await getTeams(); } catch (_) {}
-
     if (teams.length === 0) {
-      teams = WC_2026_TEAMS.map(code => {
-        const c = getFlagColors(code);
-        return { tla: code, name: c.name, shortName: c.name };
+      teams = WC_2026_TEAMS.map(c => {
+        const col = getFlagColors(c);
+        return { tla: c, name: col.name, shortName: col.name };
       });
     }
-
-    // Round-robin: each participant receives one team per pass through the group
-    const trimmedSlots = buildSlotsRoundRobin(allParticipants);
     const teamPool = shuffleTeams(teams.slice(0, 48));
 
-    for (let i = 0; i < teamPool.length; i++) {
-      const t = teamPool[i];
-      const tla = normTeamCode(t.tla || t.id || '');
-      const name = t.shortName || t.name || tla;
-      await insertAllocation(tournament.id, trimmedSlots[i], tla, name, i);
-      await new Promise(r => setTimeout(r, 200));
+    // ── Phase 1: round-robin ──────────────────────────────────────────────────
+    // Each participant receives one team per pass; skip once their allocation is full.
+    const order = [...allParticipants].sort(() => Math.random() - 0.5);
+    const rem   = order.map(p => ({ id: p.id, left: Math.max(0, p.team_slots || 0) }));
+    const phase1Ids = [];
+    while (rem.some(r => r.left > 0)) {
+      for (const r of rem) {
+        if (r.left > 0) { phase1Ids.push(r.id); r.left--; }
+      }
     }
 
+    for (let i = 0; i < phase1Ids.length; i++) {
+      const t    = teamPool[i];
+      const tla  = normTeamCode(t.tla || t.id || '');
+      const name = t.shortName || t.name || tla;
+      await insertAllocation(tournament.id, phase1Ids[i], tla, name, i);
+      await playReveal({ participant_id: phase1Ids[i], team_code: tla, team_name: name }, allParticipants);
+    }
+
+    // ── Phase 2: randomiser round ─────────────────────────────────────────────
+    // Remaining teams (to reach 48) go one by one to random participants.
+    const spareCount = 48 - phase1Ids.length;
+    if (spareCount > 0) {
+      document.getElementById('arenaCurrentLabel').textContent = '🎲 Randomiser Round — spare teams!';
+      document.getElementById('drawReelWrap').classList.remove('locked');
+      document.getElementById('drawReelFlag').textContent = '🎲';
+      document.getElementById('drawReelName').textContent  = 'RANDOMISER';
+      await new Promise(r => setTimeout(r, 2500));
+
+      for (let i = 0; i < spareCount; i++) {
+        const idx    = phase1Ids.length + i;
+        const pid    = order[Math.floor(Math.random() * order.length)].id;
+        const t      = teamPool[idx];
+        const tla    = normTeamCode(t.tla || t.id || '');
+        const name   = t.shortName || t.name || tla;
+        await insertAllocation(tournament.id, pid, tla, name, idx);
+        await playReveal({ participant_id: pid, team_code: tla, team_name: name }, allParticipants);
+      }
+    }
+
+    // ── Complete ──────────────────────────────────────────────────────────────
+    if (drawCurrentParticipantId) {
+      document.getElementById(`arenaP_${drawCurrentParticipantId}`)?.classList.remove('active');
+      document.getElementById(`arenaP_${drawCurrentParticipantId}`)?.classList.add('done');
+    }
+    document.getElementById('arenaCurrentLabel').textContent = '🏆 All teams drawn!';
+    document.getElementById('drawReelFlag').textContent = '🏆';
+    document.getElementById('drawReelName').textContent  = 'COMPLETE';
+
     await completeDraw(code, adminToken);
+    setTimeout(renderBracketState, 2800);
 
   } catch (err) {
     showToast('Draw failed: ' + err.message);
     btn.disabled = false; spinner.classList.remove('show');
+  } finally {
+    _drawRunning = false;
   }
 }
 
@@ -1736,6 +1860,7 @@ function renderPlayerView() {
 
   container.innerHTML = cards || '<p style="color:var(--muted)">No allocations yet.</p>';
 }
+}
 
 window.setBracketFilter = function(filter) {
   _bracketFilter = filter;
@@ -1932,10 +2057,11 @@ function renderBracketFull(data) {
 // ── Real-time handlers ────────────────────────────────────────────────────────
 function onTournamentUpdate(updated) {
   tournament = { ...tournament, ...updated };
-  if (updated.status === 'drawing') playCinematicCountdown().then(renderDrawState);
-  else if (updated.status === 'live') {
-    // If the draw animation is still playing, let consumeRevealQueue transition when done.
-    // Only jump straight to bracket if we're not currently in the draw state.
+  if (updated.status === 'drawing') {
+    // Admin's handleStartDraw drives countdown+animation directly, so skip for them.
+    if (!_drawRunning) playCinematicCountdown().then(renderDrawState);
+  } else if (updated.status === 'live') {
+    // Draw animation still playing — let consumeRevealQueue transition when done.
     if (!document.getElementById('stateDraw').classList.contains('active')) {
       renderBracketState();
     }
@@ -1956,7 +2082,11 @@ function onAllocation(alloc) {
   const p = allParticipants.find(x => x.id === alloc.participant_id);
   if (p && !alloc.participants) alloc.participants = p;
   allAllocations.push(alloc);
-  if (tournament.status === 'drawing') revealDrawCard(alloc, allParticipants);
+  // Skip queue when admin is running the draw directly (_drawRunning); they animate
+  // each allocation immediately in handleStartDraw and don't need the Realtime path.
+  if (!_drawRunning && document.getElementById('stateDraw').classList.contains('active')) {
+    revealDrawCard(alloc, allParticipants);
+  }
 }
 
 // ── Show error state ──────────────────────────────────────────────────────────
