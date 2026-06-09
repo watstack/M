@@ -1553,21 +1553,22 @@ async function handleStartDraw() {
   _drawRunning = true;
 
   try {
-    await startDraw(code, adminToken);
-    // Drive countdown + draw state directly; Realtime 'drawing' event is suppressed
-    // for this browser via _drawRunning so there's no double-countdown.
-    await playCinematicCountdown();
-    renderDrawState();
-
-    let teams = [];
-    try { teams = await getTeams(); } catch (_) {}
-    if (teams.length === 0) {
+    // Fetch teams BEFORE changing DB state — 5s timeout, always falls back to built-in list.
+    let teams;
+    try { teams = await withTimeout(getTeams(), 5000); } catch (_) { teams = []; }
+    if (!teams.length) {
       teams = WC_2026_TEAMS.map(c => {
         const col = getFlagColors(c);
         return { tla: c, name: col.name, shortName: col.name };
       });
     }
     const teamPool = shuffleTeams(teams.slice(0, 48));
+
+    await startDraw(code, adminToken);
+    // Drive countdown + draw state directly; Realtime 'drawing' event is suppressed
+    // for this browser via _drawRunning so there's no double-countdown.
+    await playCinematicCountdown();
+    renderDrawState();
 
     // ── Phase 1: round-robin ──────────────────────────────────────────────────
     // Each participant receives one team per pass; skip once their allocation is full.
