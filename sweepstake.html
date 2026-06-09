@@ -293,6 +293,86 @@
     }
     .slots-btn:hover { border-color: var(--gold); color: var(--gold); }
 
+    /* ── Draw cinematic countdown overlay ── */
+    #drawCinematic {
+      display: none;
+      position: fixed; inset: 0; z-index: 9999;
+      align-items: center; justify-content: center;
+    }
+    #drawCinematic.active { display: flex; }
+
+    .cinematic-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 120% 120% at 50% 50%, #2a0035 0%, #0e0010 60%, #000 100%);
+      animation: cinematicBgPulse 1s ease-in-out infinite alternate;
+    }
+    @keyframes cinematicBgPulse {
+      from { opacity: 0.92; }
+      to   { opacity: 1; }
+    }
+
+    .cinematic-content {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 12px; text-align: center; padding: 40px 24px;
+    }
+
+    .cinematic-eyebrow {
+      font-family: var(--font-pixel);
+      font-size: clamp(0.38rem, 1.6vw, 0.58rem);
+      color: var(--gold);
+      letter-spacing: 0.22em;
+      opacity: 0;
+      animation: cinematicFadeUp 0.6s ease forwards;
+    }
+
+    .cinematic-tourney {
+      font-family: var(--font-pixel);
+      font-size: clamp(0.9rem, 4vw, 1.8rem);
+      color: var(--text);
+      line-height: 1.5;
+      text-shadow: 0 0 40px rgba(255,154,208,.5), 4px 4px 0 #000;
+      opacity: 0;
+      animation: cinematicFadeUp 0.6s 0.25s ease forwards;
+    }
+
+    .cinematic-count {
+      font-family: var(--font-pixel);
+      font-size: clamp(4rem, 22vw, 9rem);
+      line-height: 1;
+      color: var(--gold);
+      text-shadow: 0 0 60px rgba(255,154,208,.8), 6px 6px 0 #000;
+      min-height: 1.1em;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .cinematic-go {
+      font-family: var(--font-pixel);
+      font-size: clamp(1.8rem, 9vw, 4rem);
+      color: var(--green);
+      text-shadow: 0 0 60px rgba(100,255,100,.8), 4px 4px 0 #000;
+      display: none;
+      animation: cinematicGoFlash 0.5s ease;
+    }
+
+    @keyframes cinematicFadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes cinematicCountPop {
+      0%   { transform: scale(2.2); opacity: 0; }
+      30%  { transform: scale(1); opacity: 1; }
+      80%  { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0.7); opacity: 0; }
+    }
+
+    @keyframes cinematicGoFlash {
+      0%   { transform: scale(0.4); opacity: 0; }
+      50%  { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
     /* ── Arena character idle dances ──────────────────────────────────────────
        Each keyframe bakes in the 3s pause: motion occupies the first N% of
        the total cycle (dance_duration / (dance_duration + 3s) * 100), then
@@ -709,6 +789,17 @@
 
 <button id="muteBtn" class="mute-btn" aria-label="Toggle music">🔊</button>
 <div id="toast"></div>
+
+<!-- Cinematic draw countdown overlay -->
+<div id="drawCinematic" aria-live="assertive">
+  <div class="cinematic-bg"></div>
+  <div class="cinematic-content">
+    <div class="cinematic-eyebrow">THE DRAW BEGINS</div>
+    <div class="cinematic-tourney" id="cinematicTourneyName"></div>
+    <div class="cinematic-count" id="cinematicCount"></div>
+    <div class="cinematic-go" id="cinematicGo">DRAW!</div>
+  </div>
+</div>
 
 <script src="js/config.js?v=17807242" onerror="document.getElementById('loadingStatus').textContent='Failed to load config — please refresh.'"></script>
 <script src="js/vendor/supabase.js?v=17807242" onerror="document.getElementById('loadingStatus').textContent='Failed to load database library — please refresh.'"></script>
@@ -1226,7 +1317,49 @@ function revealDrawCard(allocation, participants) {
   if (!drawRevealing) consumeRevealQueue();
 }
 
-// ── Admin: run draw ───────────────────────────────────────────────────────────
+// ── Cinematic countdown before the draw ──────────────────────────────────────
+function playCinematicCountdown() {
+  return new Promise(resolve => {
+    const overlay    = document.getElementById('drawCinematic');
+    const countEl    = document.getElementById('cinematicCount');
+    const goEl       = document.getElementById('cinematicGo');
+    const tourneyEl  = document.getElementById('cinematicTourneyName');
+
+    tourneyEl.textContent = tournament.name;
+    countEl.textContent   = '';
+    goEl.style.display    = 'none';
+    overlay.classList.add('active');
+    Music.play('mortal');
+
+    const delay = ms => new Promise(r => setTimeout(r, ms));
+
+    function popCount(n) {
+      countEl.style.animation = 'none';
+      countEl.offsetHeight;
+      countEl.textContent = n;
+      countEl.style.animation = 'cinematicCountPop 0.9s ease forwards';
+    }
+
+    (async () => {
+      await delay(900);
+      popCount(3);
+      await delay(950);
+      popCount(2);
+      await delay(950);
+      popCount(1);
+      await delay(950);
+      countEl.style.display = 'none';
+      goEl.style.display = 'block';
+      await delay(700);
+      overlay.classList.remove('active');
+      countEl.style.display = '';
+      goEl.style.display = 'none';
+      resolve();
+    })();
+  });
+}
+
+/ ── Admin: run draw ───────────────────────────────────────────────────────────
 async function handleStartDraw() {
   const btn = document.getElementById('startDrawBtn');
   const spinner = document.getElementById('drawSpinner');
@@ -1583,7 +1716,7 @@ function renderBracketFull(data) {
 // ── Real-time handlers ────────────────────────────────────────────────────────
 function onTournamentUpdate(updated) {
   tournament = { ...tournament, ...updated };
-  if (updated.status === 'drawing') renderDrawState();
+  if (updated.status === 'drawing') playCinematicCountdown().then(renderDrawState);
   else if (updated.status === 'live') renderBracketState();
 }
 
