@@ -351,7 +351,7 @@
     .landing-splash .btn-gold:hover { transform: translate(2px,2px); box-shadow: 2px 2px 0 rgba(0,0,0,.7); }
 
     /* ── Slot stepper ── */
-    .p-slots-edit { display: flex; align-items: center; gap: 6px; }
+    .p-slots-edit { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .slots-btn {
       background: var(--mid); border: 1px solid var(--border);
       border-radius: var(--radius); color: var(--text);
@@ -360,6 +360,17 @@
       cursor: pointer; padding: 0;
     }
     .slots-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .slots-btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+    .slots-save-btn {
+      font-size: 0.7rem; padding: 3px 10px; margin-left: 2px;
+      background: var(--green); border: 1px solid var(--green);
+      border-radius: var(--radius); color: #0a0805;
+      font-weight: 700; cursor: pointer;
+      box-shadow: 2px 2px 0 rgba(0,0,0,.5);
+      transition: transform .08s, box-shadow .08s;
+    }
+    .slots-save-btn:hover { transform: translate(1px,1px); box-shadow: 1px 1px 0 rgba(0,0,0,.5); }
+    .slots-save-btn:disabled { opacity: 0.5; cursor: default; pointer-events: none; }
 
     /* ── Draw cinematic countdown overlay ── */
     #drawCinematic {
@@ -991,6 +1002,7 @@ let allTeams        = [];
 let drawRevealQueue = [];
 let drawRevealing   = false;
 let drawDone        = 0;
+const _pendingSlots = {};
 
 const code = new URLSearchParams(window.location.search).get('code') || '';
 const adminToken = (() => {
@@ -1063,11 +1075,22 @@ function renderParticipantList(container, participants, showTeams = false) {
             return `<span class="team-pill" style="background:${c.primary};color:${c.secondary || '#fff'}">${teamFlagEmoji(a.team_code)} ${a.team_name}</span>`;
           }).join('')
       : ((p.id === myParticipantId || isAdmin) && tournament.status === 'open')
-        ? `<span class="p-slots-edit">
-             <button class="slots-btn" onclick="handleAdminSlotsChange('${p.id}',-1)">−</button>
-             <span>${p.team_slots} team${p.team_slots > 1 ? 's' : ''}</span>
-             <button class="slots-btn" onclick="handleAdminSlotsChange('${p.id}',1)">+</button>
-           </span>`
+        ? (() => {
+            const pending = _pendingSlots[p.id];
+            const display = pending !== undefined ? pending : p.team_slots;
+            const dirty   = pending !== undefined && pending !== p.team_slots;
+            const othersSlots = totalSlots(allParticipants) - p.team_slots;
+            const maxAllowed  = Math.min(tournament.teams_per_person, 48 - othersSlots);
+            const saveBtn = dirty
+              ? `<button class="slots-save-btn" onclick="handleSaveSlots('${p.id}')">Save</button>`
+              : '';
+            return `<span class="p-slots-edit" data-pid="${p.id}">
+              <button class="slots-btn" onclick="handleAdjustSlots('${p.id}',-1)" ${display <= 1 ? 'disabled' : ''}>−</button>
+              <span class="slots-count">${display} team${display > 1 ? 's' : ''}</span>
+              <button class="slots-btn" onclick="handleAdjustSlots('${p.id}',1)" ${display >= maxAllowed ? 'disabled' : ''}>+</button>
+              ${saveBtn}
+            </span>`;
+          })()
         : `<span class="p-slots">${p.team_slots} team${p.team_slots > 1 ? 's' : ''}</span>`;
     const isMe = p.id === myParticipantId ? 'style="border-color:var(--gold)"' : '';
     return `<div class="participant-row" ${isMe} data-avatar="${p.avatar_type}">
@@ -1472,21 +1495,55 @@ async function handleStartDraw() {
 }
 
 // ── Change a participant's team slot count (pre-draw only) ───────────────────
-window.handleAdminSlotsChange = async function(participantId, delta) {
+window.handleAdjustSlots = function(participantId, delta) {
   if (tournament.status !== 'open') return;
   if (!isAdmin && participantId !== myParticipantId) return;
   const p = allParticipants.find(x => x.id === participantId);
   if (!p) return;
+  const current = _pendingSlots[participantId] !== undefined ? _pendingSlots[participantId] : p.team_slots;
   const othersSlots = totalSlots(allParticipants) - p.team_slots;
   const maxAllowed = Math.min(tournament.teams_per_person, 48 - othersSlots);
-  const newSlots = Math.max(1, Math.min(maxAllowed, p.team_slots + delta));
-  if (newSlots === p.team_slots) return;
+  const newVal = Math.max(1, Math.min(maxAllowed, current + delta));
+  if (newVal === current) return;
+  _pendingSlots[participantId] = newVal;
+  // Update just this stepper in-place without a full list re-render
+  const stepperEl = document.querySelector(`.p-slots-edit[data-pid="${participantId}"]`);
+  if (!stepperEl) { refreshWaitingRoom(); return; }
+  stepperEl.querySelector('.slots-count').textContent = `${newVal} team${newVal > 1 ? 's' : ''}`;
+  const [minusBtn, plusBtn] = stepperEl.querySelectorAll('.slots-btn');
+  if (minusBtn) minusBtn.disabled = newVal <= 1;
+  if (plusBtn)  plusBtn.disabled  = newVal >= maxAllowed;
+  const isDirty = newVal !== p.team_slots;
+  let saveBtn = stepperEl.querySelector('.slots-save-btn');
+  if (isDirty && !saveBtn) {
+    saveBtn = document.createElement('button');
+    saveBtn.className = 'slots-save-btn';
+    saveBtn.textContent = 'Save';
+    saveBtn.onclick = () => handleSaveSlots(participantId);
+    stepperEl.appendChild(saveBtn);
+  } else if (!isDirty && saveBtn) {
+    saveBtn.remove();
+  }
+};
+
+window.handleSaveSlots = async function(participantId) {
+  if (tournament.status !== 'open') return;
+  if (!isAdmin && participantId !== myParticipantId) return;
+  const p = allParticipants.find(x => x.id === participantId);
+  if (!p) return;
+  const newSlots = _pendingSlots[participantId];
+  if (newSlots === undefined || newSlots === p.team_slots) return;
+  const stepperEl = document.querySelector(`.p-slots-edit[data-pid="${participantId}"]`);
+  const saveBtn = stepperEl?.querySelector('.slots-save-btn');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '…'; }
   try {
     await updateParticipantSlots(participantId, newSlots);
     p.team_slots = newSlots;
+    delete _pendingSlots[participantId];
     refreshWaitingRoom();
   } catch (err) {
-    showToast('Could not update: ' + err.message);
+    showToast('Could not save: ' + err.message);
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
   }
 };
 
