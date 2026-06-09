@@ -960,6 +960,17 @@
 <script src="js/draw.js?v=17807242" onerror="document.getElementById('loadingStatus').textContent='Error loading draw logic — please refresh.'"></script>
 <script src="js/music.js?v=17807242"></script>
 <script>
+// Surface script errors on the loading screen instead of hanging silently.
+// Kept as a separate block so it still runs if the main script fails to parse.
+window.addEventListener('error', function (e) {
+  var loading = document.getElementById('stateLoading');
+  var status = document.getElementById('loadingStatus');
+  if (loading && loading.classList.contains('active') && status) {
+    status.textContent = 'Script error: ' + (e.message || 'unknown') + ' — please refresh.';
+  }
+});
+</script>
+<script>
 // ── Timeout helper ────────────────────────────────────────────────────────────
 function withTimeout(promise, ms) {
   let timer;
@@ -1860,7 +1871,6 @@ function renderPlayerView() {
     }).join('');
 
   container.innerHTML = cards || '<p style="color:var(--muted)">No allocations yet.</p>';
-}
 }
 
 window.setBracketFilter = function(filter) {
