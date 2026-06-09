@@ -1865,7 +1865,13 @@ function renderBracketFull(data) {
 function onTournamentUpdate(updated) {
   tournament = { ...tournament, ...updated };
   if (updated.status === 'drawing') playCinematicCountdown().then(renderDrawState);
-  else if (updated.status === 'live') renderBracketState();
+  else if (updated.status === 'live') {
+    // If the draw animation is still playing, let consumeRevealQueue transition when done.
+    // Only jump straight to bracket if we're not currently in the draw state.
+    if (!document.getElementById('stateDraw').classList.contains('active')) {
+      renderBracketState();
+    }
+  }
 }
 
 function onParticipantJoin(newP) {
