@@ -718,7 +718,6 @@
   <!-- Admin bar (only shown if admin token present) -->
   <div class="admin-bar" id="adminBar" style="display:none">
     <span class="admin-bar-label">⚙ Admin controls</span>
-    <button class="btn-ghost" id="removeParticipantBtn" style="font-size:0.82rem;padding:7px 12px">Remove participant</button>
     <button class="btn-danger btn-pixel" id="reopenBtn" style="font-size:0.55rem;padding:7px 12px;display:none">Reset draw</button>
     <button class="btn-gold btn-pixel" id="startDrawBtn" style="display:none">
       🎲 Start draw
@@ -1307,7 +1306,7 @@ function renderWaitingState() {
 
   if (isAdmin) {
     document.getElementById('startDrawBtn').style.display = 'inline-flex';
-    document.getElementById('startDrawBtn').addEventListener('click', handleStartDraw);
+    document.getElementById('startDrawBtn').onclick = handleStartDraw;
   }
 
   refreshWaitingRoom();
@@ -1440,14 +1439,21 @@ function playReveal(allocation, participants) {
         drawDone++;
         document.getElementById('drawProgressNum').textContent = drawDone;
 
-        // Fill next empty slot in participant card
+        // Fill next empty slot in participant card; if all earned slots are filled
+        // (spare/randomiser team), append a new slot rather than silently dropping it.
         setTimeout(() => {
           const teamsEl = document.getElementById(`arenaTeams_${allocation.participant_id}`);
-          const emptySlot = teamsEl?.querySelector('.arena-slot.empty');
-          if (emptySlot) {
-            emptySlot.classList.replace('empty', 'filled');
-            emptySlot.style.borderColor = hexToRgba(primary, 0.55);
-            emptySlot.innerHTML =
+          let slot = teamsEl?.querySelector('.arena-slot.empty');
+          if (!slot && teamsEl) {
+            slot = document.createElement('div');
+            slot.className = 'arena-slot';
+            teamsEl.appendChild(slot);
+          }
+          if (slot) {
+            slot.classList.add('filled');
+            slot.classList.remove('empty');
+            slot.style.borderColor = hexToRgba(primary, 0.55);
+            slot.innerHTML =
               `<span class="slot-flag">${teamFlagEmoji(tla)}</span>`
               + `<span class="slot-name">${esc(allocation.team_name || tla)}</span>`;
           }
@@ -1466,21 +1472,34 @@ function playReveal(allocation, participants) {
   });
 }
 
+// Instantly fill an arena card slot without the reel animation (used for catch-up on page load).
+function populateArenaSlotDirect(allocation) {
+  const tla = normTeamCode(allocation.team_code);
+  const colors = getFlagColors(tla);
+  const primary = colors.primary || '#25d8d8';
+  const teamsEl = document.getElementById(`arenaTeams_${allocation.participant_id}`);
+  if (!teamsEl) return;
+  let slot = teamsEl.querySelector('.arena-slot.empty');
+  if (!slot) {
+    slot = document.createElement('div');
+    slot.className = 'arena-slot';
+    teamsEl.appendChild(slot);
+  }
+  slot.classList.add('filled');
+  slot.classList.remove('empty');
+  slot.style.borderColor = hexToRgba(primary, 0.55);
+  slot.innerHTML =
+    `<span class="slot-flag">${teamFlagEmoji(tla)}</span>`
+    + `<span class="slot-name">${esc(allocation.team_name || tla)}</span>`;
+  drawDone++;
+}
+
 async function consumeRevealQueue() {
   if (drawRevealing) return;
   drawRevealing = true;
-  // Phase boundary for viewers: earned slots total tells us when randomiser round starts
-  const earnedTotal = allParticipants.reduce((s, p) => s + Math.max(0, p.team_slots || 0), 0);
   while (drawRevealQueue.length > 0) {
     const { allocation, participants } = drawRevealQueue.shift();
     await playReveal(allocation, participants);
-    if (earnedTotal > 0 && drawDone === earnedTotal && drawRevealQueue.length > 0) {
-      document.getElementById('arenaCurrentLabel').textContent = '🎲 Randomiser Round — spare teams!';
-      document.getElementById('drawReelWrap').classList.remove('locked');
-      document.getElementById('drawReelFlag').textContent = '🎲';
-      document.getElementById('drawReelName').textContent  = 'RANDOMISER';
-      await new Promise(r => setTimeout(r, 2500));
-    }
   }
   drawRevealing = false;
   if (drawDone >= 48) {
@@ -1570,44 +1589,16 @@ async function handleStartDraw() {
     await playCinematicCountdown();
     renderDrawState();
 
-    // ── Phase 1: round-robin ──────────────────────────────────────────────────
-    // Each participant receives one team per pass; skip once their allocation is full.
-    const order = [...allParticipants].sort(() => Math.random() - 0.5);
-    const rem   = order.map(p => ({ id: p.id, left: Math.max(0, p.team_slots || 0) }));
-    const phase1Ids = [];
-    while (rem.some(r => r.left > 0)) {
-      for (const r of rem) {
-        if (r.left > 0) { phase1Ids.push(r.id); r.left--; }
-      }
-    }
+    // Build the full 48-slot order via the tested round-robin utility,
+    // then pair each slot with a shuffled team and reveal sequentially.
+    const slotOrder = buildSlotsRoundRobin(allParticipants);
 
-    for (let i = 0; i < phase1Ids.length; i++) {
+    for (let i = 0; i < teamPool.length; i++) {
       const t    = teamPool[i];
       const tla  = normTeamCode(t.tla || t.id || '');
       const name = t.shortName || t.name || tla;
-      await insertAllocation(tournament.id, phase1Ids[i], tla, name, i);
-      await playReveal({ participant_id: phase1Ids[i], team_code: tla, team_name: name }, allParticipants);
-    }
-
-    // ── Phase 2: randomiser round ─────────────────────────────────────────────
-    // Remaining teams (to reach 48) go one by one to random participants.
-    const spareCount = 48 - phase1Ids.length;
-    if (spareCount > 0) {
-      document.getElementById('arenaCurrentLabel').textContent = '🎲 Randomiser Round — spare teams!';
-      document.getElementById('drawReelWrap').classList.remove('locked');
-      document.getElementById('drawReelFlag').textContent = '🎲';
-      document.getElementById('drawReelName').textContent  = 'RANDOMISER';
-      await new Promise(r => setTimeout(r, 2500));
-
-      for (let i = 0; i < spareCount; i++) {
-        const idx    = phase1Ids.length + i;
-        const pid    = order[Math.floor(Math.random() * order.length)].id;
-        const t      = teamPool[idx];
-        const tla    = normTeamCode(t.tla || t.id || '');
-        const name   = t.shortName || t.name || tla;
-        await insertAllocation(tournament.id, pid, tla, name, idx);
-        await playReveal({ participant_id: pid, team_code: tla, team_name: name }, allParticipants);
-      }
+      await insertAllocation(tournament.id, slotOrder[i], tla, name, i);
+      await playReveal({ participant_id: slotOrder[i], team_code: tla, team_name: name }, allParticipants);
     }
 
     // ── Complete ──────────────────────────────────────────────────────────────
@@ -2176,7 +2167,13 @@ async function init() {
         renderBracketState();
       } else {
         renderDrawState();
-        for (const a of allAllocations) revealDrawCard(a, allParticipants);
+        // Populate already-drawn teams instantly (no catch-up animation);
+        // new Realtime events will animate normally as they arrive.
+        for (const a of allAllocations) populateArenaSlotDirect(a);
+        document.getElementById('drawProgressNum').textContent = drawDone;
+        if (allAllocations.length > 0) {
+          document.getElementById('arenaCurrentLabel').textContent = 'Draw in progress…';
+        }
       }
     } else {
       document.getElementById('adminBar').style.display = isAdmin ? 'flex' : 'none';

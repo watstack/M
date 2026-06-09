@@ -3,48 +3,6 @@ import { loadFiles } from './helpers/vmLoader.js';
 
 const ctx = loadFiles(['js/draw.js']);
 
-describe('buildSlots', () => {
-  it('pads to exactly 48 when participants have fewer total slots', () => {
-    const participants = [
-      { id: 'alice', team_slots: 2 },
-      { id: 'bob', team_slots: 1 },
-    ];
-    const slots = ctx.buildSlots(participants);
-    expect(slots).toHaveLength(48);
-    expect(slots.every(id => id === 'alice' || id === 'bob')).toBe(true);
-  });
-
-  it('returns [] without infinite loop when participants is empty', () => {
-    const slots = ctx.buildSlots([]);
-    expect(slots).toEqual([]);
-  });
-
-  it('trims to 48 when participants have more than 48 total slots', () => {
-    const participants = Array.from({ length: 20 }, (_, i) => ({
-      id: `p${i}`,
-      team_slots: 5,
-    }));
-    const slots = ctx.buildSlots(participants);
-    expect(slots).toHaveLength(48);
-  });
-
-  it('distributes proportionally when padding', () => {
-    const participants = [
-      { id: 'alice', team_slots: 2 },
-      { id: 'bob', team_slots: 1 },
-    ];
-    // Run 10 times, alice should appear roughly twice as often as bob
-    for (let i = 0; i < 10; i++) {
-      const slots = ctx.buildSlots(participants);
-      const aliceCount = slots.filter(id => id === 'alice').length;
-      const bobCount = slots.filter(id => id === 'bob').length;
-      expect(aliceCount + bobCount).toBe(48);
-      expect(aliceCount).toBeGreaterThan(0);
-      expect(bobCount).toBeGreaterThan(0);
-    }
-  });
-});
-
 describe('buildSlotsRoundRobin', () => {
   it('returns [] for empty input', () => {
     expect(ctx.buildSlotsRoundRobin([])).toEqual([]);
