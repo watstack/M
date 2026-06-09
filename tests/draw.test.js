@@ -45,6 +45,63 @@ describe('buildSlots', () => {
   });
 });
 
+describe('buildSlotsRoundRobin', () => {
+  it('returns [] for empty input', () => {
+    expect(ctx.buildSlotsRoundRobin([])).toEqual([]);
+    expect(ctx.buildSlotsRoundRobin(null)).toEqual([]);
+  });
+
+  it('total length is always 48', () => {
+    const participants = [
+      { id: 'alice', team_slots: 3 },
+      { id: 'bob',   team_slots: 2 },
+      { id: 'carol', team_slots: 1 },
+    ];
+    for (let i = 0; i < 10; i++) {
+      expect(ctx.buildSlotsRoundRobin(participants)).toHaveLength(48);
+    }
+  });
+
+  it('each participant receives exactly their team_slots in the earned portion', () => {
+    const participants = [
+      { id: 'alice', team_slots: 4 },
+      { id: 'bob',   team_slots: 2 },
+      { id: 'carol', team_slots: 1 },
+    ];
+    const total = 7; // 4+2+1
+    for (let i = 0; i < 10; i++) {
+      const slots = ctx.buildSlotsRoundRobin(participants);
+      const earned = slots.slice(0, total);
+      expect(earned.filter(id => id === 'alice').length).toBe(4);
+      expect(earned.filter(id => id === 'bob').length).toBe(2);
+      expect(earned.filter(id => id === 'carol').length).toBe(1);
+    }
+  });
+
+  it('spare teams cycle equally — no participant gets 2 spare before all have 1', () => {
+    const participants = [
+      { id: 'alice', team_slots: 4 },
+      { id: 'bob',   team_slots: 2 },
+      { id: 'carol', team_slots: 1 },
+    ];
+    const total = 7; // earned slots
+    for (let i = 0; i < 20; i++) {
+      const slots = ctx.buildSlotsRoundRobin(participants);
+      const spare = slots.slice(total);
+      // Count spare teams per participant per "round" of 3
+      const n = participants.length;
+      for (let round = 0; round + n <= spare.length; round += n) {
+        const roundSlice = spare.slice(round, round + n);
+        const counts = {};
+        for (const id of roundSlice) counts[id] = (counts[id] || 0) + 1;
+        // In each full round of n spare slots, each participant appears exactly once
+        expect(Object.keys(counts).length).toBe(n);
+        for (const id of Object.keys(counts)) expect(counts[id]).toBe(1);
+      }
+    }
+  });
+});
+
 describe('shuffleTeams', () => {
   it('returns all 48 teams with no duplicates', () => {
     const teams = Array.from({ length: 48 }, (_, i) => ({ tla: `T${i}`, name: `Team ${i}` }));
