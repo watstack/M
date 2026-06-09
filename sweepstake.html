@@ -72,7 +72,7 @@
     .bracket-filter {
       display: flex;
       gap: 8px;
-      margin-bottom: 8px;
+      margin-bottom: 16px;
       flex-wrap: wrap;
     }
     .bracket-filter-btn {
@@ -92,36 +92,72 @@
       background: var(--green); border-color: var(--green);
       color: #0a0805; box-shadow: 2px 2px 0 rgba(0,0,0,.5);
     }
-    .bracket-filter-players {
-      display: none;
-      gap: 6px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
+
+    /* ── Players grid view ── */
+    #playerView { display: none; padding-bottom: 40px; }
+    #playerView.show {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
     }
-    .bracket-filter-players.show { display: flex; }
-    .bracket-player-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .pv-card {
       background: var(--panel);
       border: 2px solid #2c3e54;
       border-radius: var(--radius);
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-weight: 700;
-      padding: 5px 10px 5px 6px;
-      cursor: pointer;
-      box-shadow: 3px 3px 0 rgba(0,0,0,.6);
-      transition: transform .08s, box-shadow .08s;
+      padding: 14px;
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,.05),
+                  inset -2px -2px 0 rgba(0,0,0,.4),
+                  3px 3px 0 rgba(0,0,0,.5);
     }
-    .bracket-player-btn:hover { transform: translate(1px,1px); box-shadow: 2px 2px 0 rgba(0,0,0,.6); color: var(--text); }
-    .bracket-player-btn.active { background: var(--gold); border-color: var(--gold); color: #0a0805; box-shadow: 2px 2px 0 rgba(0,0,0,.5); }
-    /* team rows that don't belong to the selected player */
-    [data-tla].dim { opacity: 0.15; }
-    [data-tla].highlight {
-      outline: 2px solid var(--gold);
-      outline-offset: 1px;
+    .pv-card.pv-mine {
+      border-color: var(--gold);
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,.08),
+                  inset -2px -2px 0 rgba(0,0,0,.4),
+                  3px 3px 0 rgba(0,0,0,.5),
+                  0 0 14px rgba(255,154,208,.2);
+    }
+    .pv-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .pv-name { font-weight: 700; font-size: 0.88rem; }
+    .pv-count {
+      margin-left: auto;
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+    .pv-team-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 0;
+      font-size: 0.82rem;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .pv-team-row:last-child { border-bottom: none; }
+    .pv-group-badge {
+      font-family: var(--font-pixel);
+      font-size: 0.38rem;
+      background: var(--mid);
+      border: 1px solid var(--border);
       border-radius: 2px;
+      padding: 2px 4px;
+      color: var(--muted);
+      flex-shrink: 0;
+      min-width: 18px;
+      text-align: center;
+    }
+    .pv-pts {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--muted);
     }
 
     /* ── Players grid view ── */
@@ -861,9 +897,8 @@
     <div class="bracket-filter" id="bracketFilter">
       <button class="bracket-filter-btn active" data-filter="current" onclick="setBracketFilter('current')">Current stage</button>
       <button class="bracket-filter-btn" data-filter="all" onclick="setBracketFilter('all')">All</button>
-      <button class="bracket-filter-btn" data-filter="player" onclick="setBracketFilter('player')">By player</button>
+      <button class="bracket-filter-btn" data-filter="players" onclick="setBracketFilter('players')">Players</button>
     </div>
-    <div class="bracket-filter-players" id="bracketPlayerBtns"></div>
 
     <!-- Full bracket tree (groups → knockout → final) -->
     <div class="bracket-zoom-outer">
@@ -1633,8 +1668,9 @@ function renderBracketState() {
   }
 
   _bracketFilter = 'current';
-  _bracketPlayer = null;
-  document.getElementById('bracketPlayerBtns').classList.remove('show');
+  _lastStandings = [];
+  document.getElementById('playerView').classList.remove('show');
+  document.querySelector('.bracket-zoom-outer').style.display = '';
   document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'current'));
   loadBracketData().then(() => setTimeout(BracketZoom.fit, 60));
 }
@@ -1687,7 +1723,7 @@ function buildSyntheticStandings() {
 
 let _currentBracketStage = 'groups';
 let _bracketFilter = 'current';
-let _bracketPlayer = null;
+let _lastStandings = [];
 
 function detectBracketStage(matches) {
   const order = ['r32', 'r16', 'qf', 'sf', 'final'];
@@ -1702,54 +1738,88 @@ function detectBracketStage(matches) {
 }
 
 function applyBracketFilter() {
-  // Column visibility — player mode shows all columns
   const stage = _bracketFilter === 'current' ? _currentBracketStage : null;
   document.querySelectorAll('#bracketTree .b-col').forEach(col => {
     col.style.display = (!stage || col.dataset.stage === stage) ? '' : 'none';
   });
-
-  // Player highlight — dim teams not belonging to selected player
-  const playerTeams = (_bracketFilter === 'player' && _bracketPlayer)
-    ? new Set(allAllocations.filter(a => a.participant_id === _bracketPlayer).map(a => normTeamCode(a.team_code)))
-    : null;
-  document.querySelectorAll('[data-tla]').forEach(el => {
-    const mine = playerTeams ? playerTeams.has(el.dataset.tla) : false;
-    el.classList.toggle('dim', !!playerTeams && !mine);
-    el.classList.toggle('highlight', !!playerTeams && mine);
-  });
-
   setTimeout(BracketZoom.fit, 30);
 }
 
-function renderPlayerFilterBtns() {
-  const container = document.getElementById('bracketPlayerBtns');
+function renderPlayerView() {
+  const container = document.getElementById('playerView');
   if (!container) return;
-  container.innerHTML = allParticipants.map(p =>
-    `<button class="bracket-player-btn${_bracketPlayer === p.id ? ' active' : ''}" onclick="setBracketPlayer('${p.id}')">
-      ${renderAvatar(p.avatar_type, null, 22)}${esc(p.nickname)}
-    </button>`
-  ).join('');
+
+  // Build tla → group letter map from standings or cache
+  const groupMap = {};
+  const standings = _lastStandings.length ? _lastStandings : buildSyntheticStandings();
+  for (const g of standings) {
+    const letter = (g.group || g.stage || '').replace(/^GROUP_/i, '').replace(/^Group /i, '');
+    for (const row of g.table || []) {
+      const tla = normTeamCode(row.team?.tla || '');
+      if (tla) groupMap[tla] = { letter, points: row.points ?? null, played: row.playedGames ?? 0 };
+    }
+  }
+
+  // Group allocations by participant, preserving participant order
+  const seen = new Set();
+  const order = allParticipants.map(p => p.id);
+  const byPid = {};
+  for (const a of allAllocations) {
+    if (!byPid[a.participant_id]) byPid[a.participant_id] = { p: allParticipants.find(x => x.id === a.participant_id) || a.participants, teams: [] };
+    byPid[a.participant_id].teams.push(a);
+  }
+
+  const cards = order
+    .filter(pid => byPid[pid])
+    .map(pid => {
+      const { p, teams } = byPid[pid];
+      if (!p) return '';
+      const isMine = p.id === myParticipantId;
+      const teamRows = teams.map(t => {
+        const tla = normTeamCode(t.team_code);
+        const gInfo = groupMap[tla];
+        const groupBadge = gInfo
+          ? `<span class="pv-group-badge">${gInfo.letter}</span>`
+          : '';
+        const pts = gInfo?.played > 0
+          ? `<span class="pv-pts">${gInfo.points}pt</span>`
+          : '';
+        return `<div class="pv-team-row">
+          ${groupBadge}
+          <span>${teamFlagEmoji(tla)}</span>
+          <span style="flex:1">${esc(t.team_name)}</span>
+          ${pts}
+        </div>`;
+      }).join('');
+      return `<div class="pv-card${isMine ? ' pv-mine' : ''}">
+        <div class="pv-header">
+          ${renderAvatar(p.avatar_type, null, 44)}
+          <span class="pv-name">${esc(p.nickname)}</span>
+          <span class="pv-count">${teams.length} team${teams.length !== 1 ? 's' : ''}</span>
+        </div>
+        ${teamRows}
+      </div>`;
+    }).join('');
+
+  container.innerHTML = cards || '<p style="color:var(--muted)">No allocations yet.</p>';
 }
 }
 
 window.setBracketFilter = function(filter) {
   _bracketFilter = filter;
   document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
-  const playerPanel = document.getElementById('bracketPlayerBtns');
-  if (filter === 'player') {
-    if (!_bracketPlayer && allParticipants.length) _bracketPlayer = allParticipants[0].id;
-    renderPlayerFilterBtns();
-    playerPanel.classList.add('show');
+  const bracketOuter = document.querySelector('.bracket-zoom-outer');
+  const apiTime      = document.getElementById('apiUpdateTime');
+  const playerView   = document.getElementById('playerView');
+  const isPlayers    = filter === 'players';
+  bracketOuter.style.display = isPlayers ? 'none' : '';
+  if (apiTime) apiTime.style.display = isPlayers ? 'none' : '';
+  playerView.classList.toggle('show', isPlayers);
+  if (isPlayers) {
+    renderPlayerView();
   } else {
-    playerPanel.classList.remove('show');
+    applyBracketFilter();
   }
-  applyBracketFilter();
-};
-
-window.setBracketPlayer = function(pid) {
-  _bracketPlayer = pid;
-  renderPlayerFilterBtns();
-  applyBracketFilter();
 };
 
 async function loadBracketData() {
