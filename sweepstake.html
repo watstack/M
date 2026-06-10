@@ -1392,7 +1392,7 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-function playReveal(allocation, participants) {
+function playReveal(allocation, participants, isSpare = false) {
   return new Promise(resolve => {
     const participant = participants.find(p => p.id === allocation.participant_id);
     const tla = normTeamCode(allocation.team_code);
@@ -1408,13 +1408,15 @@ function playReveal(allocation, participants) {
       }
       drawCurrentParticipantId = allocation.participant_id;
       const card = document.getElementById(`arenaP_${drawCurrentParticipantId}`);
+      card?.classList.remove('done');
       card?.classList.add('active');
       card?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     // Update label
-    document.getElementById('arenaCurrentLabel').textContent =
-      `${participant?.nickname || '?'} is picking…`;
+    document.getElementById('arenaCurrentLabel').textContent = isSpare
+      ? `🎲 Spare team for ${participant?.nickname || '?'}!`
+      : `${participant?.nickname || '?'} is picking…`;
 
     // Reset reel
     const reelWrap = document.getElementById('drawReelWrap');
@@ -1454,7 +1456,13 @@ function playReveal(allocation, participants) {
         // Fill next empty slot in participant card
         setTimeout(() => {
           const teamsEl = document.getElementById(`arenaTeams_${allocation.participant_id}`);
-          const emptySlot = teamsEl?.querySelector('.arena-slot.empty');
+          let emptySlot = teamsEl?.querySelector('.arena-slot.empty');
+          if (!emptySlot && teamsEl) {
+            // Randomiser round: spare team beyond earned slots — add an extra slot
+            emptySlot = document.createElement('div');
+            emptySlot.className = 'arena-slot empty';
+            teamsEl.appendChild(emptySlot);
+          }
           if (emptySlot) {
             emptySlot.classList.replace('empty', 'filled');
             emptySlot.style.borderColor = hexToRgba(primary, 0.55);
@@ -1484,7 +1492,7 @@ async function consumeRevealQueue() {
   const earnedTotal = allParticipants.reduce((s, p) => s + Math.max(0, p.team_slots || 0), 0);
   while (drawRevealQueue.length > 0) {
     const { allocation, participants } = drawRevealQueue.shift();
-    await playReveal(allocation, participants);
+    await playReveal(allocation, participants, earnedTotal > 0 && drawDone >= earnedTotal);
     if (earnedTotal > 0 && drawDone === earnedTotal && drawRevealQueue.length > 0) {
       document.getElementById('arenaCurrentLabel').textContent = '🎲 Randomiser Round — spare teams!';
       document.getElementById('drawReelWrap').classList.remove('locked');
@@ -1617,7 +1625,7 @@ async function handleStartDraw() {
         const tla    = normTeamCode(t.tla || t.id || '');
         const name   = t.shortName || t.name || tla;
         await insertAllocation(tournament.id, pid, tla, name, idx);
-        await playReveal({ participant_id: pid, team_code: tla, team_name: name }, allParticipants);
+        await playReveal({ participant_id: pid, team_code: tla, team_name: name }, allParticipants, true);
       }
     }
 
