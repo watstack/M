@@ -370,8 +370,8 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
   0%, 100% { box-shadow: 0 0 18px rgba(255,106,31,.35); }
   50%       { box-shadow: 0 0 38px rgba(255,106,31,.75), 0 6px 22px rgba(0,0,0,.5); }
 }
-.arena-p-card.done { opacity: .55; border-color: rgba(255,154,208,.2); }
-.arena-p-card.done::before { background: var(--gold); opacity: .5; }
+.arena-p-card.done:not(.active) { opacity: .55; border-color: rgba(255,154,208,.2); }
+.arena-p-card.done:not(.active)::before { background: var(--gold); opacity: .5; }
 
 .arena-p-name {
   font-family: var(--font-display); font-size: 0.7rem; letter-spacing: .04em;

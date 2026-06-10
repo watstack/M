@@ -1404,7 +1404,9 @@ function playReveal(allocation, participants, isSpare = false) {
       if (drawCurrentParticipantId) {
         const prev = document.getElementById(`arenaP_${drawCurrentParticipantId}`);
         prev?.classList.remove('active');
-        prev?.classList.add('done');
+        // Only dim once all their slots are filled — they may pick again in a later pass
+        const prevTeams = document.getElementById(`arenaTeams_${drawCurrentParticipantId}`);
+        if (!prevTeams?.querySelector('.arena-slot.empty')) prev?.classList.add('done');
       }
       drawCurrentParticipantId = allocation.participant_id;
       const card = document.getElementById(`arenaP_${drawCurrentParticipantId}`);
