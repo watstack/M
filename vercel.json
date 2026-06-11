@@ -2,6 +2,7 @@
   "buildCommand": "node build.js",
   "outputDirectory": ".",
   "rewrites": [
-    { "source": "/s/:code", "destination": "/sweepstake.html?code=:code" }
+    { "source": "/s/:code",  "destination": "/sweepstake.html?code=:code" },
+    { "source": "/b/:code",  "destination": "/betting.html?code=:code" }
   ]
 }

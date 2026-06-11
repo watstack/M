@@ -699,6 +699,105 @@
     .arena-p-card.active[data-avatar="8"]  .avatar-sprite { animation: dance-ultra-fast       0.18s ease-in-out infinite; }
     .arena-p-card.active[data-avatar="9"]  .avatar-sprite { animation: dance-fan-fast         0.32s ease-in-out infinite; }
     .arena-p-card.active[data-avatar="10"] .avatar-sprite { animation: dance-mascot-fast      0.48s ease-in-out infinite; }
+
+    /* ── Live bracket + leaderboard two-column layout ── */
+    .live-layout {
+      display: flex;
+      gap: 0;
+      align-items: flex-start;
+    }
+    .live-bracket-col {
+      flex: 1;
+      min-width: 0;
+      padding-right: 0;
+    }
+    .live-lb-panel {
+      display: none; /* hidden on mobile — shown via tab */
+      width: 300px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 16px;
+      max-height: calc(100vh - 32px);
+      overflow-y: auto;
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 3px 3px 0 rgba(0,0,0,.5);
+      margin-left: 16px;
+    }
+    @media (min-width: 1024px) {
+      .live-bracket-col { padding-right: 0; }
+      .live-lb-panel { display: block; }
+      .live-tabs { display: none !important; }
+      .live-bracket-col.lb-hidden { display: block !important; }
+    }
+
+    .lb-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .lb-panel-title {
+      font-family: var(--font-pixel);
+      font-size: 0.42rem;
+      color: var(--gold);
+    }
+    .lb-bet-link {
+      font-family: var(--font-pixel);
+      font-size: 0.32rem;
+      color: var(--green);
+      text-decoration: none;
+      padding: 5px 10px;
+      border: 2px solid var(--green);
+      border-radius: var(--radius);
+      box-shadow: 2px 2px 0 rgba(0,0,0,.4);
+    }
+    .lb-bet-link:hover { background: rgba(255,106,31,.1); }
+    .lb-rows { padding: 10px 0; }
+    .lb-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+    }
+    .lb-row.lb-me { background: rgba(255,154,208,.06); }
+    .lb-rank { width: 22px; text-align: center; font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); }
+    .lb-avatar { flex-shrink: 0; }
+    .lb-name { flex: 1; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-coins { font-family: var(--font-mono); font-size: 0.78rem; color: var(--gold); white-space: nowrap; }
+    .lb-flash-up   { animation: lbUp   1s ease; }
+    .lb-flash-down { animation: lbDown 1s ease; }
+    @keyframes lbUp   { 0%,100% { background: transparent; } 40% { background: rgba(60,176,74,.15); } }
+    @keyframes lbDown { 0%,100% { background: transparent; } 40% { background: rgba(255,59,92,.1); } }
+    .lb-empty { padding: 20px 16px; color: var(--muted); font-size: 0.85rem; text-align: center; }
+
+    /* ── Mobile live tabs ── */
+    .live-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .live-tab {
+      background: var(--panel);
+      border: 2px solid var(--border);
+      color: var(--muted);
+      font-family: var(--font-pixel);
+      font-size: 0.38rem;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      box-shadow: 2px 2px 0 rgba(0,0,0,.5);
+      text-decoration: none;
+      display: inline-block;
+    }
+    .live-tab.live-tab-active { background: var(--green); border-color: var(--green); color: #0a0805; box-shadow: 1px 1px 0 rgba(0,0,0,.5); }
+    .live-tab:hover:not(.live-tab-active) { color: var(--text); }
+    /* Mobile leaderboard panel (shown as full tab) */
+    .live-lb-mobile { display: none; margin-bottom: 24px; }
+    .live-lb-mobile.show { display: block; }
   </style>
 </head>
 <body>
@@ -881,58 +980,87 @@
   <!-- STATE 4: Live bracket -->
   <div class="state" id="stateBracket">
 
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-      <h1 id="bracketTourneyName" style="flex:1"></h1>
-      <span id="bracketLiveTag" style="display:none">
-        <span class="live-badge"><span class="live-dot"></span>Live</span>
-      </span>
+    <!-- Mobile tab bar (hidden on desktop via CSS) -->
+    <div class="live-tabs">
+      <button class="live-tab live-tab-active" id="ltBracket" onclick="setLiveTab('bracket')">Bracket</button>
+      <button class="live-tab" id="ltLeaderboard" onclick="setLiveTab('lb')">Leaderboard</button>
+      <a class="live-tab" id="ltBet" href="#">Bet ⚡</a>
     </div>
 
-    <div id="myTeamsPanel" class="my-teams" style="display:none">
-      <h3>Your teams</h3>
-      <div class="my-team-cards" id="myTeamCards"></div>
+    <!-- Mobile leaderboard panel (shown when Leaderboard tab active) -->
+    <div class="live-lb-mobile" id="liveLbMobile">
+      <div id="lbMobileContent" class="lb-rows"></div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border)">
+        <a id="betLinkMobile" href="#" class="btn" style="display:block;text-align:center;font-family:var(--font-pixel);font-size:0.42rem">Place Bets ⚡</a>
+      </div>
     </div>
 
-    <!-- Bracket filter -->
-    <div class="bracket-filter" id="bracketFilter">
-      <button class="bracket-filter-btn active" data-filter="current" onclick="setBracketFilter('current')">Current stage</button>
-      <button class="bracket-filter-btn" data-filter="all" onclick="setBracketFilter('all')">All</button>
-      <button class="bracket-filter-btn" data-filter="players" onclick="setBracketFilter('players')">Players</button>
-    </div>
+    <div class="live-layout">
+      <!-- Bracket column -->
+      <div class="live-bracket-col" id="liveBracketPanel">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+          <h1 id="bracketTourneyName" style="flex:1"></h1>
+          <span id="bracketLiveTag" style="display:none">
+            <span class="live-badge"><span class="live-dot"></span>Live</span>
+          </span>
+        </div>
 
-    <!-- Full bracket tree (groups → knockout → final) -->
-    <div class="bracket-zoom-outer">
-      <div class="bracket-viewport" id="bracketViewport">
-        <div id="bracketScaleOuter">
-          <div id="bracketScaleInner">
-            <div class="bracket-tree" id="bracketTree">
-              <div class="b-col b-groups-col" id="bGroupsLeft"  data-stage="groups"></div>
-              <div class="b-col b-round-col"  id="bR32Left"     data-stage="r32"></div>
-              <div class="b-col b-round-col"  id="bR16Left"     data-stage="r16"></div>
-              <div class="b-col b-round-col"  id="bQFLeft"      data-stage="qf"></div>
-              <div class="b-col b-round-col"  id="bSFLeft"      data-stage="sf"></div>
-              <div class="b-col b-final-col"  id="bFinalCenter" data-stage="final"></div>
-              <div class="b-col b-round-col"  id="bSFRight"     data-stage="sf"></div>
-              <div class="b-col b-round-col"  id="bQFRight"     data-stage="qf"></div>
-              <div class="b-col b-round-col"  id="bR16Right"    data-stage="r16"></div>
-              <div class="b-col b-round-col"  id="bR32Right"    data-stage="r32"></div>
-              <div class="b-col b-groups-col" id="bGroupsRight" data-stage="groups"></div>
+        <div id="myTeamsPanel" class="my-teams" style="display:none">
+          <h3>Your teams</h3>
+          <div class="my-team-cards" id="myTeamCards"></div>
+        </div>
+
+        <!-- Bracket filter -->
+        <div class="bracket-filter" id="bracketFilter">
+          <button class="bracket-filter-btn active" data-filter="current" onclick="setBracketFilter('current')">Current stage</button>
+          <button class="bracket-filter-btn" data-filter="all" onclick="setBracketFilter('all')">All</button>
+          <button class="bracket-filter-btn" data-filter="players" onclick="setBracketFilter('players')">Players</button>
+        </div>
+
+        <!-- Full bracket tree (groups → knockout → final) -->
+        <div class="bracket-zoom-outer">
+          <div class="bracket-viewport" id="bracketViewport">
+            <div id="bracketScaleOuter">
+              <div id="bracketScaleInner">
+                <div class="bracket-tree" id="bracketTree">
+                  <div class="b-col b-groups-col" id="bGroupsLeft"  data-stage="groups"></div>
+                  <div class="b-col b-round-col"  id="bR32Left"     data-stage="r32"></div>
+                  <div class="b-col b-round-col"  id="bR16Left"     data-stage="r16"></div>
+                  <div class="b-col b-round-col"  id="bQFLeft"      data-stage="qf"></div>
+                  <div class="b-col b-round-col"  id="bSFLeft"      data-stage="sf"></div>
+                  <div class="b-col b-final-col"  id="bFinalCenter" data-stage="final"></div>
+                  <div class="b-col b-round-col"  id="bSFRight"     data-stage="sf"></div>
+                  <div class="b-col b-round-col"  id="bQFRight"     data-stage="qf"></div>
+                  <div class="b-col b-round-col"  id="bR16Right"    data-stage="r16"></div>
+                  <div class="b-col b-round-col"  id="bR32Right"    data-stage="r32"></div>
+                  <div class="b-col b-groups-col" id="bGroupsRight" data-stage="groups"></div>
+                </div>
+              </div>
             </div>
           </div>
+          <div class="bracket-zoom-bar">
+            <button class="bracket-zoom-btn" id="bzOut" aria-label="Zoom out">−</button>
+            <span class="bracket-zoom-level" id="bzLevel">100%</span>
+            <button class="bracket-zoom-btn" id="bzIn" aria-label="Zoom in">+</button>
+            <button class="bracket-zoom-btn" id="bzFit">Fit</button>
+          </div>
         </div>
+
+        <p class="muted" style="font-size:0.78rem;margin-top:12px;text-align:center" id="apiUpdateTime"></p>
+
+        <!-- Players grid view (shown instead of bracket when filter = 'players') -->
+        <div id="playerView"></div>
       </div>
-      <div class="bracket-zoom-bar">
-        <button class="bracket-zoom-btn" id="bzOut" aria-label="Zoom out">−</button>
-        <span class="bracket-zoom-level" id="bzLevel">100%</span>
-        <button class="bracket-zoom-btn" id="bzIn" aria-label="Zoom in">+</button>
-        <button class="bracket-zoom-btn" id="bzFit">Fit</button>
+
+      <!-- Desktop sticky leaderboard panel -->
+      <div class="live-lb-panel" id="liveLbPanel">
+        <div class="lb-panel-header">
+          <span class="lb-panel-title">🏆 Leaderboard</span>
+          <a id="betLinkDesktop" href="#" class="lb-bet-link">Bet ⚡</a>
+        </div>
+        <div id="lbDesktopContent" class="lb-rows"></div>
       </div>
     </div>
-
-    <p class="muted" style="font-size:0.78rem;margin-top:12px;text-align:center" id="apiUpdateTime"></p>
-
-    <!-- Players grid view (shown instead of bracket when filter = 'players') -->
-    <div id="playerView"></div>
 
   </div>
 
@@ -958,6 +1086,7 @@
 <script src="js/avatars.js?v=17807242" onerror="document.getElementById('loadingStatus').textContent='Error loading avatars — please refresh.'"></script>
 <script src="js/football.js?v=17807242" onerror="document.getElementById('loadingStatus').textContent='Error loading football data — please refresh.'"></script>
 <script src="js/draw.js?v=17807242" onerror="document.getElementById('loadingStatus').textContent='Error loading draw logic — please refresh.'"></script>
+<script src="js/leaderboard.js?v=17807242"></script>
 <script src="js/music.js?v=17807242"></script>
 <script>
 // Surface script errors on the loading screen instead of hanging silently.
@@ -1091,8 +1220,9 @@ let allTeams        = [];
 let drawRevealQueue = [];
 let drawRevealing   = false;
 let drawDone        = 0;
-let _drawRunning    = false; // admin is animating directly; Realtime queue skipped
+let _drawRunning    = false;
 const _pendingSlots = {};
+const _settledMatchCache = new Set(); // tracks match IDs we've already triggered settlement for
 
 const code = new URLSearchParams(window.location.search).get('code') || '';
 const adminToken = (() => {
@@ -1751,7 +1881,76 @@ function renderBracketState() {
   document.getElementById('playerView').classList.remove('show');
   document.querySelector('.bracket-zoom-outer').style.display = '';
   document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'current'));
+
+  // Wire up betting links
+  const betUrl = `betting.html?code=${tournament.code}`;
+  const ldMobile  = document.getElementById('betLinkMobile');
+  const ldDesktop = document.getElementById('betLinkDesktop');
+  const ltBet     = document.getElementById('ltBet');
+  if (ldMobile)  ldMobile.href  = betUrl;
+  if (ldDesktop) ldDesktop.href = betUrl;
+  if (ltBet)     ltBet.href     = betUrl;
+
+  // Initial leaderboard load
+  initLeaderboard();
+
   loadBracketData().then(() => setTimeout(BracketZoom.fit, 60));
+}
+
+// ── Leaderboard init ──────────────────────────────────────────────────────────
+
+function initLeaderboard() {
+  if (!db || !tournament) return;
+  const lbDesktop = document.getElementById('lbDesktopContent');
+  const lbMobile  = document.getElementById('lbMobileContent');
+
+  async function refresh() {
+    if (lbDesktop) await refreshLeaderboard(tournament.id, myParticipantId, lbDesktop);
+    if (lbMobile)  await refreshLeaderboard(tournament.id, myParticipantId, lbMobile);
+  }
+
+  refresh();
+  subscribeLeaderboard(tournament.id, refresh);
+}
+
+// ── Live tab switching (mobile) ───────────────────────────────────────────────
+
+function setLiveTab(tab) {
+  const bracketPanel = document.getElementById('liveBracketPanel');
+  const lbMobile     = document.getElementById('liveLbMobile');
+  const ltBracket    = document.getElementById('ltBracket');
+  const ltLb         = document.getElementById('ltLeaderboard');
+
+  const isBracket = tab === 'bracket';
+  bracketPanel.style.display = isBracket ? '' : 'none';
+  lbMobile.classList.toggle('show', !isBracket);
+  ltBracket.classList.toggle('live-tab-active', isBracket);
+  ltLb.classList.toggle('live-tab-active', !isBracket);
+
+  if (!isBracket) {
+    // Refresh leaderboard when tab is opened
+    const lbMobileContent = document.getElementById('lbMobileContent');
+    if (lbMobileContent && tournament) {
+      refreshLeaderboard(tournament.id, myParticipantId, lbMobileContent);
+    }
+  }
+}
+
+// ── Settlement trigger ────────────────────────────────────────────────────────
+
+function triggerSettlementForFinished(matches) {
+  if (!tournament) return;
+  for (const m of matches) {
+    if (m.status !== 'FINISHED') continue;
+    const key = String(m.id);
+    if (_settledMatchCache.has(key)) continue;
+    _settledMatchCache.add(key);
+    fetch('/api/settle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ matchId: key, tournamentId: tournament.id }),
+    }).catch(() => {});
+  }
 }
 
 function saveGroupCache(standings) {
@@ -1919,6 +2118,7 @@ async function loadBracketData() {
       document.getElementById('bracketLiveTag').style.display  = live ? 'inline' : 'none';
       document.getElementById('apiUpdateTime').textContent =
         'Last updated: ' + new Date().toLocaleTimeString();
+      triggerSettlementForFinished(freshData.matches);
     });
   } catch (err) {
     const standings = buildSyntheticStandings();
