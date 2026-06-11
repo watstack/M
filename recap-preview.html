@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Recap · Style Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --dark:   #140a18;
+  --mid:    #211327;
+  --panel:  #190d1f;
+  --border: #3a1f3a;
+  --text:   #f6ead8;
+  --muted:  #b58aa0;
+  --orange: #ff6a1f;
+  --gold:   #ff9ad0;
+  --red:    #ff3b5c;
+  --px-grn: #3cb04a;
+  --px-dk:  #1a5e1a;
+  --px-sky: #6888c8;
+  --px-snd: #e8c97a;
+  --px-blk: #0a0808;
+  --fp: 'Press Start 2P', monospace;
+  --fd: 'Chakra Petch', sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--px-blk);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  min-height:100vh;font-family:var(--fp);
+  overflow:hidden;
+}
+
+/* ── OUTER FRAME ─────────────────────────────── */
+#wrap{
+  position:relative;
+  width:min(640px,100vw);
+  aspect-ratio:16/10;
+  background:var(--dark);
+  border:3px solid var(--border);
+  box-shadow:0 0 50px rgba(255,106,31,.35),0 0 0 1px rgba(255,154,208,.08);
+  overflow:hidden;
+  image-rendering:pixelated;
+}
+
+/* ── STADIUM BG ──────────────────────────────── */
+.sky{
+  position:absolute;inset:0;
+  background:linear-gradient(to bottom,
+    #06030d 0%,#0f0620 28%,#16093a 50%,
+    #0b2e1a 62%,#145e1a 73%,#2a9432 100%);
+}
+/* pixel crowd dots */
+.crowd{
+  position:absolute;top:22%;left:0;right:0;height:22%;
+  background:
+    repeating-linear-gradient(90deg,
+      rgba(255,106,31,.18) 0 3px, transparent 3px 6px,
+      rgba(255,154,208,.12) 6px 9px, transparent 9px 12px),
+    repeating-linear-gradient(to bottom,
+      rgba(255,220,100,.08) 0 2px, transparent 2px 4px);
+  image-rendering:pixelated;
+}
+/* stadium arc lights */
+.lights{
+  position:absolute;top:10%;left:0;right:0;height:14%;
+  display:flex;justify-content:space-around;align-items:flex-end;
+  padding:0 8%;
+}
+.lbeam{width:2px;height:100%;
+  background:linear-gradient(to bottom,rgba(255,230,160,.35),transparent);}
+/* pitch */
+.pitch{
+  position:absolute;bottom:0;left:0;right:0;height:40%;
+}
+.pitch::before{
+  content:'';position:absolute;left:50%;top:0;bottom:0;
+  width:2px;background:rgba(255,255,255,.18);transform:translateX(-50%);
+}
+.pcircle{
+  position:absolute;left:50%;top:35%;
+  width:66px;height:66px;
+  border:2px solid rgba(255,255,255,.13);border-radius:50%;
+  transform:translate(-50%,-50%);
+}
+/* pitch line glow */
+.pitch::after{
+  content:'';position:absolute;left:50%;top:0;
+  width:1px;height:100%;
+  background:rgba(255,255,255,.06);
+  box-shadow:0 0 12px rgba(255,255,255,.15);
+  transform:translateX(-50%);
+}
+
+/* ── HUD ─────────────────────────────────────── */
+#hud{
+  position:absolute;top:0;left:0;right:0;
+  height:50px;
+  background:rgba(10,8,8,.93);
+  border-bottom:2px solid var(--border);
+  display:flex;align-items:center;
+  padding:0 8px;gap:6px;z-index:10;
+}
+.tname{
+  font-size:5.5px;color:var(--text);white-space:nowrap;
+  letter-spacing:.04em;min-width:52px;text-align:center;
+  line-height:1.6;
+}
+.hp-wrap{
+  flex:1;height:16px;
+  background:#0a0808;border:1px solid #2a1a2a;
+  position:relative;overflow:hidden;
+}
+.hp-fill{
+  position:absolute;top:0;bottom:0;
+  transition:width .4s ease-out;
+}
+.hp-fill.p1{right:0;}
+.hp-fill.p2{left:0;}
+.hp-stripe{
+  position:absolute;inset:0;
+  background:repeating-linear-gradient(-45deg,
+    transparent,transparent 4px,rgba(0,0,0,.18) 4px,rgba(0,0,0,.18) 6px);
+  pointer-events:none;
+}
+.hp-low{ filter:saturate(1.8) hue-rotate(-20deg); }
+.timer-box{
+  font-size:17px;color:var(--text);
+  background:#0a0808;border:2px solid #3a1f3a;
+  padding:4px 9px;min-width:44px;text-align:center;
+  font-family:var(--fp);flex-shrink:0;
+}
+.timer-box.urgent{color:var(--red);}
+
+/* ── SCORE ───────────────────────────────────── */
+#score-row{
+  position:absolute;top:53px;left:0;right:0;
+  display:flex;justify-content:center;align-items:center;
+  gap:14px;z-index:8;
+}
+.snum{
+  font-size:20px;color:var(--text);
+  text-shadow:2px 2px 0 var(--px-blk);
+  transition:transform .1s,color .1s;
+  min-width:26px;text-align:center;
+}
+.snum.pop{transform:scale(1.7);color:var(--orange);}
+.sdash{font-size:11px;color:var(--muted);}
+
+/* ── FIGHTERS ────────────────────────────────── */
+.fighter-slot{
+  position:absolute;bottom:38%;z-index:6;
+  display:flex;flex-direction:column;align-items:center;
+}
+.fighter-slot.p1{left:20%;transform:translateX(-50%);}
+.fighter-slot.p2{right:20%;transform:translateX(50%);}
+
+/* inner wrapper holds the mirror, animations hit the sprite */
+.fighter-inner{display:flex;flex-direction:column;align-items:center;}
+.fighter-slot.p2 .fighter-inner{transform:scaleX(-1);}
+
+.fighter-sprite{
+  width:64px;height:80px;
+  image-rendering:pixelated;
+  filter:drop-shadow(0 6px 10px rgba(0,0,0,.85));
+  transform-origin:center bottom;
+  display:block;
+}
+.fighter-shadow{
+  width:36px;height:5px;
+  background:radial-gradient(ellipse,rgba(0,0,0,.55),transparent);
+  margin-top:-2px;
+}
+
+/* Idle bob */
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.fighter-slot.idle .fighter-sprite{animation:bob .9s ease-in-out infinite;}
+
+/* Kick forward */
+@keyframes kick{
+  0%  {transform:translateY(0) translateX(0) rotate(0);}
+  20% {transform:translateY(-12px) translateX(32px) rotate(10deg);}
+  45% {transform:translateY(-4px) translateX(52px) rotate(5deg);}
+  70% {transform:translateY(0) translateX(20px) rotate(2deg);}
+  100%{transform:translateY(0) translateX(0) rotate(0);}
+}
+/* Stagger back */
+@keyframes stagger{
+  0%  {transform:translateY(0) translateX(0);}
+  25% {transform:translateY(-10px) translateX(-28px) rotate(-12deg);}
+  55% {transform:translateY(0) translateX(-12px) rotate(-5deg);}
+  80% {transform:translateY(0) translateX(-4px);}
+  100%{transform:translateY(0) translateX(0);}
+}
+/* Victory */
+@keyframes victory{
+  0%,100%{transform:translateY(0) scale(1);}
+  35%{transform:translateY(-22px) scale(1.08);}
+  65%{transform:translateY(-10px) scale(1.03);}
+}
+/* Defeat */
+@keyframes defeat{
+  0%  {transform:rotate(0) translateY(0);opacity:1;}
+  100%{transform:rotate(85deg) translateX(25px) translateY(8px);opacity:.35;}
+}
+
+.fighter-sprite.do-kick    {animation:kick    .55s ease-in-out forwards!important;}
+.fighter-sprite.do-stagger {animation:stagger .55s ease-in-out forwards!important;}
+.fighter-sprite.do-victory {animation:victory .75s ease-in-out infinite!important;}
+.fighter-sprite.do-defeat  {animation:defeat  .5s  ease-in     forwards!important;}
+
+/* ── HIT FLASH ───────────────────────────────── */
+#hit-flash{
+  position:absolute;inset:0;background:#fff;
+  opacity:0;pointer-events:none;z-index:20;
+}
+@keyframes flash{0%{opacity:.7;}100%{opacity:0;}}
+#hit-flash.go{animation:flash .35s ease-out forwards;}
+
+/* ── SCREEN SHAKE ────────────────────────────── */
+@keyframes shake{
+  0%  {transform:translate(0);}
+  15% {transform:translate(-5px,3px);}
+  30% {transform:translate(5px,-2px);}
+  50% {transform:translate(-4px,4px);}
+  70% {transform:translate(3px,-1px);}
+  85% {transform:translate(-2px,2px);}
+  100%{transform:translate(0);}
+}
+#wrap.go-shake{animation:shake .4s ease-out;}
+
+/* ── ANNOUNCER ───────────────────────────────── */
+#ann{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-size:22px;text-align:center;
+  z-index:22;pointer-events:none;opacity:0;
+  white-space:nowrap;text-shadow:3px 3px 0 rgba(0,0,0,.9);
+}
+@keyframes ann-pop{
+  0%  {opacity:0;transform:translate(-50%,-50%) scale(.25) rotate(-6deg);}
+  14% {opacity:1;transform:translate(-50%,-50%) scale(1.3) rotate(3deg);}
+  24% {transform:translate(-50%,-50%) scale(1) rotate(0);}
+  72% {opacity:1;}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1);}
+}
+#ann.go{animation:ann-pop 1.6s ease-out forwards;}
+
+/* ── SCORER LABEL ────────────────────────────── */
+#scorer-lbl{
+  position:absolute;bottom:42%;left:50%;
+  transform:translateX(-50%);
+  font-size:8px;color:var(--px-snd);
+  text-shadow:1px 1px 0 var(--px-blk);
+  z-index:9;opacity:0;white-space:nowrap;pointer-events:none;
+}
+@keyframes scorer-rise{
+  0%  {opacity:0;transform:translateX(-50%) translateY(6px);}
+  18% {opacity:1;transform:translateX(-50%) translateY(0);}
+  72% {opacity:1;}
+  100%{opacity:0;transform:translateX(-50%) translateY(-8px);}
+}
+#scorer-lbl.go{animation:scorer-rise 1.9s ease-out forwards;}
+
+/* ── VS SCREEN ───────────────────────────────── */
+#vs-screen{
+  position:absolute;inset:0;
+  background:var(--px-blk);
+  display:flex;align-items:center;justify-content:center;
+  z-index:30;
+}
+.vs-side{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:10px;padding:16px;
+}
+.vs-side.p1{transform:translateX(-130%);transition:transform .42s cubic-bezier(0.23,1,.32,1);}
+.vs-side.p2{transform:translateX(130%); transition:transform .42s cubic-bezier(0.23,1,.32,1);}
+.vs-flag{width:54px;height:36px;border:2px solid rgba(255,255,255,.28);border-radius:2px;}
+.vs-tname{font-size:7px;color:var(--text);text-align:center;letter-spacing:.05em;}
+.vs-sprite{width:52px;height:64px;image-rendering:pixelated;}
+.vs-sprite.flip{transform:scaleX(-1);}
+.vs-mid{
+  display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;
+}
+.vs-big{
+  font-size:30px;color:var(--orange);
+  text-shadow:4px 4px 0 var(--red),7px 7px 0 rgba(0,0,0,.5);
+  letter-spacing:.1em;
+}
+.vs-sub{font-size:5.5px;color:var(--muted);text-align:center;line-height:2.2;}
+
+/* ── RESULT BANNER ───────────────────────────── */
+#result{
+  position:absolute;top:36%;left:0;right:0;
+  text-align:center;font-size:26px;
+  text-shadow:4px 4px 0 rgba(0,0,0,.85);
+  z-index:22;opacity:0;pointer-events:none;
+}
+@keyframes result-slam{
+  0%  {opacity:0;transform:scaleY(5) scaleX(.2);}
+  14% {opacity:1;transform:scaleY(.75) scaleX(1.12);}
+  24% {transform:scale(1);}
+  78% {opacity:1;}
+  100%{opacity:0;transform:scale(1.04);}
+}
+#result.go{animation:result-slam 2s ease-out forwards;}
+
+/* ── PROGRESS BAR ────────────────────────────── */
+#prog{
+  position:absolute;bottom:0;left:0;
+  height:3px;background:var(--orange);z-index:15;
+  box-shadow:0 0 8px var(--orange);
+  transition:width 10s linear;
+}
+
+/* ── PARTICLES ───────────────────────────────── */
+.px{
+  position:absolute;width:5px;height:5px;border-radius:50%;
+  pointer-events:none;z-index:18;
+}
+@keyframes px-fly{
+  0%  {opacity:1;transform:translate(0,0) scale(1);}
+  100%{opacity:0;transform:var(--t) scale(0);}
+}
+
+/* ── SKIP BTN ────────────────────────────────── */
+#skip{
+  position:absolute;bottom:9px;right:9px;
+  font-family:var(--fp);font-size:6px;
+  color:var(--muted);background:rgba(10,8,8,.82);
+  border:1px solid var(--border);padding:7px 11px;
+  cursor:pointer;z-index:25;letter-spacing:.04em;
+  transition:color .12s,border-color .12s;
+}
+#skip:hover{color:var(--text);border-color:var(--muted);}
+
+/* ── MATCH COUNTER ───────────────────────────── */
+#mctr{
+  position:absolute;bottom:11px;left:9px;
+  font-size:5px;color:var(--muted);z-index:12;
+}
+
+/* ── TITLE ───────────────────────────────────── */
+#titlbar{
+  position:absolute;top:7px;left:50%;transform:translateX(-50%);
+  font-size:5px;color:var(--muted);z-index:11;white-space:nowrap;
+  letter-spacing:.07em;
+}
+
+/* ── END SCREEN ──────────────────────────────── */
+#end{
+  position:absolute;inset:0;background:var(--px-blk);
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:22px;z-index:40;
+  opacity:0;pointer-events:none;transition:opacity .5s;
+}
+#end.show{opacity:1;pointer-events:auto;}
+.end-h{font-size:14px;color:var(--orange);text-shadow:3px 3px 0 var(--red);}
+.end-s{font-size:6.5px;color:var(--muted);text-align:center;line-height:2.4;}
+
+/* ── PAGE LABEL ──────────────────────────────── */
+#page-lbl{
+  margin-top:10px;font-family:var(--fp);
+  font-size:5px;color:#3a2a3a;
+  text-align:center;letter-spacing:.06em;
+}
+</style>
+</head>
+<body>
+
+<div id="wrap">
+
+  <!-- BG -->
+  <div class="sky"></div>
+  <div class="lights">
+    <div class="lbeam"></div><div class="lbeam"></div><div class="lbeam"></div>
+    <div class="lbeam"></div><div class="lbeam"></div><div class="lbeam"></div>
+  </div>
+  <div class="crowd"></div>
+  <div class="pitch"><div class="pcircle"></div></div>
+
+  <!-- VS intro -->
+  <div id="vs-screen">
+    <div class="vs-side p1" id="vs-left">
+      <img id="vs-sp1" src="assets/avatars/striker.svg" class="vs-sprite" alt="">
+      <div class="vs-flag" id="vs-f1"></div>
+      <div class="vs-tname" id="vs-n1">ENGLAND</div>
+    </div>
+    <div class="vs-mid">
+      <div class="vs-big">VS</div>
+      <div class="vs-sub" id="vs-sub">GROUP STAGE · JUNE 11</div>
+    </div>
+    <div class="vs-side p2" id="vs-right">
+      <img id="vs-sp2" src="assets/avatars/captain.svg" class="vs-sprite flip" alt="">
+      <div class="vs-flag" id="vs-f2"></div>
+      <div class="vs-tname" id="vs-n2">FRANCE</div>
+    </div>
+  </div>
+
+  <!-- End -->
+  <div id="end">
+    <div class="end-h">RECAP COMPLETE</div>
+    <div class="end-s">ALL YESTERDAY'S RESULTS SHOWN</div>
+  </div>
+
+  <!-- HUD -->
+  <div id="hud">
+    <div class="tname" id="hn1">ENGLAND</div>
+    <div class="hp-wrap">
+      <div class="hp-fill p1" id="hp1" style="width:100%"></div>
+      <div class="hp-stripe"></div>
+    </div>
+    <div class="timer-box" id="tim">10</div>
+    <div class="hp-wrap">
+      <div class="hp-fill p2" id="hp2" style="width:100%"></div>
+      <div class="hp-stripe"></div>
+    </div>
+    <div class="tname" id="hn2">FRANCE</div>
+  </div>
+
+  <div id="titlbar">DAILY RECAP · YESTERDAY'S BATTLES</div>
+
+  <!-- Score -->
+  <div id="score-row">
+    <span class="snum" id="s1">0</span>
+    <span class="sdash">—</span>
+    <span class="snum" id="s2">0</span>
+  </div>
+
+  <!-- P1 fighter -->
+  <div class="fighter-slot p1" id="slot1">
+    <div class="fighter-inner">
+      <img id="sp1" src="assets/avatars/striker.svg" class="fighter-sprite" alt="">
+    </div>
+    <div class="fighter-shadow"></div>
+  </div>
+
+  <!-- P2 fighter -->
+  <div class="fighter-slot p2" id="slot2">
+    <div class="fighter-inner">
+      <img id="sp2" src="assets/avatars/captain.svg" class="fighter-sprite" alt="">
+    </div>
+    <div class="fighter-shadow"></div>
+  </div>
+
+  <!-- Overlays -->
+  <div id="ann"></div>
+  <div id="scorer-lbl"></div>
+  <div id="result"></div>
+  <div id="hit-flash"></div>
+
+  <!-- Progress -->
+  <div id="prog" style="width:100%"></div>
+
+  <!-- Controls -->
+  <button id="skip" onclick="skipNow()">SKIP ▶▶</button>
+  <div id="mctr">MATCH 1 / 4</div>
+
+</div>
+
+<div id="page-lbl">STYLE PREVIEW — CLICK SKIP TO ADVANCE MATCH</div>
+
+<script>
+// ── Match data ────────────────────────────────────
+const MATCHES = [
+  {
+    home:{ name:'ENGLAND',     c1:'#003399', c2:'#CC0000' },
+    away:{ name:'FRANCE',      c1:'#0055A4', c2:'#EF4135' },
+    hs:2, as:1,
+    goals:[
+      {t:'home',sc:'KANE  23\''},
+      {t:'away',sc:'MBAPPÉ  45\''},
+      {t:'home',sc:'SAKA  78\''},
+    ]
+  },
+  {
+    home:{ name:'BRAZIL',      c1:'#009B3A', c2:'#FEDD00' },
+    away:{ name:'ARGENTINA',   c1:'#5B9BD5', c2:'#B5D0EC' },
+    hs:1, as:1,
+    goals:[
+      {t:'home',sc:'VINICIUS  31\''},
+      {t:'away',sc:'MESSI  67\''},
+    ]
+  },
+  {
+    home:{ name:'GERMANY',     c1:'#222222', c2:'#CCCCCC' },
+    away:{ name:'SPAIN',       c1:'#AA151B', c2:'#F1BF00' },
+    hs:0, as:3,
+    goals:[
+      {t:'away',sc:'MORATA  12\''},
+      {t:'away',sc:'YAMAL  55\''},
+      {t:'away',sc:'OLMO  88\''},
+    ]
+  },
+  {
+    home:{ name:'PORTUGAL',    c1:'#006600', c2:'#FF3333' },
+    away:{ name:'NETHERLANDS', c1:'#E8600C', c2:'#FFFFFF' },
+    hs:2, as:0,
+    goals:[
+      {t:'home',sc:'RONALDO  34\''},
+      {t:'home',sc:'LEÃO  71\''},
+    ]
+  }
+];
+
+// Avatar pairs per match for visual variety
+const SPRITES = [
+  ['assets/avatars/striker.svg',   'assets/avatars/captain.svg'],
+  ['assets/avatars/winger.svg',    'assets/avatars/playmaker.svg'],
+  ['assets/avatars/keeper.svg',    'assets/avatars/manager.svg'],
+  ['assets/avatars/ultra.svg',     'assets/avatars/mascot.svg'],
+];
+
+// ── State ─────────────────────────────────────────
+let gen = 0;          // generation counter — increment to cancel pending ops
+let curIdx = 0;
+let tickId = null;
+let timerVal = 10;
+
+function e(id){ return document.getElementById(id); }
+
+// ── Boot ──────────────────────────────────────────
+window.addEventListener('load', () => setTimeout(() => runMatch(0), 200));
+
+// ── Load a match ──────────────────────────────────
+function runMatch(idx){
+  gen++;                          // cancel all previous pending timeouts
+  if(tickId) clearInterval(tickId);
+
+  if(idx >= MATCHES.length){ showEnd(); return; }
+  curIdx = idx;
+
+  const m = MATCHES[idx];
+  const sp = SPRITES[idx % SPRITES.length];
+  const myGen = gen;
+
+  // Sprites
+  e('sp1').src = sp[0];  e('sp2').src = sp[1];
+  e('vs-sp1').src = sp[0]; e('vs-sp2').src = sp[1];
+
+  // HUD
+  e('hn1').textContent = m.home.name;
+  e('hn2').textContent = m.away.name;
+  setHP(1, 100, m);
+  setHP(2, 100, m);
+
+  // Score reset
+  e('s1').textContent = '0'; e('s2').textContent = '0';
+  e('s1').classList.remove('pop'); e('s2').classList.remove('pop');
+
+  // Timer
+  timerVal = 10;
+  e('tim').textContent = '10';
+  e('tim').classList.remove('urgent');
+
+  // Fighters
+  e('slot1').classList.remove('idle');
+  e('slot2').classList.remove('idle');
+  clearAnimClasses('sp1'); clearAnimClasses('sp2');
+
+  // Progress bar
+  e('prog').style.transition = 'none';
+  e('prog').style.width = '100%';
+
+  // Counter
+  e('mctr').textContent = `MATCH ${idx+1} / ${MATCHES.length}`;
+
+  // VS intro → battle
+  vsIntro(m, sp, myGen, () => {
+    if(gen !== myGen) return;
+    startBattle(m, myGen);
+  });
+}
+
+// ── VS Intro ──────────────────────────────────────
+function vsIntro(m, sp, myGen, cb){
+  const vs = e('vs-screen');
+  const left = e('vs-left');
+  const right = e('vs-right');
+
+  e('vs-n1').textContent = m.home.name;
+  e('vs-n2').textContent = m.away.name;
+  e('vs-f1').style.background = m.home.c1;
+  e('vs-f2').style.background = m.away.c1;
+
+  // Reset off-screen
+  left.style.transition = 'none'; right.style.transition = 'none';
+  left.style.transform = 'translateX(-130%)';
+  right.style.transform = 'translateX(130%)';
+  vs.style.opacity = '1'; vs.style.transition = '';
+
+  // Slide in
+  raf2(() => {
+    left.style.transition = 'transform .42s cubic-bezier(0.23,1,.32,1)';
+    right.style.transition = 'transform .42s cubic-bezier(0.23,1,.32,1)';
+    left.style.transform = 'translateX(0)';
+    right.style.transform = 'translateX(0)';
+  });
+
+  // Slam together at ~1.1s
+  after(1100, myGen, () => {
+    left.style.transition = 'transform .1s ease-in';
+    right.style.transition = 'transform .1s ease-in';
+    left.style.transform = 'translateX(22px)';
+    right.style.transform = 'translateX(-22px)';
+    doFlash(); doShake();
+  });
+
+  // Fade out VS at 1.4s
+  after(1400, myGen, () => {
+    vs.style.transition = 'opacity .3s ease-out';
+    vs.style.opacity = '0';
+    after(330, myGen, cb);
+  });
+}
+
+// ── Battle ────────────────────────────────────────
+function startBattle(m, myGen){
+  e('slot1').classList.add('idle');
+  e('slot2').classList.add('idle');
+
+  announce('⚽  KICK OFF!', '#ff9ad0', myGen);
+
+  // Spread goals between t=1.5s and t=7.2s
+  const G = m.goals, n = G.length;
+  const t0 = 1500, t1 = 7200;
+  const step = n <= 1 ? 0 : (t1 - t0) / (n - 1);
+
+  let hs = 0, as = 0;
+  G.forEach((g, i) => {
+    after(t0 + i * step, myGen, () => {
+      if(g.t === 'home'){ hs++; fireGoal('p1', hs, as, m, g.sc, myGen); }
+      else              { as++; fireGoal('p2', hs, as, m, g.sc, myGen); }
+    });
+  });
+
+  // Result at 8.1s
+  after(8100, myGen, () => showResult(m));
+
+  // Next at 10s
+  after(10000, myGen, fadeNext);
+
+  // Countdown tick
+  tickId = setInterval(() => {
+    timerVal--;
+    const v = Math.max(0, timerVal);
+    e('tim').textContent = v;
+    if(v <= 3) e('tim').classList.add('urgent');
+    if(v <= 0) clearInterval(tickId);
+  }, 1000);
+
+  // Shrink progress bar
+  raf2(() => {
+    e('prog').style.transition = 'width 10s linear';
+    e('prog').style.width = '0%';
+  });
+}
+
+// ── Goal ──────────────────────────────────────────
+function fireGoal(side, hs, as, m, scorer, myGen){
+  // Fighter animations (kick attacker, stagger defender)
+  const atkId = side === 'p1' ? 'sp1' : 'sp2';
+  const defId = side === 'p1' ? 'sp2' : 'sp1';
+  playAnim(atkId, 'do-kick');
+  playAnim(defId, 'do-stagger');
+
+  doFlash(); doShake();
+
+  // Score update after kick lands (~200ms)
+  after(200, myGen, () => {
+    e('s1').textContent = hs; e('s2').textContent = as;
+    const sid = side === 'p1' ? 's1' : 's2';
+    e(sid).classList.add('pop');
+    after(220, myGen, () => e(sid).classList.remove('pop'));
+  });
+
+  // HP update
+  const mx = Math.max(m.hs, m.as, 1);
+  const h1 = Math.max(8, 100 - (as / mx) * 88);
+  const h2 = Math.max(8, 100 - (hs / mx) * 88);
+  setHP(1, h1, m); setHP(2, h2, m);
+
+  // Announcer + scorer
+  announce('⚽  GOAL!', '#3cb04a', myGen);
+  popScorer(scorer);
+
+  // Burst particles near the scoring side
+  const xPct = side === 'p1' ? 22 : 78;
+  const col  = side === 'p1' ? m.home.c2 : m.away.c2;
+  burst(xPct, col, 12);
+}
+
+// ── Result ────────────────────────────────────────
+function showResult(m){
+  const r = e('result');
+  let text, color;
+
+  if(m.hs > m.as){
+    text  = m.home.name + '  WIN!';
+    color = m.home.c2;
+    playAnim('sp1', 'do-victory'); playAnim('sp2', 'do-defeat');
+    e('slot1').classList.remove('idle'); e('slot2').classList.remove('idle');
+    burst(22, m.home.c2, 22);
+  } else if(m.as > m.hs){
+    text  = m.away.name + '  WIN!';
+    color = m.away.c2;
+    playAnim('sp2', 'do-victory'); playAnim('sp1', 'do-defeat');
+    e('slot1').classList.remove('idle'); e('slot2').classList.remove('idle');
+    burst(78, m.away.c2, 22);
+  } else {
+    text  = 'IT\'S  A  DRAW!';
+    color = '#ff9ad0';
+    playAnim('sp1', 'do-victory'); playAnim('sp2', 'do-victory');
+    e('slot1').classList.remove('idle'); e('slot2').classList.remove('idle');
+  }
+
+  r.textContent = text;
+  r.style.color = color;
+  r.classList.remove('go'); r.offsetHeight; r.classList.add('go');
+}
+
+// ── Transition ────────────────────────────────────
+function fadeNext(){
+  clearInterval(tickId);
+  const w = e('wrap');
+  w.style.transition = 'opacity .38s';
+  w.style.opacity = '0';
+  setTimeout(() => {
+    w.style.opacity = '1';
+    runMatch(curIdx + 1);
+  }, 400);
+}
+
+function skipNow(){
+  gen++;                    // invalidate all pending after() calls
+  clearInterval(tickId);
+  fadeNext();
+}
+
+function showEnd(){
+  e('end').classList.add('show');
+}
+
+// ── Helpers ───────────────────────────────────────
+function setHP(n, pct, m){
+  const el = e('hp' + n);
+  const m2 = n === 1 ? m.home : m.away;
+  el.style.width = pct + '%';
+  el.style.background = n === 1
+    ? `linear-gradient(to left, ${m2.c1}, ${m2.c2})`
+    : `linear-gradient(to right, ${m2.c1}, ${m2.c2})`;
+  el.classList.toggle('hp-low', pct < 30);
+}
+
+function announce(txt, col, myGen){
+  const a = e('ann');
+  a.textContent = txt; a.style.color = col;
+  a.classList.remove('go'); a.offsetHeight; a.classList.add('go');
+}
+
+function popScorer(txt){
+  const l = e('scorer-lbl');
+  l.textContent = txt;
+  l.classList.remove('go'); l.offsetHeight; l.classList.add('go');
+}
+
+function doFlash(){
+  const f = e('hit-flash');
+  f.classList.remove('go'); f.offsetHeight; f.classList.add('go');
+}
+
+function doShake(){
+  const w = e('wrap');
+  w.classList.remove('go-shake'); w.offsetHeight; w.classList.add('go-shake');
+}
+
+function playAnim(id, cls){
+  const s = e(id);
+  clearAnimClasses(id);
+  s.offsetHeight;
+  s.classList.add(cls);
+  if(cls !== 'do-victory' && cls !== 'do-defeat'){
+    setTimeout(() => s.classList.remove(cls), 650);
+  }
+}
+
+function clearAnimClasses(id){
+  const s = e(id);
+  ['do-kick','do-stagger','do-victory','do-defeat'].forEach(c => s.classList.remove(c));
+}
+
+function burst(xPct, color, n){
+  const w = e('wrap');
+  for(let i = 0; i < n; i++){
+    const p = document.createElement('div');
+    p.className = 'px';
+    p.style.background = color;
+    p.style.left = (xPct + (Math.random()-.5)*14) + '%';
+    p.style.top  = (30 + Math.random()*28) + '%';
+    const dx = (Math.random()-.5)*110;
+    const dy = -(Math.random()*90 + 25);
+    p.style.setProperty('--t', `translate(${dx}px,${dy}px)`);
+    p.style.animation = `px-fly ${.45 + Math.random()*.55}s ease-out forwards`;
+    w.appendChild(p);
+    setTimeout(() => p.remove(), 1200);
+  }
+}
+
+// after() respects the generation counter — noop if gen changed
+function after(ms, myGen, fn){
+  setTimeout(() => { if(gen === myGen) fn(); }, ms);
+}
+
+// double-rAF to guarantee style commit before transition
+function raf2(fn){ requestAnimationFrame(() => requestAnimationFrame(fn)); }
+</script>
+</body>
+</html>
