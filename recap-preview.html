@@ -457,8 +457,22 @@ const SPRITES = [
   ['assets/avatars/ultra.svg',     'assets/avatars/mascot.svg'],
 ];
 
+// Avatar color palettes matching the pixel art SVGs
+const AVATAR_COLORS = {
+  striker:    { skin:'#c98a5c', hair:'#241a12', jersey:'#e8392f', shorts:'#ffffff', socks:'#ffffff', boots:'#ffffff' },
+  captain:    { skin:'#c98a5c', hair:'#ecbb33', jersey:'#ecbb33', shorts:'#3a2c0a', socks:'#14121f', boots:'#14121f', special:'armband' },
+  keeper:     { skin:'#d99a66', hair:'#3a2a18', jersey:'#f5d020', shorts:'#1a1a1f', socks:'#f5d020', boots:'#14121f', special:'gloves', gloveColor:'#1fc2a4' },
+  playmaker:  { skin:'#f0c39a', hair:'#5a3a1c', jersey:'#2a6fdb', shorts:'#13294f', socks:'#ffffff', boots:'#14121f' },
+  winger:     { skin:'#e0a877', hair:'#e8c86a', jersey:'#1f9d55', shorts:'#101014', socks:'#ffffff', boots:'#14121f' },
+  manager:    { skin:'#c98a5c', hair:'#b8b8be', jersey:'#2b303c', shorts:'#2b303c', socks:'#2b303c', boots:'#14121f', special:'tie', tieColor:'#e8392f' },
+  mascot:     { skin:'#f3b96e', hair:'#e07b1f', jersey:'#e8392f', shorts:'#ffffff', socks:'#e8392f', boots:'#14121f' },
+  fan:        { skin:'#c98a5c', hair:'#1fc2a4', jersey:'#e8392f', shorts:'#ffffff', socks:'#e8392f', boots:'#14121f' },
+  ultra:      { skin:'#e0a877', hair:'#e8c86a', jersey:'#1f9d55', shorts:'#101014', socks:'#ffffff', boots:'#14121f' },
+  commentator:{ skin:'#c98a5c', hair:'#3a2a18', jersey:'#2a2e38', shorts:'#2a2e38', socks:'#2a2e38', boots:'#14121f', special:'earpiece', earColor:'#25d8d8' },
+};
+
 // ── State ─────────────────────────────────────────
-let gen = 0;          // generation counter — increment to cancel pending ops
+let gen = 0;
 let curIdx = 0;
 let tickId = null;
 let timerVal = 10;
@@ -597,31 +611,70 @@ function startBattle(m, myGen){
   });
 }
 
+// ── Fight sequences ─────────────────────────────────
+const FIGHT_SEQS = [
+  { atk:'kick',      atkX:0.36, defX:0.62, def:'hurt'    },
+  { atk:'punch',     atkX:0.38, defX:0.58, def:'stumble' },
+  { atk:'high_kick', atkX:0.34, defX:0.60, def:'hurt'    },
+  { atk:'uppercut',  atkX:0.35, defX:0.57, def:'hurt'    },
+  { atk:'jump_kick', atkX:0.42, defX:0.60, def:'hurt',    jump:true },
+  { atk:'punch',     atkX:0.16, defX:0.84, def:'duck',    noWalk:true, defNoWalk:true },
+  { atk:'low_kick',  atkX:0.36, defX:0.62, def:'block'   },
+  { atk:'high_kick', atkX:0.38, defX:0.60, def:'duck'    },
+];
+
 // ── Goal ──────────────────────────────────────────
 function fireGoal(side, hs, as, m, scorer, myGen){
   const atk = F[side], def = F[side === 'p1' ? 'p2' : 'p1'];
-  const useKick = (hs + as) % 2 === 0;  // alternate kick/punch per goal
+  const W = document.getElementById('fighter-canvas').clientWidth;
+  const seq = FIGHT_SEQS[(hs + as - 1) % FIGHT_SEQS.length];
 
-  // Walk in
-  atk.walkTo(side === 'p1' ? 230 : 410, 400, () => {
-    atk.setState(useKick ? 'kick' : 'punch', { onComplete: () => {
-      after(600, myGen, () => { atk.walkTo(atk.homeX, 400); atk.setState('walk'); });
-      after(1000, myGen, () => atk.setState('idle'));
+  // Mirror positions for P2 attacking from right
+  const atkPos = side === 'p1' ? seq.atkX * W : W - seq.atkX * W;
+  const defPos = side === 'p1' ? seq.defX * W : W - seq.defX * W;
+
+  // Attacker
+  if(seq.jump){
+    atk.setState(seq.atk, { onComplete: () => {
+      after(500, myGen, () => { atk.walkTo(atk.homeX, 400); atk.setState('walk'); });
+      after(900, myGen, () => atk.setState('idle'));
     }});
-  });
-  def.walkTo(side === 'p1' ? 380 : 260, 400, () => {
-    after(200, myGen, () => {
-      def.setState('hurt', { onComplete: () => {
-        after(400, myGen, () => { def.walkTo(def.homeX, 400); def.setState('walk'); });
-        after(800, myGen, () => def.setState('idle'));
+    atk.jumpTo(atkPos, -55, 350);
+  } else if(!seq.noWalk){
+    atk.setState('walk');
+    atk.walkTo(atkPos, 400, () => {
+      atk.setState(seq.atk, { onComplete: () => {
+        after(500, myGen, () => { atk.walkTo(atk.homeX, 400); atk.setState('walk'); });
+        after(900, myGen, () => atk.setState('idle'));
       }});
     });
-  });
-  atk.setState('walk'); def.setState('walk');
+  } else {
+    atk.setState(seq.atk, { onComplete: () => {
+      after(700, myGen, () => atk.setState('idle'));
+    }});
+  }
+
+  // Defender
+  if(!seq.defNoWalk){
+    def.setState('walk');
+    def.walkTo(defPos, 400, () => {
+      after(150, myGen, () => {
+        def.setState(seq.def, { onComplete: () => {
+          after(350, myGen, () => { def.walkTo(def.homeX, 400); def.setState('walk'); });
+          after(750, myGen, () => def.setState('idle'));
+        }});
+      });
+    });
+  } else {
+    after(300, myGen, () => {
+      def.setState(seq.def, { onComplete: () => {
+        after(500, myGen, () => def.setState('idle'));
+      }});
+    });
+  }
 
   doFlash(); doShake();
 
-  // Score update after kick lands (~200ms)
   after(200, myGen, () => {
     e('s1').textContent = hs; e('s2').textContent = as;
     const sid = side === 'p1' ? 's1' : 's2';
@@ -629,20 +682,14 @@ function fireGoal(side, hs, as, m, scorer, myGen){
     after(220, myGen, () => e(sid).classList.remove('pop'));
   });
 
-  // HP update
   const mx = Math.max(m.hs, m.as, 1);
-  const h1 = Math.max(8, 100 - (as / mx) * 88);
-  const h2 = Math.max(8, 100 - (hs / mx) * 88);
-  setHP(1, h1, m); setHP(2, h2, m);
+  setHP(1, Math.max(8, 100 - (as / mx) * 88), m);
+  setHP(2, Math.max(8, 100 - (hs / mx) * 88), m);
 
-  // Announcer + scorer
   announce('⚽  GOAL!', '#3cb04a', myGen);
   popScorer(scorer);
 
-  // Burst particles near the scoring side
-  const xPct = side === 'p1' ? 22 : 78;
-  const col  = side === 'p1' ? m.home.c2 : m.away.c2;
-  burst(xPct, col, 12);
+  burst(side === 'p1' ? 22 : 78, side === 'p1' ? m.home.c2 : m.away.c2, 12);
 }
 
 // ── Result ────────────────────────────────────────
@@ -832,6 +879,134 @@ const POSES = {
         rTH:0.12, rSH:0.25, lTH:-0.12, lSH:0 },
     ]
   },
+  high_kick: {
+    dur: 0.6, loop: false,
+    kf: [
+      { t:0,    bodyY:0,   torsoTilt:0.06,  headTilt:0,
+        rUA:0.45, rFA:1.15, lUA:-0.45, lFA:-1.15,
+        rTH:0.12, rSH:0.25, lTH:-0.12, lSH:0 },
+      { t:0.12, bodyY:-4,  torsoTilt:-0.12, headTilt:-0.08,
+        rUA:0.6,  rFA:0.9,  lUA:-0.7,  lFA:-0.3,
+        rTH:-0.55, rSH:0.85, lTH:0.08, lSH:0 },
+      { t:0.25, bodyY:-10, torsoTilt:-0.25, headTilt:-0.1,
+        rUA:0.9,  rFA:0.4,  lUA:-1.0,  lFA:-0.2,
+        rTH:-1.6, rSH:-0.05, lTH:0.15, lSH:0 },
+      { t:0.38, bodyY:-12, torsoTilt:-0.28, headTilt:-0.12,
+        rUA:0.9,  rFA:0.3,  lUA:-1.05, lFA:-0.2,
+        rTH:-1.65, rSH:-0.1, lTH:0.18, lSH:0 },
+      { t:0.50, bodyY:-5,  torsoTilt:-0.1,  headTilt:-0.04,
+        rUA:0.6,  rFA:0.9,  lUA:-0.6,  lFA:-0.8,
+        rTH:-0.9, rSH:0.6,  lTH:0.05, lSH:0 },
+      { t:0.60, bodyY:0,   torsoTilt:0.06,  headTilt:0,
+        rUA:0.45, rFA:1.15, lUA:-0.45, lFA:-1.15,
+        rTH:0.12, rSH:0.25, lTH:-0.12, lSH:0 },
+    ]
+  },
+  low_kick: {
+    dur: 0.55, loop: false,
+    kf: [
+      { t:0,    bodyY:0,  torsoTilt:0.06, headTilt:0,
+        rUA:0.45, rFA:1.15, lUA:-0.45, lFA:-1.15,
+        rTH:0.12, rSH:0.25, lTH:-0.12, lSH:0 },
+      { t:0.15, bodyY:8,  torsoTilt:0.18, headTilt:0.05,
+        rUA:0.8,  rFA:1.3,  lUA:-0.8,  lFA:-1.3,
+        rTH:0.5,  rSH:0.6,  lTH:-0.6,  lSH:0.3 },
+      { t:0.30, bodyY:10, torsoTilt:0.2,  headTilt:0.06,
+        rUA:0.8,  rFA:1.3,  lUA:-1.0,  lFA:-1.3,
+        rTH:0.15, rSH:-0.1, lTH:-0.7,  lSH:0.1 },
+      { t:0.55, bodyY:0,  torsoTilt:0.06, headTilt:0,
+        rUA:0.45, rFA:1.15, lUA:-0.45, lFA:-1.15,
+        rTH:0.12, rSH:0.25, lTH:-0.12, lSH:0 },
+    ]
+  },
+  jump_kick: {
+    dur: 0.7, loop: false,
+    kf: [
+      { t:0,    bodyY:0, torsoTilt:0.06, headTilt:0,
+        rUA:0.45, rFA:1.15, lUA:-0.45, lFA:-1.15,
+        rTH:0.12, rSH:0.25, lTH:-0.12, lSH:0 },
+      { t:0.15, bodyY:6, torsoTilt:0.12, headTilt:0,
+        rUA:0.6,  rFA:1.2,  lUA:-0.6,  lFA:-1.2,
+        rTH:0.5,  rSH:0.8,  lTH:-0.5,  lSH:0.8 },
+      { t:0.30, bodyY:0, torsoTilt:-0.1, headTilt:-0.1,
+        rUA:0.8,  rFA:0.6,  lUA:-0.8,  lFA:-0.6,
+        rTH:-0.6, rSH:1.0,  lTH:-0.4,  lSH:0.8 },
+      { t:0.42, bodyY:0, torsoTilt:-0.2, headTilt:-0.12,
+        rUA:0.9,  rFA:0.4,  lUA:-0.9,  lFA:-0.3,
+        rTH:-1.4, rSH:-0.1, lTH:0.2,   lSH:0 },
+      { t:0.58, bodyY:8, torsoTilt:0.1,  headTilt:0.05,
+        rUA:0.6,  rFA:1.0,  lUA:-0.6,  lFA:-1.0,
+        rTH:0.5,  rSH:0.6,  lTH:-0.3,  lSH:0.4 },
+      { t:0.70, bodyY:0, torsoTilt:0.06, headTilt:0,
+        rUA:0.45, rFA:1.15, lUA:-0.45, lFA:-1.15,
+        rTH:0.12, rSH:0.25, lTH:-0.12, lSH:0 },
+    ]
+  },
+  uppercut: {
+    dur: 0.5, loop: false,
+    kf: [
+      { t:0,    bodyY:0,  torsoTilt:0.06, headTilt:0,
+        rUA:0.45, rFA:1.15, lUA:-0.45, lFA:-1.15,
+        rTH:0.12, rSH:0.25, lTH:-0.12, lSH:0 },
+      { t:0.12, bodyY:16, torsoTilt:0.2,  headTilt:0.1,
+        rUA:0.8,  rFA:1.4,  lUA:-0.6,  lFA:-1.0,
+        rTH:0.5,  rSH:0.7,  lTH:-0.5,  lSH:0.6 },
+      { t:0.28, bodyY:-8, torsoTilt:-0.2, headTilt:-0.15,
+        rUA:-1.3, rFA:-0.4, lUA:-0.4,  lFA:-1.0,
+        rTH:0.15, rSH:0.2,  lTH:-0.15, lSH:0 },
+      { t:0.50, bodyY:0,  torsoTilt:0.06, headTilt:0,
+        rUA:0.45, rFA:1.15, lUA:-0.45, lFA:-1.15,
+        rTH:0.12, rSH:0.25, lTH:-0.12, lSH:0 },
+    ]
+  },
+  block: {
+    dur: 0.4, loop: true,
+    kf: [
+      { t:0,   bodyY:-4, torsoTilt:0.0, headTilt:-0.05,
+        rUA:-0.3, rFA:-1.1, lUA:0.3, lFA:1.1,
+        rTH:0.15, rSH:0.25, lTH:-0.15, lSH:0.1 },
+      { t:0.5, bodyY:-6, torsoTilt:0.0, headTilt:-0.05,
+        rUA:-0.3, rFA:-1.1, lUA:0.3, lFA:1.1,
+        rTH:0.15, rSH:0.25, lTH:-0.15, lSH:0.1 },
+      { t:1.0, bodyY:-4, torsoTilt:0.0, headTilt:-0.05,
+        rUA:-0.3, rFA:-1.1, lUA:0.3, lFA:1.1,
+        rTH:0.15, rSH:0.25, lTH:-0.15, lSH:0.1 },
+    ]
+  },
+  duck: {
+    dur: 0.4, loop: true,
+    kf: [
+      { t:0,   bodyY:18, torsoTilt:0.2,  headTilt:0.1,
+        rUA:0.6, rFA:1.3, lUA:-0.6, lFA:-1.3,
+        rTH:0.55, rSH:0.7, lTH:-0.55, lSH:0.6 },
+      { t:0.5, bodyY:20, torsoTilt:0.22, headTilt:0.12,
+        rUA:0.6, rFA:1.3, lUA:-0.6, lFA:-1.3,
+        rTH:0.55, rSH:0.7, lTH:-0.55, lSH:0.6 },
+      { t:1.0, bodyY:18, torsoTilt:0.2,  headTilt:0.1,
+        rUA:0.6, rFA:1.3, lUA:-0.6, lFA:-1.3,
+        rTH:0.55, rSH:0.7, lTH:-0.55, lSH:0.6 },
+    ]
+  },
+  stumble: {
+    dur: 0.7, loop: false,
+    kf: [
+      { t:0,    bodyY:0,   torsoTilt:0.06,  headTilt:0,
+        rUA:0.45, rFA:1.15, lUA:-0.45, lFA:-1.15,
+        rTH:0.12, rSH:0.25, lTH:-0.12, lSH:0 },
+      { t:0.12, bodyY:-12, torsoTilt:-0.55, headTilt:-0.45,
+        rUA:1.0,  rFA:0.4,  lUA:-1.0, lFA:-0.3,
+        rTH:-0.3, rSH:0.7,  lTH:0.3, lSH:0.5 },
+      { t:0.28, bodyY:-3,  torsoTilt:-0.2,  headTilt:-0.2,
+        rUA:0.7,  rFA:0.8,  lUA:-0.5, lFA:-0.7,
+        rTH:0.4,  rSH:0.6,  lTH:-0.6, lSH:0.4 },
+      { t:0.45, bodyY:-6,  torsoTilt:-0.3,  headTilt:-0.25,
+        rUA:0.8,  rFA:0.6,  lUA:-0.6, lFA:-0.5,
+        rTH:-0.15, rSH:0.4, lTH:0.2, lSH:0.35 },
+      { t:0.70, bodyY:0,   torsoTilt:0.06,  headTilt:0,
+        rUA:0.45, rFA:1.15, lUA:-0.45, lFA:-1.15,
+        rTH:0.12, rSH:0.25, lTH:-0.12, lSH:0 },
+    ]
+  },
   punch: {
     dur: 0.55, loop: false,
     kf: [
@@ -899,10 +1074,6 @@ const POSES = {
   },
 };
 
-// Skin / hair palette per match index (cycles through 4)
-const SKINS  = ['#d4906a','#c8784a','#e8b88a','#b06030'];
-const HAIRS  = ['#241a12','#3a2a18','#ecbb33','#1a1018'];
-
 // ── Lerp helpers ──────────────────────────────────
 function lerp(a, b, t){ return a + (b - a) * t; }
 function easeInOut(t){ return t < .5 ? 2*t*t : -1+(4-2*t)*t; }
@@ -929,7 +1100,7 @@ function samplePose(anim, t){
 // ── Fighter class ─────────────────────────────────
 class Fighter {
   constructor({ facing, homeX, floorY, colors }){
-    this.facing  = facing;   // 1=right, -1=left
+    this.facing  = facing;
     this.homeX   = homeX;
     this.floorY  = floorY;
     this.colors  = colors;
@@ -939,13 +1110,18 @@ class Fighter {
     this.animT   = 0;
     this.pose    = samplePose(this.anim, 0);
     this.opacity = 1;
-    // walk state
     this._walkFrom = homeX;
     this._walkTo   = homeX;
     this._walkDur  = 0;
     this._walkT    = 1;
     this._walkCb   = null;
     this._onComplete = null;
+    this._jumpActive = false;
+    this._jumpPeak   = 0;
+    this._jumpDur    = 0;
+    this._jumpT      = 1;
+    this._jumpOffset = 0;
+    this._jumpCb     = null;
   }
 
   setState(name, { onComplete } = {}){
@@ -966,15 +1142,36 @@ class Fighter {
     this._walkCb   = cb || null;
   }
 
+  jumpTo(tx, peakY, ms, cb){
+    this._jumpPeak   = peakY;
+    this._jumpDur    = ms / 1000;
+    this._jumpT      = 0;
+    this._jumpOffset = 0;
+    this._jumpActive = true;
+    this._jumpCb     = cb || null;
+    this.walkTo(tx, ms);
+  }
+
   update(dt){
-    // Advance walk
+    // Walk
     if(this._walkT < 1){
       this._walkT = Math.min(1, this._walkT + dt / this._walkDur);
       this.x = lerp(this._walkFrom, this._walkTo, easeInOut(this._walkT));
       if(this._walkT >= 1 && this._walkCb){ const cb = this._walkCb; this._walkCb = null; cb(); }
     }
 
-    // Advance animation
+    // Jump arc
+    if(this._jumpActive){
+      this._jumpT = Math.min(1, this._jumpT + dt / this._jumpDur);
+      this._jumpOffset = this._jumpPeak * 4 * this._jumpT * (1 - this._jumpT);
+      if(this._jumpT >= 1){
+        this._jumpActive = false;
+        this._jumpOffset = 0;
+        if(this._jumpCb){ const cb = this._jumpCb; this._jumpCb = null; cb(); }
+      }
+    }
+
+    // Animation
     const prevT = this.animT;
     this.animT += dt / this.anim.dur;
 
@@ -1011,9 +1208,9 @@ class Fighter {
       ctx.translate(0, SK.HIP_Y);
     }
 
-    const bodyY = p.bodyY || 0;
+    const bodyY = (p.bodyY || 0) + this._jumpOffset;
 
-    // ── shadow (drawn at foot level)
+    // Shadow
     ctx.save();
     ctx.globalAlpha = (this.opacity * 0.45);
     ctx.fillStyle = '#000';
@@ -1025,10 +1222,10 @@ class Fighter {
     // ── back leg (thigh + shin + boot)
     this._drawLeg(ctx, SK.HIP_Y - bodyY, p.lTH, p.lSH, C.shorts, C.socks, C.boots);
 
-    // ── back arm (upper arm + forearm + fist)
-    this._drawArm(ctx, SK.SHOULDER_Y - bodyY, p.lUA, p.lFA, C.jersey, C.skin);
+    // Back arm
+    this._drawArm(ctx, SK.SHOULDER_Y - bodyY, p.lUA, p.lFA, C.jersey, C.skin, true);
 
-    // ── torso + shorts
+    // Torso
     ctx.save();
     ctx.translate(0, -(SK.HIP_Y - bodyY));
     ctx.rotate(p.torsoTilt || 0);
@@ -1043,22 +1240,34 @@ class Fighter {
     ctx.strokeStyle = darken(C.jersey, 0.6);
     ctx.fillRect(-SK.TORSO_W/2, -SK.TORSO_H, SK.TORSO_W, SK.TORSO_H*0.72);
     ctx.strokeRect(-SK.TORSO_W/2, -SK.TORSO_H, SK.TORSO_W, SK.TORSO_H*0.72);
-    // jersey accent stripe
-    ctx.fillStyle = C.accent;
-    ctx.fillRect(-SK.TORSO_W/2, -SK.TORSO_H, SK.TORSO_W, SK.TORSO_H*0.12);
+    // accent stripe
+    if(C.accent){
+      ctx.fillStyle = C.accent;
+      ctx.fillRect(-SK.TORSO_W/2, -SK.TORSO_H, SK.TORSO_W, SK.TORSO_H*0.12);
+    }
+    // tie (manager)
+    if(C.special === 'tie'){
+      ctx.fillStyle = C.tieColor;
+      ctx.fillRect(-2, -SK.TORSO_H*0.9, 4, SK.TORSO_H*0.65);
+    }
     ctx.restore();
 
     // ── front leg
     this._drawLeg(ctx, SK.HIP_Y - bodyY, p.rTH, p.rSH, C.shorts, C.socks, C.boots);
 
-    // ── front arm
-    this._drawArm(ctx, SK.SHOULDER_Y - bodyY, p.rUA, p.rFA, C.jersey, C.skin);
+    // Front arm
+    this._drawArm(ctx, SK.SHOULDER_Y - bodyY, p.rUA, p.rFA, C.jersey, C.skin, false);
 
-    // ── head
+    // Head
     ctx.save();
     ctx.translate(0, -(SK.NECK_Y - bodyY + SK.TORSO_H * (p.torsoTilt||0) * 0.5));
     ctx.rotate((p.torsoTilt||0) * 0.5 + (p.headTilt||0));
-    // hair cap
+    // earpiece (commentator)
+    if(C.special === 'earpiece'){
+      ctx.fillStyle = C.earColor;
+      ctx.fillRect(SK.HEAD_W/2 - 1, -SK.HEAD_H*0.55, 3, 3);
+    }
+    // hair
     ctx.fillStyle = C.hair;
     ctx.fillRect(-SK.HEAD_W/2, -SK.HEAD_H - SK.HEAD_H*0.15, SK.HEAD_W, SK.HEAD_H*0.25);
     // face
@@ -1105,26 +1314,29 @@ class Fighter {
     ctx.restore();
   }
 
-  _drawArm(ctx, pivotY, upperAngle, foreAngle, jerseyColor, skinColor){
+  _drawArm(ctx, pivotY, upperAngle, foreAngle, jerseyColor, skinColor, isBack){
     ctx.save();
     ctx.translate(0, -pivotY);
     ctx.rotate(upperAngle);
-    // upper arm
     ctx.fillStyle = jerseyColor;
     ctx.strokeStyle = darken(jerseyColor, 0.6);
     ctx.lineWidth = 1;
     ctx.fillRect(-SK.UARM_W/2, 0, SK.UARM_W, SK.UARM_L);
     ctx.strokeRect(-SK.UARM_W/2, 0, SK.UARM_W, SK.UARM_L);
-    // forearm
     ctx.translate(0, SK.UARM_L);
     ctx.rotate(foreAngle);
     ctx.fillStyle = skinColor;
     ctx.strokeStyle = darken(skinColor, 0.6);
     ctx.fillRect(-SK.FARM_W/2, 0, SK.FARM_W, SK.FARM_L);
     ctx.strokeRect(-SK.FARM_W/2, 0, SK.FARM_W, SK.FARM_L);
-    // fist
+    // armband on front forearm (captain)
+    if(!isBack && this.colors.special === 'armband'){
+      ctx.fillStyle = '#e8392f';
+      ctx.fillRect(-SK.FARM_W/2 - 1, SK.FARM_L * 0.35, SK.FARM_W + 2, 3);
+    }
     ctx.translate(0, SK.FARM_L);
-    ctx.fillStyle = skinColor;
+    const fistC = (!isBack && this.colors.special === 'gloves') ? this.colors.gloveColor : skinColor;
+    ctx.fillStyle = fistC;
     ctx.fillRect(-SK.FIST_W/2, 0, SK.FIST_W, SK.FIST_H);
     ctx.strokeRect(-SK.FIST_W/2, 0, SK.FIST_W, SK.FIST_H);
     ctx.restore();
@@ -1149,25 +1361,20 @@ function resetFighters(m){
   const cvs = document.getElementById('fighter-canvas');
   const W = cvs.clientWidth, H = 180;
   cvs.width = W; cvs.height = H;
-  const midIdx = curIdx % 4;
+
+  const sp = SPRITES[curIdx % SPRITES.length];
+  const av1 = sp[0].replace('assets/avatars/','').replace('.svg','');
+  const av2 = sp[1].replace('assets/avatars/','').replace('.svg','');
+  const ac1 = AVATAR_COLORS[av1] || AVATAR_COLORS.striker;
+  const ac2 = AVATAR_COLORS[av2] || AVATAR_COLORS.captain;
 
   F.p1 = new Fighter({
     facing: 1, homeX: W * 0.16, floorY: H - 10,
-    colors:{
-      jersey: m.home.c1, accent: m.home.c2,
-      shorts: darken(m.home.c2 || '#333', 0.9),
-      socks: m.home.c1, boots: '#0a0808',
-      skin: SKINS[midIdx], hair: HAIRS[midIdx],
-    }
+    colors: { ...ac1, accent: m.home.c2 }
   });
   F.p2 = new Fighter({
     facing: -1, homeX: W * 0.84, floorY: H - 10,
-    colors:{
-      jersey: m.away.c1, accent: m.away.c2,
-      shorts: darken(m.away.c2 || '#333', 0.9),
-      socks: m.away.c1, boots: '#0a0808',
-      skin: SKINS[(midIdx+2)%4], hair: HAIRS[(midIdx+1)%4],
-    }
+    colors: { ...ac2, accent: m.away.c2 }
   });
 
   if(!_rafId) _rafId = requestAnimationFrame(_rafLoop);
