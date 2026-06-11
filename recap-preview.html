@@ -152,25 +152,25 @@ body{
 
 /* ── FIGHTERS ────────────────────────────────── */
 .fighter-slot{
-  position:absolute;bottom:38%;z-index:6;
+  position:absolute;bottom:36%;z-index:6;
   display:flex;flex-direction:column;align-items:center;
 }
-.fighter-slot.p1{left:20%;transform:translateX(-50%);}
-.fighter-slot.p2{right:20%;transform:translateX(50%);}
+.fighter-slot.p1{left:16%;transform:translateX(-50%);}
+.fighter-slot.p2{right:16%;transform:translateX(50%);}
 
 /* inner wrapper holds the mirror, animations hit the sprite */
 .fighter-inner{display:flex;flex-direction:column;align-items:center;}
 .fighter-slot.p2 .fighter-inner{transform:scaleX(-1);}
 
 .fighter-sprite{
-  width:64px;height:80px;
+  width:112px;height:140px;
   image-rendering:pixelated;
-  filter:drop-shadow(0 6px 10px rgba(0,0,0,.85));
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,.85));
   transform-origin:center bottom;
   display:block;
 }
 .fighter-shadow{
-  width:36px;height:5px;
+  width:60px;height:7px;
   background:radial-gradient(ellipse,rgba(0,0,0,.55),transparent);
   margin-top:-2px;
 }
@@ -280,7 +280,7 @@ body{
 .vs-side.p2{transform:translateX(130%); transition:transform .42s cubic-bezier(0.23,1,.32,1);}
 .vs-flag{width:54px;height:36px;border:2px solid rgba(255,255,255,.28);border-radius:2px;}
 .vs-tname{font-size:7px;color:var(--text);text-align:center;letter-spacing:.05em;}
-.vs-sprite{width:52px;height:64px;image-rendering:pixelated;}
+.vs-sprite{width:80px;height:100px;image-rendering:pixelated;}
 .vs-sprite.flip{transform:scaleX(-1);}
 .vs-mid{
   display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;
@@ -328,14 +328,22 @@ body{
 
 /* ── SKIP BTN ────────────────────────────────── */
 #skip{
-  position:absolute;bottom:9px;right:9px;
-  font-family:var(--fp);font-size:6px;
-  color:var(--muted);background:rgba(10,8,8,.82);
-  border:1px solid var(--border);padding:7px 11px;
-  cursor:pointer;z-index:25;letter-spacing:.04em;
-  transition:color .12s,border-color .12s;
+  position:absolute;bottom:10px;right:10px;
+  font-family:var(--fp);font-size:7px;
+  color:var(--text);
+  background:linear-gradient(135deg,rgba(255,106,31,.18),rgba(255,59,92,.14));
+  border:2px solid var(--orange);
+  padding:10px 18px;
+  cursor:pointer;z-index:25;letter-spacing:.05em;
+  box-shadow:0 0 12px rgba(255,106,31,.25);
+  transition:background .12s,box-shadow .12s,transform .08s;
 }
-#skip:hover{color:var(--text);border-color:var(--muted);}
+#skip:hover{
+  background:linear-gradient(135deg,rgba(255,106,31,.35),rgba(255,59,92,.28));
+  box-shadow:0 0 22px rgba(255,106,31,.5);
+  transform:scale(1.04);
+}
+#skip:active{transform:scale(.97);}
 
 /* ── MATCH COUNTER ───────────────────────────── */
 #mctr{
