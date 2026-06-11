@@ -227,6 +227,79 @@
       color: var(--muted);
     }
 
+    /* ── Highlights / Recap panel ── */
+    #recapPanel { display: none; }
+    #recapPanel.show { display: flex; justify-content: center; padding-bottom: 40px; }
+    #rc-wrap {
+      --rc-blk:#0a0808; --rc-border:#3a1f3a; --rc-orange:#ff6a1f;
+      --rc-red:#ff3b5c; --rc-gold:#ff9ad0; --rc-snd:#e8c97a;
+      --rc-fp:'Press Start 2P',monospace;
+      position:relative; width:min(640px,100%); aspect-ratio:16/10;
+      background:#140a18; border:3px solid var(--rc-border);
+      box-shadow:0 0 50px rgba(255,106,31,.35),0 0 0 1px rgba(255,154,208,.08);
+      overflow:hidden; image-rendering:pixelated; font-family:var(--rc-fp);
+    }
+    .rc-sky { position:absolute;inset:0;background:linear-gradient(to bottom,#06030d 0%,#0f0620 28%,#16093a 50%,#0b2e1a 62%,#145e1a 73%,#2a9432 100%); }
+    .rc-crowd { position:absolute;top:22%;left:0;right:0;height:22%;background:repeating-linear-gradient(90deg,rgba(255,106,31,.18) 0 3px,transparent 3px 6px,rgba(255,154,208,.12) 6px 9px,transparent 9px 12px),repeating-linear-gradient(to bottom,rgba(255,220,100,.08) 0 2px,transparent 2px 4px);image-rendering:pixelated; }
+    .rc-lights { position:absolute;top:10%;left:0;right:0;height:14%;display:flex;justify-content:space-around;align-items:flex-end;padding:0 8%; }
+    .rc-lbeam { width:2px;height:100%;background:linear-gradient(to bottom,rgba(255,230,160,.35),transparent); }
+    .rc-pitch { position:absolute;bottom:0;left:0;right:0;height:40%; }
+    .rc-pitch::before { content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;background:rgba(255,255,255,.18);transform:translateX(-50%); }
+    .rc-pcircle { position:absolute;left:50%;top:35%;width:66px;height:66px;border:2px solid rgba(255,255,255,.13);border-radius:50%;transform:translate(-50%,-50%); }
+    .rc-pitch::after { content:'';position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(255,255,255,.06);box-shadow:0 0 12px rgba(255,255,255,.15);transform:translateX(-50%); }
+    #rc-hud { position:absolute;top:0;left:0;right:0;height:50px;background:rgba(10,8,8,.93);border-bottom:2px solid var(--rc-border);display:flex;align-items:center;padding:0 8px;gap:6px;z-index:10; }
+    .rc-tname { font-size:5.5px;color:var(--text);white-space:nowrap;letter-spacing:.04em;min-width:52px;text-align:center;line-height:1.6; }
+    .rc-hp-wrap { flex:1;height:16px;background:var(--rc-blk);border:1px solid #2a1a2a;position:relative;overflow:hidden; }
+    .rc-hp-fill { position:absolute;top:0;bottom:0;transition:width .4s ease-out; }
+    .rc-hp-fill.rc-p1 { right:0; } .rc-hp-fill.rc-p2 { left:0; }
+    .rc-hp-stripe { position:absolute;inset:0;background:repeating-linear-gradient(-45deg,transparent,transparent 4px,rgba(0,0,0,.18) 4px,rgba(0,0,0,.18) 6px);pointer-events:none; }
+    .rc-hp-low { filter:saturate(1.8) hue-rotate(-20deg); }
+    .rc-timer { font-size:17px;color:var(--text);background:var(--rc-blk);border:2px solid var(--rc-border);padding:4px 9px;min-width:44px;text-align:center;font-family:var(--rc-fp);flex-shrink:0; }
+    .rc-timer.urgent { color:var(--rc-red); }
+    #rc-score-row { position:absolute;top:53px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:14px;z-index:8; }
+    .rc-snum { font-size:20px;color:var(--text);text-shadow:2px 2px 0 var(--rc-blk);transition:transform .1s,color .1s;min-width:26px;text-align:center; }
+    .rc-snum.pop { transform:scale(1.7);color:var(--rc-orange); }
+    .rc-sdash { font-size:11px;color:var(--muted); }
+    #rc-canvas { position:absolute;bottom:36%;left:0;width:100%;height:180px;z-index:6;image-rendering:pixelated;pointer-events:none; }
+    #rc-flash { position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:20; }
+    @keyframes rc-flash { 0%{opacity:.7;} 100%{opacity:0;} }
+    #rc-flash.go { animation:rc-flash .35s ease-out forwards; }
+    @keyframes rc-shake { 0%{transform:translate(0);} 15%{transform:translate(-5px,3px);} 30%{transform:translate(5px,-2px);} 50%{transform:translate(-4px,4px);} 70%{transform:translate(3px,-1px);} 85%{transform:translate(-2px,2px);} 100%{transform:translate(0);} }
+    #rc-wrap.go-shake { animation:rc-shake .4s ease-out; }
+    #rc-ann { position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;text-align:center;z-index:22;pointer-events:none;opacity:0;white-space:nowrap;text-shadow:3px 3px 0 rgba(0,0,0,.9); }
+    @keyframes rc-ann-pop { 0%{opacity:0;transform:translate(-50%,-50%) scale(.25) rotate(-6deg);} 14%{opacity:1;transform:translate(-50%,-50%) scale(1.3) rotate(3deg);} 24%{transform:translate(-50%,-50%) scale(1) rotate(0);} 72%{opacity:1;} 100%{opacity:0;transform:translate(-50%,-50%) scale(1);} }
+    #rc-ann.go { animation:rc-ann-pop 1.6s ease-out forwards; }
+    #rc-scorer { position:absolute;bottom:42%;left:50%;transform:translateX(-50%);font-size:8px;color:var(--rc-snd);text-shadow:1px 1px 0 var(--rc-blk);z-index:9;opacity:0;white-space:nowrap;pointer-events:none; }
+    @keyframes rc-scorer-rise { 0%{opacity:0;transform:translateX(-50%) translateY(6px);} 18%{opacity:1;transform:translateX(-50%) translateY(0);} 72%{opacity:1;} 100%{opacity:0;transform:translateX(-50%) translateY(-8px);} }
+    #rc-scorer.go { animation:rc-scorer-rise 1.9s ease-out forwards; }
+    #rc-vs { position:absolute;inset:0;background:var(--rc-blk);display:flex;align-items:center;justify-content:center;z-index:30; }
+    .rc-vs-side { flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px; }
+    .rc-vs-side.rc-p1 { transform:translateX(-130%);transition:transform .42s cubic-bezier(0.23,1,.32,1); }
+    .rc-vs-side.rc-p2 { transform:translateX(130%);transition:transform .42s cubic-bezier(0.23,1,.32,1); }
+    .rc-vs-flag { width:54px;height:36px;border:2px solid rgba(255,255,255,.28);border-radius:2px; }
+    .rc-vs-tname { font-size:7px;color:var(--text);text-align:center;letter-spacing:.05em; }
+    .rc-vs-sprite { width:80px;height:100px;image-rendering:pixelated; }
+    .rc-vs-sprite.rc-flip { transform:scaleX(-1); }
+    .rc-vs-mid { display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0; }
+    .rc-vs-big { font-size:30px;color:var(--rc-orange);text-shadow:4px 4px 0 var(--rc-red),7px 7px 0 rgba(0,0,0,.5);letter-spacing:.1em; }
+    .rc-vs-sub { font-size:5.5px;color:var(--muted);text-align:center;line-height:2.2; }
+    #rc-result { position:absolute;top:36%;left:0;right:0;text-align:center;font-size:26px;text-shadow:4px 4px 0 rgba(0,0,0,.85);z-index:22;opacity:0;pointer-events:none; }
+    @keyframes rc-result-slam { 0%{opacity:0;transform:scaleY(5) scaleX(.2);} 14%{opacity:1;transform:scaleY(.75) scaleX(1.12);} 24%{transform:scale(1);} 78%{opacity:1;} 100%{opacity:0;transform:scale(1.04);} }
+    #rc-result.go { animation:rc-result-slam 2s ease-out forwards; }
+    #rc-prog { position:absolute;bottom:0;left:0;height:3px;background:var(--rc-orange);z-index:15;box-shadow:0 0 8px var(--rc-orange);transition:width 10s linear; }
+    .rc-px { position:absolute;width:5px;height:5px;border-radius:50%;pointer-events:none;z-index:18; }
+    @keyframes rc-px-fly { 0%{opacity:1;transform:translate(0,0) scale(1);} 100%{opacity:0;transform:var(--t) scale(0);} }
+    #rc-skip { position:absolute;bottom:10px;right:10px;font-family:var(--rc-fp);font-size:7px;color:var(--text);background:linear-gradient(135deg,rgba(255,106,31,.18),rgba(255,59,92,.14));border:2px solid var(--rc-orange);padding:10px 18px;cursor:pointer;z-index:25;letter-spacing:.05em;box-shadow:0 0 12px rgba(255,106,31,.25);transition:background .12s,box-shadow .12s,transform .08s; }
+    #rc-skip:hover { background:linear-gradient(135deg,rgba(255,106,31,.35),rgba(255,59,92,.28));box-shadow:0 0 22px rgba(255,106,31,.5);transform:scale(1.04); }
+    #rc-skip:active { transform:scale(.97); }
+    #rc-mctr { position:absolute;bottom:11px;left:9px;font-size:5px;color:var(--muted);z-index:12; }
+    #rc-titlbar { position:absolute;top:7px;left:50%;transform:translateX(-50%);font-size:5px;color:var(--muted);z-index:11;white-space:nowrap;letter-spacing:.07em; }
+    #rc-end { position:absolute;inset:0;background:var(--rc-blk);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;z-index:40;opacity:0;pointer-events:none;transition:opacity .5s; }
+    #rc-end.show { opacity:1;pointer-events:auto; }
+    .rc-end-h { font-size:14px;color:var(--rc-orange);text-shadow:3px 3px 0 var(--rc-red); }
+    .rc-end-s { font-size:6.5px;color:var(--muted);text-align:center;line-height:2.4; }
+    .rc-replay-btn { font-family:var(--rc-fp);font-size:7px;color:#0a0805;background:var(--rc-orange);border:2px solid var(--rc-red);padding:10px 20px;cursor:pointer;letter-spacing:.05em; }
+
     /* ── Bracket state ── */
     .bracket-nav {
       display: flex;
@@ -1015,6 +1088,7 @@
           <button class="bracket-filter-btn active" data-filter="current" onclick="setBracketFilter('current')">Current stage</button>
           <button class="bracket-filter-btn" data-filter="all" onclick="setBracketFilter('all')">All</button>
           <button class="bracket-filter-btn" data-filter="players" onclick="setBracketFilter('players')">Players</button>
+          <button class="bracket-filter-btn" data-filter="highlights" onclick="setBracketFilter('highlights')">Highlights</button>
         </div>
 
         <!-- Full bracket tree (groups → knockout → final) -->
@@ -1050,6 +1124,76 @@
 
         <!-- Players grid view (shown instead of bracket when filter = 'players') -->
         <div id="playerView"></div>
+
+        <!-- Highlights / daily recap battle view -->
+        <div id="recapPanel">
+          <div id="rc-wrap">
+            <div class="rc-sky"></div>
+            <div class="rc-lights">
+              <div class="rc-lbeam"></div><div class="rc-lbeam"></div><div class="rc-lbeam"></div>
+              <div class="rc-lbeam"></div><div class="rc-lbeam"></div><div class="rc-lbeam"></div>
+            </div>
+            <div class="rc-crowd"></div>
+            <div class="rc-pitch"><div class="rc-pcircle"></div></div>
+
+            <div id="rc-vs">
+              <div class="rc-vs-side rc-p1" id="rc-vs-left">
+                <img id="rc-vs-sp1" src="assets/avatars/striker.svg" class="rc-vs-sprite" alt="">
+                <div class="rc-vs-flag" id="rc-vs-f1"></div>
+                <div class="rc-vs-tname" id="rc-vs-n1">TEAM 1</div>
+              </div>
+              <div class="rc-vs-mid">
+                <div class="rc-vs-big">VS</div>
+                <div class="rc-vs-sub" id="rc-vs-sub">GROUP STAGE</div>
+              </div>
+              <div class="rc-vs-side rc-p2" id="rc-vs-right">
+                <img id="rc-vs-sp2" src="assets/avatars/captain.svg" class="rc-vs-sprite rc-flip" alt="">
+                <div class="rc-vs-flag" id="rc-vs-f2"></div>
+                <div class="rc-vs-tname" id="rc-vs-n2">TEAM 2</div>
+              </div>
+            </div>
+
+            <div id="rc-end">
+              <div class="rc-end-h">RECAP COMPLETE</div>
+              <div class="rc-end-s" id="rc-end-s">ALL RESULTS SHOWN</div>
+              <button class="rc-replay-btn" onclick="RC.replay()">▶ REPLAY</button>
+            </div>
+
+            <div id="rc-hud">
+              <div class="rc-tname" id="rc-hn1">TEAM 1</div>
+              <div class="rc-hp-wrap">
+                <div class="rc-hp-fill rc-p1" id="rc-hp1" style="width:100%"></div>
+                <div class="rc-hp-stripe"></div>
+              </div>
+              <div class="rc-timer" id="rc-tim">10</div>
+              <div class="rc-hp-wrap">
+                <div class="rc-hp-fill rc-p2" id="rc-hp2" style="width:100%"></div>
+                <div class="rc-hp-stripe"></div>
+              </div>
+              <div class="rc-tname" id="rc-hn2">TEAM 2</div>
+            </div>
+
+            <div id="rc-titlbar">DAILY RECAP · YESTERDAY'S BATTLES</div>
+
+            <div id="rc-score-row">
+              <span class="rc-snum" id="rc-s1">0</span>
+              <span class="rc-sdash">—</span>
+              <span class="rc-snum" id="rc-s2">0</span>
+            </div>
+
+            <canvas id="rc-canvas"></canvas>
+
+            <div id="rc-ann"></div>
+            <div id="rc-scorer"></div>
+            <div id="rc-result"></div>
+            <div id="rc-flash"></div>
+
+            <div id="rc-prog" style="width:100%"></div>
+
+            <button id="rc-skip" onclick="RC.skip()">SKIP ▶▶</button>
+            <div id="rc-mctr">MATCH 1 / 1</div>
+          </div>
+        </div>
       </div>
 
       <!-- Desktop sticky leaderboard panel -->
@@ -1061,7 +1205,6 @@
         <div id="lbDesktopContent" class="lb-rows"></div>
       </div>
     </div>
-
   </div>
 
 </div>
@@ -2002,6 +2145,7 @@ function buildSyntheticStandings() {
 let _currentBracketStage = 'groups';
 let _bracketFilter = 'current';
 let _lastStandings = [];
+let _lastMatchData = null;
 
 function detectBracketStage(matches) {
   const order = ['r32', 'r16', 'qf', 'sf', 'final'];
@@ -2088,12 +2232,18 @@ window.setBracketFilter = function(filter) {
   const bracketOuter = document.querySelector('.bracket-zoom-outer');
   const apiTime      = document.getElementById('apiUpdateTime');
   const playerView   = document.getElementById('playerView');
+  const recapPanel   = document.getElementById('recapPanel');
   const isPlayers    = filter === 'players';
-  bracketOuter.style.display = isPlayers ? 'none' : '';
-  if (apiTime) apiTime.style.display = isPlayers ? 'none' : '';
+  const isHighlights = filter === 'highlights';
+  const showBracket  = !isPlayers && !isHighlights;
+  bracketOuter.style.display = showBracket ? '' : 'none';
+  if (apiTime) apiTime.style.display = showBracket ? '' : 'none';
   playerView.classList.toggle('show', isPlayers);
+  recapPanel.classList.toggle('show', isHighlights);
   if (isPlayers) {
     renderPlayerView();
+  } else if (isHighlights) {
+    RC.start();
   } else {
     applyBracketFilter();
   }
@@ -2103,6 +2253,7 @@ async function loadBracketData() {
   try {
     const data = await getAllMatchData();
     allTeams = data.teams;
+    _lastMatchData = data;
     if (data.standings.length) saveGroupCache(data.standings);
     _currentBracketStage = detectBracketStage(data.matches);
     renderBracketFull(data);
@@ -2491,6 +2642,545 @@ const BracketZoom = (function () {
   }
 
   return { init, fit };
+})();
+
+/* ── RC: Daily Recap battle animation ─────────────────────── */
+const RC = (() => {
+  'use strict';
+  let gen = 0, curIdx = 0, tickId = null, timerVal = 10;
+  let rcMatches = [];
+  const F = { p1: null, p2: null };
+  let rafId = null, lastT = 0;
+
+  function rcE(id) { return document.getElementById('rc-' + id); }
+
+  const AV_NAMES = ['striker','playmaker','winger','keeper','captain','manager','commentator','ultra','fan','mascot'];
+
+  const AVATAR_COLORS = {
+    striker:    {skin:'#c98a5c',hair:'#241a12',jersey:'#e8392f',shorts:'#ffffff',socks:'#ffffff',boots:'#ffffff'},
+    captain:    {skin:'#c98a5c',hair:'#ecbb33',jersey:'#ecbb33',shorts:'#3a2c0a',socks:'#14121f',boots:'#14121f',special:'armband'},
+    keeper:     {skin:'#d99a66',hair:'#3a2a18',jersey:'#f5d020',shorts:'#1a1a1f',socks:'#f5d020',boots:'#14121f',special:'gloves',gloveColor:'#1fc2a4'},
+    playmaker:  {skin:'#f0c39a',hair:'#5a3a1c',jersey:'#2a6fdb',shorts:'#13294f',socks:'#ffffff',boots:'#14121f'},
+    winger:     {skin:'#e0a877',hair:'#e8c86a',jersey:'#1f9d55',shorts:'#101014',socks:'#ffffff',boots:'#14121f'},
+    manager:    {skin:'#c98a5c',hair:'#b8b8be',jersey:'#2b303c',shorts:'#2b303c',socks:'#2b303c',boots:'#14121f',special:'tie',tieColor:'#e8392f'},
+    mascot:     {skin:'#f3b96e',hair:'#e07b1f',jersey:'#e8392f',shorts:'#ffffff',socks:'#e8392f',boots:'#14121f'},
+    fan:        {skin:'#c98a5c',hair:'#1fc2a4',jersey:'#e8392f',shorts:'#ffffff',socks:'#e8392f',boots:'#14121f'},
+    ultra:      {skin:'#e0a877',hair:'#e8c86a',jersey:'#1f9d55',shorts:'#101014',socks:'#ffffff',boots:'#14121f'},
+    commentator:{skin:'#c98a5c',hair:'#3a2a18',jersey:'#2a2e38',shorts:'#2a2e38',socks:'#2a2e38',boots:'#14121f',special:'earpiece',earColor:'#25d8d8'},
+  };
+
+  const S = 6;
+  const SK = {
+    HEAD_W:7*S,HEAD_H:7*S,NECK_H:1*S,TORSO_W:7*S,TORSO_H:7*S,
+    UARM_W:2*S,UARM_L:4*S,FARM_W:2*S,FARM_L:3.5*S,FIST_W:2.5*S,FIST_H:2.5*S,
+    THIGH_W:3*S,THIGH_L:5*S,SHIN_W:2.5*S,SHIN_L:5*S,BOOT_W:4*S,BOOT_H:1.5*S,
+    HIP_Y:7*S,SHOULDER_Y:14*S,NECK_Y:16*S,
+  };
+
+  const POSES = {
+    idle:{dur:0.9,loop:true,kf:[
+      {t:0,  bodyY:0, torsoTilt:0.06,headTilt:0,   rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12,rSH:0.25,lTH:-0.12,lSH:0},
+      {t:0.5,bodyY:-5,torsoTilt:0.07,headTilt:0.03,rUA:0.40,rFA:1.10,lUA:-0.40,lFA:-1.10,rTH:0.15,rSH:0.30,lTH:-0.15,lSH:0.05},
+      {t:1,  bodyY:0, torsoTilt:0.06,headTilt:0,   rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12,rSH:0.25,lTH:-0.12,lSH:0},
+    ]},
+    walk:{dur:0.45,loop:true,kf:[
+      {t:0,   bodyY:-1,torsoTilt:0.08,headTilt:0,rUA:-0.5,rFA:0.6,lUA:0.5, lFA:0.4,rTH:-0.45,rSH:0.1,lTH:0.55,lSH:0.7},
+      {t:0.25,bodyY:-3,torsoTilt:0.06,headTilt:0,rUA:0,   rFA:0.5,lUA:0,   lFA:0.5,rTH:0,    rSH:0.2,lTH:0,   lSH:0.1},
+      {t:0.5, bodyY:-1,torsoTilt:0.08,headTilt:0,rUA:0.5, rFA:0.4,lUA:-0.5,lFA:0.6,rTH:0.55, rSH:0.7,lTH:-0.45,lSH:0.1},
+      {t:0.75,bodyY:-3,torsoTilt:0.06,headTilt:0,rUA:0,   rFA:0.5,lUA:0,   lFA:0.5,rTH:0,    rSH:0.2,lTH:0,   lSH:0.1},
+      {t:1,   bodyY:-1,torsoTilt:0.08,headTilt:0,rUA:-0.5,rFA:0.6,lUA:0.5, lFA:0.4,rTH:-0.45,rSH:0.1,lTH:0.55,lSH:0.7},
+    ]},
+    kick:{dur:0.55,loop:false,kf:[
+      {t:0,   bodyY:0, torsoTilt:0.06, headTilt:0,    rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12, rSH:0.25, lTH:-0.12,lSH:0},
+      {t:0.18,bodyY:-7,torsoTilt:-0.15,headTilt:-0.1, rUA:0.7, rFA:0.8, lUA:-0.9, lFA:-0.4, rTH:-1.0, rSH:0.15, lTH:0.1,  lSH:0},
+      {t:0.38,bodyY:-9,torsoTilt:-0.2, headTilt:-0.15,rUA:0.8, rFA:0.5, lUA:-1.0, lFA:-0.3, rTH:-1.5, rSH:-0.05,lTH:0.12, lSH:0.1},
+      {t:0.55,bodyY:0, torsoTilt:0.06, headTilt:0,    rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12, rSH:0.25, lTH:-0.12,lSH:0},
+    ]},
+    high_kick:{dur:0.6,loop:false,kf:[
+      {t:0,   bodyY:0,  torsoTilt:0.06, headTilt:0,    rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12, rSH:0.25,  lTH:-0.12,lSH:0},
+      {t:0.12,bodyY:-4, torsoTilt:-0.12,headTilt:-0.08,rUA:0.6, rFA:0.9, lUA:-0.7, lFA:-0.3, rTH:-0.55,rSH:0.85,  lTH:0.08, lSH:0},
+      {t:0.25,bodyY:-10,torsoTilt:-0.25,headTilt:-0.1, rUA:0.9, rFA:0.4, lUA:-1.0, lFA:-0.2, rTH:-1.6, rSH:-0.05, lTH:0.15, lSH:0},
+      {t:0.38,bodyY:-12,torsoTilt:-0.28,headTilt:-0.12,rUA:0.9, rFA:0.3, lUA:-1.05,lFA:-0.2, rTH:-1.65,rSH:-0.1,  lTH:0.18, lSH:0},
+      {t:0.50,bodyY:-5, torsoTilt:-0.1, headTilt:-0.04,rUA:0.6, rFA:0.9, lUA:-0.6, lFA:-0.8, rTH:-0.9, rSH:0.6,   lTH:0.05, lSH:0},
+      {t:0.60,bodyY:0,  torsoTilt:0.06, headTilt:0,    rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12, rSH:0.25,  lTH:-0.12,lSH:0},
+    ]},
+    low_kick:{dur:0.55,loop:false,kf:[
+      {t:0,   bodyY:0, torsoTilt:0.06,headTilt:0,   rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12,rSH:0.25,lTH:-0.12,lSH:0},
+      {t:0.15,bodyY:8, torsoTilt:0.18,headTilt:0.05,rUA:0.8, rFA:1.3, lUA:-0.8, lFA:-1.3, rTH:0.5, rSH:0.6, lTH:-0.6, lSH:0.3},
+      {t:0.30,bodyY:10,torsoTilt:0.2, headTilt:0.06,rUA:0.8, rFA:1.3, lUA:-1.0, lFA:-1.3, rTH:0.15,rSH:-0.1,lTH:-0.7, lSH:0.1},
+      {t:0.55,bodyY:0, torsoTilt:0.06,headTilt:0,   rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12,rSH:0.25,lTH:-0.12,lSH:0},
+    ]},
+    jump_kick:{dur:0.7,loop:false,kf:[
+      {t:0,   bodyY:0,torsoTilt:0.06, headTilt:0,    rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12,rSH:0.25,lTH:-0.12,lSH:0},
+      {t:0.15,bodyY:6,torsoTilt:0.12, headTilt:0,    rUA:0.6, rFA:1.2, lUA:-0.6, lFA:-1.2, rTH:0.5, rSH:0.8, lTH:-0.5, lSH:0.8},
+      {t:0.30,bodyY:0,torsoTilt:-0.1, headTilt:-0.1, rUA:0.8, rFA:0.6, lUA:-0.8, lFA:-0.6, rTH:-0.6,rSH:1.0, lTH:-0.4, lSH:0.8},
+      {t:0.42,bodyY:0,torsoTilt:-0.2, headTilt:-0.12,rUA:0.9, rFA:0.4, lUA:-0.9, lFA:-0.3, rTH:-1.4,rSH:-0.1,lTH:0.2,  lSH:0},
+      {t:0.58,bodyY:8,torsoTilt:0.1,  headTilt:0.05, rUA:0.6, rFA:1.0, lUA:-0.6, lFA:-1.0, rTH:0.5, rSH:0.6, lTH:-0.3, lSH:0.4},
+      {t:0.70,bodyY:0,torsoTilt:0.06, headTilt:0,    rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12,rSH:0.25,lTH:-0.12,lSH:0},
+    ]},
+    uppercut:{dur:0.5,loop:false,kf:[
+      {t:0,   bodyY:0, torsoTilt:0.06, headTilt:0,    rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12,rSH:0.25,lTH:-0.12,lSH:0},
+      {t:0.12,bodyY:16,torsoTilt:0.2,  headTilt:0.1,  rUA:0.8, rFA:1.4, lUA:-0.6, lFA:-1.0, rTH:0.5, rSH:0.7, lTH:-0.5, lSH:0.6},
+      {t:0.28,bodyY:-8,torsoTilt:-0.2, headTilt:-0.15,rUA:-1.3,rFA:-0.4,lUA:-0.4, lFA:-1.0, rTH:0.15,rSH:0.2, lTH:-0.15,lSH:0},
+      {t:0.50,bodyY:0, torsoTilt:0.06, headTilt:0,    rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12,rSH:0.25,lTH:-0.12,lSH:0},
+    ]},
+    block:{dur:0.4,loop:true,kf:[
+      {t:0,  bodyY:-4,torsoTilt:0.0,headTilt:-0.05,rUA:-0.3,rFA:-1.1,lUA:0.3,lFA:1.1,rTH:0.15,rSH:0.25,lTH:-0.15,lSH:0.1},
+      {t:0.5,bodyY:-6,torsoTilt:0.0,headTilt:-0.05,rUA:-0.3,rFA:-1.1,lUA:0.3,lFA:1.1,rTH:0.15,rSH:0.25,lTH:-0.15,lSH:0.1},
+      {t:1.0,bodyY:-4,torsoTilt:0.0,headTilt:-0.05,rUA:-0.3,rFA:-1.1,lUA:0.3,lFA:1.1,rTH:0.15,rSH:0.25,lTH:-0.15,lSH:0.1},
+    ]},
+    duck:{dur:0.4,loop:true,kf:[
+      {t:0,  bodyY:18,torsoTilt:0.2, headTilt:0.1, rUA:0.6,rFA:1.3,lUA:-0.6,lFA:-1.3,rTH:0.55,rSH:0.7,lTH:-0.55,lSH:0.6},
+      {t:0.5,bodyY:20,torsoTilt:0.22,headTilt:0.12,rUA:0.6,rFA:1.3,lUA:-0.6,lFA:-1.3,rTH:0.55,rSH:0.7,lTH:-0.55,lSH:0.6},
+      {t:1.0,bodyY:18,torsoTilt:0.2, headTilt:0.1, rUA:0.6,rFA:1.3,lUA:-0.6,lFA:-1.3,rTH:0.55,rSH:0.7,lTH:-0.55,lSH:0.6},
+    ]},
+    stumble:{dur:0.7,loop:false,kf:[
+      {t:0,   bodyY:0,  torsoTilt:0.06, headTilt:0,    rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12, rSH:0.25,lTH:-0.12,lSH:0},
+      {t:0.12,bodyY:-12,torsoTilt:-0.55,headTilt:-0.45,rUA:1.0, rFA:0.4, lUA:-1.0, lFA:-0.3, rTH:-0.3, rSH:0.7, lTH:0.3,  lSH:0.5},
+      {t:0.28,bodyY:-3, torsoTilt:-0.2, headTilt:-0.2, rUA:0.7, rFA:0.8, lUA:-0.5, lFA:-0.7, rTH:0.4,  rSH:0.6, lTH:-0.6, lSH:0.4},
+      {t:0.45,bodyY:-6, torsoTilt:-0.3, headTilt:-0.25,rUA:0.8, rFA:0.6, lUA:-0.6, lFA:-0.5, rTH:-0.15,rSH:0.4, lTH:0.2,  lSH:0.35},
+      {t:0.70,bodyY:0,  torsoTilt:0.06, headTilt:0,    rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12, rSH:0.25,lTH:-0.12,lSH:0},
+    ]},
+    punch:{dur:0.55,loop:false,kf:[
+      {t:0,   bodyY:0, torsoTilt:0.06,headTilt:0,   rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12,rSH:0.25,lTH:-0.12,lSH:0},
+      {t:0.2, bodyY:-3,torsoTilt:0.04,headTilt:0,   rUA:0.5, rFA:1.2, lUA:0.1,  lFA:0.15, rTH:0.12,rSH:0.25,lTH:-0.12,lSH:0},
+      {t:0.38,bodyY:-4,torsoTilt:0.22,headTilt:0.05,rUA:-0.2,rFA:0.05,lUA:0.5,  lFA:1.3,  rTH:0.15,rSH:0.3, lTH:-0.15,lSH:0},
+      {t:0.55,bodyY:0, torsoTilt:0.06,headTilt:0,   rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12,rSH:0.25,lTH:-0.12,lSH:0},
+    ]},
+    hurt:{dur:0.55,loop:false,kf:[
+      {t:0,   bodyY:0,  torsoTilt:0.06, headTilt:0,    rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12, rSH:0.25,lTH:-0.12,lSH:0},
+      {t:0.15,bodyY:-10,torsoTilt:-0.35,headTilt:-0.35,rUA:0.9, rFA:0.5, lUA:-0.9, lFA:-0.4, rTH:-0.2, rSH:0.5, lTH:0.25, lSH:0.3},
+      {t:0.35,bodyY:-5, torsoTilt:-0.18,headTilt:-0.18,rUA:0.6, rFA:0.9, lUA:-0.55,lFA:-0.9, rTH:0.05, rSH:0.35,lTH:-0.05,lSH:0.15},
+      {t:0.55,bodyY:0,  torsoTilt:0.06, headTilt:0,    rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12, rSH:0.25,lTH:-0.12,lSH:0},
+    ]},
+    win:{dur:0.75,loop:true,kf:[
+      {t:0,  bodyY:0,  torsoTilt:-0.05,headTilt:-0.1, rUA:-1.0, rFA:-0.5,lUA:1.0, lFA:0.5,rTH:0.05,rSH:0,lTH:-0.05,lSH:0},
+      {t:0.5,bodyY:-12,torsoTilt:-0.08,headTilt:-0.15,rUA:-1.25,rFA:-0.3,lUA:1.25,lFA:0.3,rTH:0.05,rSH:0,lTH:-0.05,lSH:0},
+      {t:1,  bodyY:0,  torsoTilt:-0.05,headTilt:-0.1, rUA:-1.0, rFA:-0.5,lUA:1.0, lFA:0.5,rTH:0.05,rSH:0,lTH:-0.05,lSH:0},
+    ]},
+    die:{dur:0.55,loop:false,kf:[
+      {t:0,   bodyY:0,  torsoTilt:0.06, headTilt:0,   bodyRot:0,   rUA:0.45,rFA:1.15,lUA:-0.45,lFA:-1.15,rTH:0.12,rSH:0.25,lTH:-0.12,lSH:0},
+      {t:0.2, bodyY:-8, torsoTilt:0.3,  headTilt:0.2, bodyRot:0.3, rUA:0.8, rFA:0.6, lUA:-0.5, lFA:-0.5, rTH:0.6, rSH:0.9, lTH:-0.3, lSH:0.4},
+      {t:0.45,bodyY:-60,torsoTilt:1.2,  headTilt:0.3, bodyRot:1.3, rUA:0.8, rFA:0.6, lUA:-0.5, lFA:-0.5, rTH:1.1, rSH:1.4, lTH:0.9,  lSH:0.8},
+      {t:0.55,bodyY:-70,torsoTilt:1.57, headTilt:0.3, bodyRot:1.57,rUA:0.8, rFA:0.6, lUA:-0.5, lFA:-0.5, rTH:1.2, rSH:1.5, lTH:1.0,  lSH:0.9},
+    ]},
+  };
+
+  const FIGHT_SEQS = [
+    {atk:'kick',     atkX:0.36,defX:0.62,def:'hurt'},
+    {atk:'punch',    atkX:0.38,defX:0.58,def:'stumble'},
+    {atk:'high_kick',atkX:0.34,defX:0.60,def:'hurt'},
+    {atk:'uppercut', atkX:0.35,defX:0.57,def:'hurt'},
+    {atk:'jump_kick',atkX:0.42,defX:0.60,def:'hurt',jump:true},
+    {atk:'punch',    atkX:0.16,defX:0.84,def:'duck',noWalk:true,defNoWalk:true},
+    {atk:'low_kick', atkX:0.36,defX:0.62,def:'block'},
+    {atk:'high_kick',atkX:0.38,defX:0.60,def:'duck'},
+  ];
+
+  function lerp(a,b,t){return a+(b-a)*t;}
+  function easeInOut(t){return t<.5?2*t*t:-1+(4-2*t)*t;}
+  function lerpPose(a,b,t){const r={};for(const k in a)r[k]=lerp(a[k]||0,b[k]||0,t);return r;}
+
+  function samplePose(anim,t){
+    const kf=anim.kf;
+    for(let i=0;i<kf.length-1;i++){
+      if(t>=kf[i].t&&t<=kf[i+1].t){
+        const span=kf[i+1].t-kf[i].t;
+        const local=span===0?0:(t-kf[i].t)/span;
+        return lerpPose(kf[i],kf[i+1],easeInOut(local));
+      }
+    }
+    return{...kf[kf.length-1]};
+  }
+
+  class Fighter{
+    constructor({facing,homeX,floorY,colors}){
+      this.facing=facing;this.homeX=homeX;this.floorY=floorY;this.colors=colors;
+      this.x=homeX;this.animName='idle';this.anim=POSES.idle;this.animT=0;
+      this.pose=samplePose(this.anim,0);this.opacity=1;
+      this._walkFrom=homeX;this._walkTo=homeX;this._walkDur=0;this._walkT=1;this._walkCb=null;
+      this._onComplete=null;this._jumpActive=false;this._jumpPeak=0;this._jumpDur=0;
+      this._jumpT=1;this._jumpOffset=0;this._jumpCb=null;
+    }
+    setState(name,{onComplete}={}){
+      const a=POSES[name];if(!a)return;
+      this.animName=name;this.anim=a;this.animT=0;this._onComplete=onComplete||null;
+      if(name!=='die')this.opacity=1;
+    }
+    walkTo(tx,ms,cb){
+      this._walkFrom=this.x;this._walkTo=tx;this._walkDur=ms/1000;
+      this._walkT=0;this._walkCb=cb||null;
+    }
+    jumpTo(tx,peakY,ms,cb){
+      this._jumpPeak=peakY;this._jumpDur=ms/1000;this._jumpT=0;
+      this._jumpOffset=0;this._jumpActive=true;this._jumpCb=cb||null;
+      this.walkTo(tx,ms);
+    }
+    update(dt){
+      if(this._walkT<1){
+        this._walkT=Math.min(1,this._walkT+dt/this._walkDur);
+        this.x=lerp(this._walkFrom,this._walkTo,easeInOut(this._walkT));
+        if(this._walkT>=1&&this._walkCb){const cb=this._walkCb;this._walkCb=null;cb();}
+      }
+      if(this._jumpActive){
+        this._jumpT=Math.min(1,this._jumpT+dt/this._jumpDur);
+        this._jumpOffset=this._jumpPeak*4*this._jumpT*(1-this._jumpT);
+        if(this._jumpT>=1){
+          this._jumpActive=false;this._jumpOffset=0;
+          if(this._jumpCb){const cb=this._jumpCb;this._jumpCb=null;cb();}
+        }
+      }
+      const prevT=this.animT;
+      this.animT+=dt/this.anim.dur;
+      if(this.anim.loop){
+        this.animT%=1;
+      }else{
+        if(this.animT>=1){
+          this.animT=1;
+          if(this.animName==='die')this.opacity=0.35;
+          if(this._onComplete&&prevT<1){const cb=this._onComplete;this._onComplete=null;cb();}
+        }
+      }
+      this.pose=samplePose(this.anim,this.animT);
+    }
+    draw(ctx){
+      const p=this.pose,cx=this.x,cy=this.floorY,f=this.facing,C=this.colors;
+      ctx.save();ctx.globalAlpha=this.opacity;ctx.translate(cx,cy);ctx.scale(f,1);
+      const bRot=p.bodyRot||0;
+      if(bRot!==0){ctx.translate(0,-SK.HIP_Y);ctx.rotate(bRot);ctx.translate(0,SK.HIP_Y);}
+      const bodyY=(p.bodyY||0)+this._jumpOffset;
+      ctx.save();ctx.globalAlpha=this.opacity*0.45;ctx.fillStyle='#000';
+      ctx.beginPath();ctx.ellipse(0,2,SK.THIGH_W*1.6,4,0,0,Math.PI*2);ctx.fill();ctx.restore();
+      this._drawLeg(ctx,SK.HIP_Y-bodyY,p.lTH,p.lSH,C.shorts,C.socks,C.boots);
+      this._drawArm(ctx,SK.SHOULDER_Y-bodyY,p.lUA,p.lFA,C.jersey,C.skin,true);
+      ctx.save();ctx.translate(0,-(SK.HIP_Y-bodyY));ctx.rotate(p.torsoTilt||0);
+      ctx.fillStyle=C.shorts;ctx.strokeStyle=rcDarken(C.shorts,0.6);ctx.lineWidth=1;
+      ctx.fillRect(-SK.TORSO_W/2,-SK.TORSO_H*0.28,SK.TORSO_W,SK.TORSO_H*0.28);
+      ctx.strokeRect(-SK.TORSO_W/2,-SK.TORSO_H*0.28,SK.TORSO_W,SK.TORSO_H*0.28);
+      ctx.fillStyle=C.jersey;ctx.strokeStyle=rcDarken(C.jersey,0.6);
+      ctx.fillRect(-SK.TORSO_W/2,-SK.TORSO_H,SK.TORSO_W,SK.TORSO_H*0.72);
+      ctx.strokeRect(-SK.TORSO_W/2,-SK.TORSO_H,SK.TORSO_W,SK.TORSO_H*0.72);
+      if(C.accent){ctx.fillStyle=C.accent;ctx.fillRect(-SK.TORSO_W/2,-SK.TORSO_H,SK.TORSO_W,SK.TORSO_H*0.12);}
+      if(C.special==='tie'){ctx.fillStyle=C.tieColor;ctx.fillRect(-2,-SK.TORSO_H*0.9,4,SK.TORSO_H*0.65);}
+      ctx.restore();
+      this._drawLeg(ctx,SK.HIP_Y-bodyY,p.rTH,p.rSH,C.shorts,C.socks,C.boots);
+      this._drawArm(ctx,SK.SHOULDER_Y-bodyY,p.rUA,p.rFA,C.jersey,C.skin,false);
+      ctx.save();ctx.translate(0,-(SK.NECK_Y-bodyY+SK.TORSO_H*(p.torsoTilt||0)*0.5));
+      ctx.rotate((p.torsoTilt||0)*0.5+(p.headTilt||0));
+      if(C.special==='earpiece'){ctx.fillStyle=C.earColor;ctx.fillRect(SK.HEAD_W/2-1,-SK.HEAD_H*0.55,3,3);}
+      ctx.fillStyle=C.hair;ctx.fillRect(-SK.HEAD_W/2,-SK.HEAD_H-SK.HEAD_H*0.15,SK.HEAD_W,SK.HEAD_H*0.25);
+      ctx.fillStyle=C.skin;ctx.strokeStyle=rcDarken(C.skin,0.6);ctx.lineWidth=1;
+      ctx.fillRect(-SK.HEAD_W/2,-SK.HEAD_H,SK.HEAD_W,SK.HEAD_H);
+      ctx.strokeRect(-SK.HEAD_W/2,-SK.HEAD_H,SK.HEAD_W,SK.HEAD_H);
+      ctx.fillStyle='#fff';
+      ctx.fillRect(SK.HEAD_W*0.15,-SK.HEAD_H*0.65,SK.HEAD_W*0.22,SK.HEAD_H*0.18);
+      ctx.fillRect(-SK.HEAD_W*0.38,-SK.HEAD_H*0.65,SK.HEAD_W*0.22,SK.HEAD_H*0.18);
+      ctx.fillStyle='#1a0a14';
+      ctx.fillRect(SK.HEAD_W*0.22,-SK.HEAD_H*0.65,SK.HEAD_W*0.1,SK.HEAD_H*0.15);
+      ctx.fillRect(-SK.HEAD_W*0.30,-SK.HEAD_H*0.65,SK.HEAD_W*0.1,SK.HEAD_H*0.15);
+      ctx.restore();ctx.restore();
+    }
+    _drawLeg(ctx,pivotY,thighAngle,shinAngle,shortColor,sockColor,bootColor){
+      ctx.save();ctx.translate(0,-pivotY);ctx.rotate(thighAngle);
+      ctx.fillStyle=shortColor;ctx.strokeStyle=rcDarken(shortColor,0.6);ctx.lineWidth=1;
+      ctx.fillRect(-SK.THIGH_W/2,0,SK.THIGH_W,SK.THIGH_L);ctx.strokeRect(-SK.THIGH_W/2,0,SK.THIGH_W,SK.THIGH_L);
+      ctx.translate(0,SK.THIGH_L);ctx.rotate(shinAngle);
+      ctx.fillStyle=sockColor;ctx.strokeStyle=rcDarken(sockColor,0.55);
+      ctx.fillRect(-SK.SHIN_W/2,0,SK.SHIN_W,SK.SHIN_L);ctx.strokeRect(-SK.SHIN_W/2,0,SK.SHIN_W,SK.SHIN_L);
+      ctx.translate(0,SK.SHIN_L);ctx.fillStyle=bootColor;ctx.strokeStyle='#000';
+      ctx.fillRect(-SK.BOOT_W/2,0,SK.BOOT_W,SK.BOOT_H);ctx.strokeRect(-SK.BOOT_W/2,0,SK.BOOT_W,SK.BOOT_H);
+      ctx.restore();
+    }
+    _drawArm(ctx,pivotY,upperAngle,foreAngle,jerseyColor,skinColor,isBack){
+      ctx.save();ctx.translate(0,-pivotY);ctx.rotate(upperAngle);
+      ctx.fillStyle=jerseyColor;ctx.strokeStyle=rcDarken(jerseyColor,0.6);ctx.lineWidth=1;
+      ctx.fillRect(-SK.UARM_W/2,0,SK.UARM_W,SK.UARM_L);ctx.strokeRect(-SK.UARM_W/2,0,SK.UARM_W,SK.UARM_L);
+      ctx.translate(0,SK.UARM_L);ctx.rotate(foreAngle);
+      ctx.fillStyle=skinColor;ctx.strokeStyle=rcDarken(skinColor,0.6);
+      ctx.fillRect(-SK.FARM_W/2,0,SK.FARM_W,SK.FARM_L);ctx.strokeRect(-SK.FARM_W/2,0,SK.FARM_W,SK.FARM_L);
+      if(!isBack&&this.colors.special==='armband'){ctx.fillStyle='#e8392f';ctx.fillRect(-SK.FARM_W/2-1,SK.FARM_L*0.35,SK.FARM_W+2,3);}
+      ctx.translate(0,SK.FARM_L);
+      const fistC=(!isBack&&this.colors.special==='gloves')?this.colors.gloveColor:skinColor;
+      ctx.fillStyle=fistC;ctx.fillRect(-SK.FIST_W/2,0,SK.FIST_W,SK.FIST_H);ctx.strokeRect(-SK.FIST_W/2,0,SK.FIST_W,SK.FIST_H);
+      ctx.restore();
+    }
+  }
+
+  function rcDarken(hex,f){
+    hex=hex.replace('#','');
+    if(hex.length===3)hex=hex.split('').map(c=>c+c).join('');
+    const r=Math.round(parseInt(hex.slice(0,2),16)*f);
+    const g=Math.round(parseInt(hex.slice(2,4),16)*f);
+    const b=Math.round(parseInt(hex.slice(4,6),16)*f);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function buildRecapMatches(){
+    if(!_lastMatchData)return[];
+    const{matches}=_lastMatchData;
+    const finished=matches.filter(m=>m.status==='FINISHED');
+    if(!finished.length)return[];
+    finished.sort((a,b)=>new Date(b.utcDate)-new Date(a.utcDate));
+    const latestDay=new Date(finished[0].utcDate).toDateString();
+    const dayMatches=finished.filter(m=>new Date(m.utcDate).toDateString()===latestDay).slice(0,6);
+    return dayMatches.map(m=>{
+      const htla=normTeamCode(m.homeTeam?.tla||'');
+      const atla=normTeamCode(m.awayTeam?.tla||'');
+      const hAlloc=allAllocations.find(a=>normTeamCode(a.team_code)===htla);
+      const aAlloc=allAllocations.find(a=>normTeamCode(a.team_code)===atla);
+      const hc=getFlagColors(htla);
+      const ac=getFlagColors(atla);
+      const hs=m.score?.fullTime?.home||0;
+      const as=m.score?.fullTime?.away||0;
+      const total=hs+as;
+      const mins=Array.from({length:total},()=>5+Math.round(Math.random()*80));
+      mins.sort((a,b)=>a-b);
+      let hi=0,ai=0;
+      const goals=mins.map(min=>{
+        if(hi<hs&&(ai>=as||Math.random()<0.55)){hi++;return{t:'home',sc:min+"'"};}
+        ai++;return{t:'away',sc:min+"'"};
+      });
+      const stageLabel={GROUP_STAGE:'Group Stage',ROUND_OF_32:'Rd of 32',ROUND_OF_16:'Rd of 16',QUARTER_FINALS:'Quarter Final',SEMI_FINALS:'Semi Final',FINAL:'Final',THIRD_PLACE:'3rd Place'}[m.stage]||m.stage||'';
+      const dateLabel=m.utcDate?new Date(m.utcDate).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
+      const hAvType=hAlloc?.participants?.avatar_type||1;
+      const aAvType=aAlloc?.participants?.avatar_type||2;
+      return{
+        home:{name:(m.homeTeam?.shortName||m.homeTeam?.name||htla).toUpperCase(),c1:hc.primary||'#334',c2:hc.secondary||'#778',avName:AV_NAMES[hAvType-1]||'striker'},
+        away:{name:(m.awayTeam?.shortName||m.awayTeam?.name||atla).toUpperCase(),c1:ac.primary||'#334',c2:ac.secondary||'#778',avName:AV_NAMES[aAvType-1]||'captain'},
+        hs,as,goals,
+        stage:stageLabel+(dateLabel?'  ·  '+dateLabel:''),
+      };
+    });
+  }
+
+  function startRecap(){
+    rcE('end').classList.remove('show');
+    const vs=rcE('vs');vs.style.opacity='1';vs.style.transition='';
+    rcMatches=buildRecapMatches();
+    if(!rcMatches.length){
+      rcE('end').classList.add('show');
+      rcE('end-s').textContent='NO FINISHED MATCHES TO RECAP YET';
+      vs.style.opacity='0';
+      return;
+    }
+    gen++;if(tickId)clearInterval(tickId);
+    rcRunMatch(0);
+  }
+
+  function rcRunMatch(idx){
+    gen++;if(tickId)clearInterval(tickId);
+    if(idx>=rcMatches.length){rcShowEnd();return;}
+    curIdx=idx;
+    const m=rcMatches[idx];
+    const myGen=gen;
+    rcE('hn1').textContent=m.home.name;rcE('hn2').textContent=m.away.name;
+    rcSetHP(1,100,m);rcSetHP(2,100,m);
+    rcE('s1').textContent='0';rcE('s2').textContent='0';
+    rcE('s1').classList.remove('pop');rcE('s2').classList.remove('pop');
+    timerVal=10;rcE('tim').textContent='10';rcE('tim').classList.remove('urgent');
+    rcResetFighters(m);
+    rcE('prog').style.transition='none';rcE('prog').style.width='100%';
+    rcE('mctr').textContent=`MATCH ${idx+1} / ${rcMatches.length}`;
+    rcVsIntro(m,myGen,()=>{if(gen!==myGen)return;rcStartBattle(m,myGen);});
+  }
+
+  function rcVsIntro(m,myGen,cb){
+    const vs=rcE('vs');
+    const left=rcE('vs-left'),right=rcE('vs-right');
+    rcE('vs-sp1').src='assets/avatars/'+m.home.avName+'.svg';
+    rcE('vs-sp2').src='assets/avatars/'+m.away.avName+'.svg';
+    rcE('vs-n1').textContent=m.home.name;rcE('vs-n2').textContent=m.away.name;
+    rcE('vs-f1').style.background=m.home.c1;rcE('vs-f2').style.background=m.away.c1;
+    rcE('vs-sub').textContent=m.stage||'';
+    left.style.transition='none';right.style.transition='none';
+    left.style.transform='translateX(-130%)';right.style.transform='translateX(130%)';
+    vs.style.opacity='1';vs.style.transition='';
+    rcRaf2(()=>{
+      left.style.transition='transform .42s cubic-bezier(0.23,1,.32,1)';
+      right.style.transition='transform .42s cubic-bezier(0.23,1,.32,1)';
+      left.style.transform='translateX(0)';right.style.transform='translateX(0)';
+    });
+    rcAfter(1100,myGen,()=>{
+      left.style.transition='transform .1s ease-in';right.style.transition='transform .1s ease-in';
+      left.style.transform='translateX(22px)';right.style.transform='translateX(-22px)';
+      rcDoFlash();rcDoShake();
+    });
+    rcAfter(1400,myGen,()=>{
+      vs.style.transition='opacity .3s ease-out';vs.style.opacity='0';
+      rcAfter(330,myGen,cb);
+    });
+  }
+
+  function rcStartBattle(m,myGen){
+    F.p1.setState('idle');F.p2.setState('idle');
+    rcAnnounce('⚽  KICK OFF!','#ff9ad0',myGen);
+    const G=m.goals,n=G.length;
+    const t0=1500,t1=7200;
+    const step=n<=1?0:(t1-t0)/(n-1);
+    let hs=0,as=0;
+    G.forEach((g,i)=>{
+      rcAfter(t0+i*step,myGen,()=>{
+        if(g.t==='home'){hs++;rcFireGoal('p1',hs,as,m,g.sc,myGen);}
+        else{as++;rcFireGoal('p2',hs,as,m,g.sc,myGen);}
+      });
+    });
+    rcAfter(8100,myGen,()=>rcShowResult(m));
+    rcAfter(10000,myGen,rcFadeNext);
+    tickId=setInterval(()=>{
+      timerVal--;
+      const v=Math.max(0,timerVal);
+      rcE('tim').textContent=v;
+      if(v<=3)rcE('tim').classList.add('urgent');
+      if(v<=0)clearInterval(tickId);
+    },1000);
+    rcRaf2(()=>{rcE('prog').style.transition='width 10s linear';rcE('prog').style.width='0%';});
+  }
+
+  function rcFireGoal(side,hs,as,m,scorer,myGen){
+    const atk=F[side],def=F[side==='p1'?'p2':'p1'];
+    const W=rcE('canvas').clientWidth;
+    const seq=FIGHT_SEQS[(hs+as-1)%FIGHT_SEQS.length];
+    const atkPos=side==='p1'?seq.atkX*W:W-seq.atkX*W;
+    const defPos=side==='p1'?seq.defX*W:W-seq.defX*W;
+    if(seq.jump){
+      atk.setState(seq.atk,{onComplete:()=>{
+        rcAfter(500,myGen,()=>{atk.walkTo(atk.homeX,400);atk.setState('walk');});
+        rcAfter(900,myGen,()=>atk.setState('idle'));
+      }});
+      atk.jumpTo(atkPos,-55,350);
+    }else if(!seq.noWalk){
+      atk.setState('walk');
+      atk.walkTo(atkPos,400,()=>{
+        atk.setState(seq.atk,{onComplete:()=>{
+          rcAfter(500,myGen,()=>{atk.walkTo(atk.homeX,400);atk.setState('walk');});
+          rcAfter(900,myGen,()=>atk.setState('idle'));
+        }});
+      });
+    }else{
+      atk.setState(seq.atk,{onComplete:()=>{rcAfter(700,myGen,()=>atk.setState('idle'));}});
+    }
+    if(!seq.defNoWalk){
+      def.setState('walk');
+      def.walkTo(defPos,400,()=>{
+        rcAfter(150,myGen,()=>{
+          def.setState(seq.def,{onComplete:()=>{
+            rcAfter(350,myGen,()=>{def.walkTo(def.homeX,400);def.setState('walk');});
+            rcAfter(750,myGen,()=>def.setState('idle'));
+          }});
+        });
+      });
+    }else{
+      rcAfter(300,myGen,()=>{def.setState(seq.def,{onComplete:()=>{rcAfter(500,myGen,()=>def.setState('idle'));}});});
+    }
+    rcDoFlash();rcDoShake();
+    rcAfter(200,myGen,()=>{
+      rcE('s1').textContent=hs;rcE('s2').textContent=as;
+      const sid=side==='p1'?'s1':'s2';
+      rcE(sid).classList.add('pop');
+      rcAfter(220,myGen,()=>rcE(sid).classList.remove('pop'));
+    });
+    const mx=Math.max(m.hs,m.as,1);
+    rcSetHP(1,Math.max(8,100-(as/mx)*88),m);
+    rcSetHP(2,Math.max(8,100-(hs/mx)*88),m);
+    rcAnnounce('⚽  GOAL!','#3cb04a',myGen);
+    rcPopScorer(scorer);
+    rcBurst(side==='p1'?22:78,side==='p1'?m.home.c2:m.away.c2,12);
+  }
+
+  function rcShowResult(m){
+    const r=rcE('result');
+    let text,color;
+    if(m.hs>m.as){text=m.home.name+'  WIN!';color=m.home.c2;F.p1.setState('win');F.p2.setState('die');rcBurst(22,m.home.c2,22);}
+    else if(m.as>m.hs){text=m.away.name+'  WIN!';color=m.away.c2;F.p2.setState('win');F.p1.setState('die');rcBurst(78,m.away.c2,22);}
+    else{text="IT'S  A  DRAW!";color='#ff9ad0';F.p1.setState('win');F.p2.setState('win');}
+    r.textContent=text;r.style.color=color;
+    r.classList.remove('go');r.offsetHeight;r.classList.add('go');
+  }
+
+  function rcFadeNext(){
+    clearInterval(tickId);
+    const w=rcE('wrap');
+    w.style.transition='opacity .38s';w.style.opacity='0';
+    setTimeout(()=>{w.style.opacity='1';rcRunMatch(curIdx+1);},400);
+  }
+
+  function rcShowEnd(){
+    rcE('end').classList.add('show');
+    rcE('end-s').textContent=`ALL ${rcMatches.length} RESULT${rcMatches.length!==1?'S':''} SHOWN`;
+  }
+
+  function rcSetHP(n,pct,m){
+    const el=rcE('hp'+n);
+    const m2=n===1?m.home:m.away;
+    el.style.width=pct+'%';
+    el.style.background=n===1?`linear-gradient(to left,${m2.c1},${m2.c2})`:`linear-gradient(to right,${m2.c1},${m2.c2})`;
+    el.classList.toggle('rc-hp-low',pct<30);
+  }
+
+  function rcAnnounce(txt,col){
+    const a=rcE('ann');a.textContent=txt;a.style.color=col;
+    a.classList.remove('go');a.offsetHeight;a.classList.add('go');
+  }
+
+  function rcPopScorer(txt){
+    const l=rcE('scorer');l.textContent=txt;
+    l.classList.remove('go');l.offsetHeight;l.classList.add('go');
+  }
+
+  function rcDoFlash(){
+    const f=rcE('flash');f.classList.remove('go');f.offsetHeight;f.classList.add('go');
+  }
+
+  function rcDoShake(){
+    const w=rcE('wrap');w.classList.remove('go-shake');w.offsetHeight;w.classList.add('go-shake');
+  }
+
+  function rcBurst(xPct,color,n){
+    const w=rcE('wrap');
+    for(let i=0;i<n;i++){
+      const p=document.createElement('div');
+      p.className='rc-px';p.style.background=color;
+      p.style.left=(xPct+(Math.random()-.5)*14)+'%';
+      p.style.top=(30+Math.random()*28)+'%';
+      const dx=(Math.random()-.5)*110,dy=-(Math.random()*90+25);
+      p.style.setProperty('--t',`translate(${dx}px,${dy}px)`);
+      p.style.animation=`rc-px-fly ${.45+Math.random()*.55}s ease-out forwards`;
+      w.appendChild(p);setTimeout(()=>p.remove(),1200);
+    }
+  }
+
+  function rcAfter(ms,myGen,fn){setTimeout(()=>{if(gen===myGen)fn();},ms);}
+  function rcRaf2(fn){requestAnimationFrame(()=>requestAnimationFrame(fn));}
+
+  function rcResetFighters(m){
+    const cvs=rcE('canvas');
+    const W=cvs.clientWidth,H=180;
+    cvs.width=W;cvs.height=H;
+    const mc=rcMatches[curIdx];
+    const ac1=AVATAR_COLORS[mc.home.avName]||AVATAR_COLORS.striker;
+    const ac2=AVATAR_COLORS[mc.away.avName]||AVATAR_COLORS.captain;
+    F.p1=new Fighter({facing:1,homeX:W*0.16,floorY:H-10,colors:{...ac1,accent:m.home.c2}});
+    F.p2=new Fighter({facing:-1,homeX:W*0.84,floorY:H-10,colors:{...ac2,accent:m.away.c2}});
+    if(!rafId)rafId=requestAnimationFrame(rcRafLoop);
+  }
+
+  function rcRafLoop(now){
+    const dt=Math.min((now-(lastT||now))/1000,0.05);
+    lastT=now;
+    const cvs=rcE('canvas');
+    if(!cvs){rafId=requestAnimationFrame(rcRafLoop);return;}
+    const ctx=cvs.getContext('2d');
+    ctx.clearRect(0,0,cvs.width,cvs.height);
+    if(F.p1){F.p1.update(dt);F.p1.draw(ctx);}
+    if(F.p2){F.p2.update(dt);F.p2.draw(ctx);}
+    rafId=requestAnimationFrame(rcRafLoop);
+  }
+
+  return{
+    start:startRecap,
+    replay(){rcMatches=buildRecapMatches();gen++;if(tickId)clearInterval(tickId);rcRunMatch(0);},
+    skip(){gen++;clearInterval(tickId);rcFadeNext();},
+  };
 })();
 
 BracketZoom.init();
