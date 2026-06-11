@@ -79,6 +79,17 @@
     }
 
     .teams-hint strong { color: var(--text); }
+
+    .mid-tourney-notice {
+      background: rgba(240,192,64,0.08);
+      border: 1px solid rgba(240,192,64,0.25);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: var(--gold);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
   </style>
 </head>
 <body class="tunnel-screen">
@@ -114,6 +125,10 @@
             <br>E.g. <strong>3 teams</strong> per person → good for a group of ~16 friends.
           </p>
           <div class="field-error" id="teamsError">Must be between 1 and 12.</div>
+        </div>
+
+        <div class="mid-tourney-notice" id="midTourneyNotice" style="display:none">
+          ⚠️ The World Cup has already started — <strong id="activeTeamCount"></strong> of 48 teams are still in the tournament. Participants may be assigned teams that have already been eliminated.
         </div>
 
         <button class="btn-full btn-gold" id="createBtn">
@@ -178,6 +193,7 @@
 <div id="toast"></div>
 
 <script src="js/config.js?v=17807242" onerror="document.getElementById('toast').textContent='Failed to load: config.js';document.getElementById('toast').classList.add('show')"></script>
+<script src="js/football.js?v=17807242"></script>
 <script src="js/music.js?v=17807242"></script>
 <script src="js/vendor/supabase.js?v=17807242" onerror="document.getElementById('toast').textContent='Failed to load: vendor/supabase.js';document.getElementById('toast').classList.add('show')"></script>
 <script>
@@ -284,6 +300,25 @@
 
   nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') teamsInput.focus(); });
   teamsInput.addEventListener('keydown', e => { if (e.key === 'Enter') createBtn.click(); });
+
+  (async () => {
+    try {
+      const matches = await getMatches();
+      const hasStarted = matches.some(m =>
+        m.status === 'FINISHED' || m.status === 'IN_PLAY' || m.status === 'PAUSED'
+      );
+      if (!hasStarted) return;
+      const active = new Set();
+      for (const m of matches) {
+        if (m.status !== 'FINISHED') {
+          if (m.homeTeam?.tla) active.add(m.homeTeam.tla);
+          if (m.awayTeam?.tla) active.add(m.awayTeam.tla);
+        }
+      }
+      document.getElementById('activeTeamCount').textContent = active.size;
+      document.getElementById('midTourneyNotice').style.display = '';
+    } catch { /* API unavailable — show nothing */ }
+  })();
 </script>
 </body>
 </html>
