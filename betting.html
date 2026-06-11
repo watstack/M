@@ -527,19 +527,24 @@ async function loadMarketsView() {
       fetchOutrightOdds('soccer_fifa_world_cup_2026'),
     ]);
 
-    const fixtureList = matches.status === 'fulfilled' ? matches.value : [];
+    const fixtureList = matches.status === 'fulfilled' ? (matches.value || []) : [];
     const oddsEvents  = allOddsData.status === 'fulfilled' ? (allOddsData.value || []) : [];
     const outrights   = outrightOdds.status === 'fulfilled' ? (outrightOdds.value || []) : [];
 
-    // Ensure markets exist for upcoming fixtures
-    const upcoming = fixtureList.filter(m =>
-      ['SCHEDULED','TIMED'].includes(m.status) && m.utcDate
-    ).slice(0, 20); // limit to avoid hammering DB
+    if (matches.status === 'rejected') console.warn('Football API failed:', matches.reason);
 
-    await Promise.all(upcoming.map(f =>
-      getOrCreateMatchMarkets(_tournament.id, f, oddsEvents).catch(() => {})
-    ));
-    await getOrCreateWinnerMarket(_tournament.id, outrights).catch(() => {});
+    // Create markets for all non-cancelled fixtures (includes IN_PLAY, FINISHED, SCHEDULED, TIMED)
+    const relevant = fixtureList.filter(m =>
+      m.utcDate && !['POSTPONED','CANCELLED','SUSPENDED'].includes(m.status)
+    );
+
+    const results = await Promise.allSettled(
+      relevant.map(f => getOrCreateMatchMarkets(_tournament.id, f, oddsEvents))
+    );
+    const failed = results.filter(r => r.status === 'rejected');
+    if (failed.length) console.warn('Market creation errors:', failed.map(r => r.reason?.message));
+
+    await getOrCreateWinnerMarket(_tournament.id, outrights).catch(e => console.warn('Winner market error:', e));
 
     // Load all markets
     const markets = await loadOpenMarkets(_tournament.id);
@@ -598,9 +603,9 @@ function renderMarketsView(markets) {
         </div>
       </div>
       <div class="match-odds-row">
-        ${oddsBtn(mr.id, 'home', 'Home', o.home, isClosed, isSettled && mr.result === 'home')}
-        ${o.draw != null ? oddsBtn(mr.id, 'draw', 'Draw', o.draw, isClosed, isSettled && mr.result === 'draw') : ''}
-        ${oddsBtn(mr.id, 'away', 'Away', o.away, isClosed, isSettled && mr.result === 'away')}
+        ${o.home != null ? oddsBtn(mr.id, 'home', 'Home', o.home, isClosed, isSettled && mr.result === 'home') : oddsTbc('Home')}
+        ${o.draw != null ? oddsBtn(mr.id, 'draw', 'Draw', o.draw, isClosed, isSettled && mr.result === 'draw') : (isClosed ? '' : oddsTbc('Draw'))}
+        ${o.away != null ? oddsBtn(mr.id, 'away', 'Away', o.away, isClosed, isSettled && mr.result === 'away') : oddsTbc('Away')}
       </div>
       ${cs && !isClosed ? `<div class="cs-toggle" onclick="toggleCorrectScore(this)">
         <span>Correct Score</span><span class="cs-arrow">▾</span>
