@@ -9,6 +9,16 @@ const CACHE_TTL_IDLE = 300_000;   // 5min otherwise
 let _pollTimer = null;
 let _pollCallback = null;
 
+// Purge any cached responses that predate the ?season=2026 parameter addition.
+(function purgeLegacyCache() {
+  const stale = [
+    `wc26_api_/competitions/WC/matches`,
+    `wc26_api_/competitions/WC/standings`,
+    `wc26_api_/competitions/WC/teams`,
+  ];
+  stale.forEach(k => sessionStorage.removeItem(k));
+}());
+
 async function footballFetch(path) {
   const cacheKey = `wc26_api_${path}`;
   const cached = sessionStorage.getItem(cacheKey);
@@ -21,8 +31,16 @@ async function footballFetch(path) {
   const res = await fetch(`https://api.football-data.org/v4/${cleanPath}`, {
     headers: { 'X-Auth-Token': CONFIG.FOOTBALL_API_TOKEN },
   });
-  if (!res.ok) throw new Error(`Football API error: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    console.error(`[football] API ${res.status} for ${path}:`, body);
+    throw new Error(`Football API error: ${res.status}`);
+  }
   const data = await res.json();
+  const finCount = (data.matches || []).filter(m => m.status === 'FINISHED').length;
+  if (finCount > 0 || (data.matches || []).length > 0) {
+    console.log(`[football] ${path} → ${(data.matches||[]).length} matches, ${finCount} FINISHED`);
+  }
   sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
   return data;
 }
@@ -41,13 +59,14 @@ async function getTeams() {
 }
 
 async function getMatches(stage = null) {
-  const qs = stage ? `?stage=${encodeURIComponent(stage)}` : '';
-  const data = await footballFetch(`/competitions/${WC_CODE}/matches${qs}`);
+  const params = new URLSearchParams({ season: '2026' });
+  if (stage) params.set('stage', stage);
+  const data = await footballFetch(`/competitions/${WC_CODE}/matches?${params}`);
   return data.matches || [];
 }
 
 async function getStandings() {
-  const data = await footballFetch(`/competitions/${WC_CODE}/standings`);
+  const data = await footballFetch(`/competitions/${WC_CODE}/standings?season=2026`);
   return data.standings || [];
 }
 
