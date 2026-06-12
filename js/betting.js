@@ -292,6 +292,13 @@ function renderMatchCard(market, myBets, isOpen) {
   </div>`;
 }
 
+function oddsTbc(label) {
+  return `<button class="odds-btn disabled" disabled>
+    <span class="odds-label">${label}</span>
+    <span class="odds-price">TBC</span>
+  </button>`;
+}
+
 function oddsBtn(marketId, selection, label, price, disabled, isResult) {
   if (price == null) return '';
   const cls = ['odds-btn', disabled ? 'disabled' : '', isResult ? 'result-winner' : ''].filter(Boolean).join(' ');
