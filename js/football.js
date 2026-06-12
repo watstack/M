@@ -1,85 +1,190 @@
-// football-data.org API wrapper for WC 2026.
-// Calls api.football-data.org directly from the browser (CORS supported).
-// Free tier: 10 req/min. We cache aggressively and poll only when needed.
+// Match data via ESPN public API → Supabase wc_matches table.
+// On load: /api/sync fetches ESPN in the background and upserts to Supabase.
+// getAllMatchData() reads from Supabase and normalises to the existing format.
+// Falls back to direct football-data.org if Supabase is empty or unreachable.
 
-const WC_CODE = 'WC';
-const CACHE_TTL_LIVE = 60_000;    // 60s when a match is live
-const CACHE_TTL_IDLE = 300_000;   // 5min otherwise
+const CACHE_TTL_LIVE = 60_000;
+const CACHE_TTL_IDLE = 300_000;
 
 let _pollTimer = null;
 let _pollCallback = null;
+let _syncFired   = false;   // only fire background sync once per session
 
-// Purge any cached responses that predate the ?season=2026 parameter addition.
-(function purgeLegacyCache() {
-  const stale = [
-    `wc26_api_/competitions/WC/matches`,
-    `wc26_api_/competitions/WC/standings`,
-    `wc26_api_/competitions/WC/teams`,
-  ];
-  stale.forEach(k => sessionStorage.removeItem(k));
-}());
+// ─── Primary path: Supabase ───────────────────────────────────────────────────
 
-async function footballFetch(path) {
-  const cacheKey = `wc26_api_${path}`;
-  const cached = sessionStorage.getItem(cacheKey);
-  if (cached) {
-    const { ts, data } = JSON.parse(cached);
-    const ttl = hasLiveMatch(data) ? CACHE_TTL_LIVE : CACHE_TTL_IDLE;
-    if (Date.now() - ts < ttl) return data;
-  }
-  const cleanPath = path.replace(/^\//, '');
-  const res = await fetch(`https://api.football-data.org/v4/${cleanPath}`, {
-    headers: { 'X-Auth-Token': CONFIG.FOOTBALL_API_TOKEN },
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    console.error(`[football] API ${res.status} for ${path}:`, body);
-    throw new Error(`Football API error: ${res.status}`);
-  }
-  const data = await res.json();
-  const finCount = (data.matches || []).filter(m => m.status === 'FINISHED').length;
-  if (finCount > 0 || (data.matches || []).length > 0) {
-    console.log(`[football] ${path} → ${(data.matches||[]).length} matches, ${finCount} FINISHED`);
-  }
-  sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
-  return data;
+async function supaFetch(path) {
+  const base    = CONFIG.SUPABASE_URL + '/rest/v1';
+  const headers = {
+    'apikey':        CONFIG.SUPABASE_ANON_KEY,
+    'Authorization': `Bearer ${CONFIG.SUPABASE_ANON_KEY}`,
+  };
+  const res = await fetch(`${base}${path}`, { headers });
+  if (!res.ok) throw new Error(`Supabase ${res.status} for ${path}`);
+  return res.json();
 }
 
-// Returns true if any match in a response payload is currently in play.
-function hasLiveMatch(data) {
-  const matches = data?.matches || [];
-  return matches.some(m => m.status === 'IN_PLAY' || m.status === 'PAUSED');
+async function triggerSync() {
+  if (_syncFired) return;
+  _syncFired = true;
+  fetch('/api/sync').catch(e => console.warn('[football] sync failed:', e.message));
+}
+
+async function awaitSync() {
+  try {
+    const r = await fetch('/api/sync');
+    if (!r.ok) console.warn('[football] sync returned', r.status);
+  } catch (e) {
+    console.warn('[football] sync error:', e.message);
+  }
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-async function getTeams() {
-  const data = await footballFetch(`/competitions/${WC_CODE}/teams`);
-  return data.teams || [];
-}
-
-async function getMatches(stage = null) {
-  const params = new URLSearchParams({ season: '2026' });
-  if (stage) params.set('stage', stage);
-  const data = await footballFetch(`/competitions/${WC_CODE}/matches?${params}`);
-  return data.matches || [];
-}
-
-async function getStandings() {
-  const data = await footballFetch(`/competitions/${WC_CODE}/standings?season=2026`);
-  return data.standings || [];
-}
-
 async function getAllMatchData() {
-  const [teams, matches, standings] = await Promise.all([
-    getTeams(),
-    getMatches(),
-    getStandings(),
+  // Fire background sync on first call each session
+  triggerSync();
+
+  let rows;
+  try {
+    rows = await supaFetch('/wc_matches?select=*&order=utc_date.asc&limit=300');
+  } catch (e) {
+    console.warn('[football] Supabase read failed, trying sync+retry:', e.message);
+    await awaitSync();
+    rows = await supaFetch('/wc_matches?select=*&order=utc_date.asc&limit=300');
+  }
+
+  // If table is empty (first deploy), wait for sync then retry
+  if (!Array.isArray(rows) || rows.length === 0) {
+    console.log('[football] No Supabase data yet — waiting for sync...');
+    _syncFired = false;        // allow awaitSync to call /api/sync
+    await awaitSync();
+    _syncFired = true;
+    try {
+      rows = await supaFetch('/wc_matches?select=*&order=utc_date.asc&limit=300');
+    } catch (_) {}
+  }
+
+  // Fall back to football-data.org if Supabase still has nothing
+  if (!Array.isArray(rows) || rows.length === 0) {
+    console.warn('[football] Supabase empty — falling back to football-data.org');
+    return footballDataFallback();
+  }
+
+  const finCount = rows.filter(r => r.status === 'FINISHED').length;
+  console.log(`[football] Supabase → ${rows.length} matches, ${finCount} FINISHED`);
+  return normaliseRows(rows);
+}
+
+// ─── Normalise Supabase rows → existing { teams, matches, standings } shape ───
+
+function normaliseRows(rows) {
+  const matches = rows.map(r => ({
+    id:       r.id,
+    status:   r.status,
+    utcDate:  r.utc_date,
+    stage:    r.stage   || 'GROUP_STAGE',
+    group:    r.group_name,
+    homeTeam: { id: r.home_id, tla: r.home_tla, shortName: r.home_name, name: r.home_name },
+    awayTeam: { id: r.away_id, tla: r.away_tla, shortName: r.away_name, name: r.away_name },
+    score: {
+      fullTime:  { home: r.home_score, away: r.away_score },
+      halfTime:  { home: null, away: null },
+    },
+    goals: Array.isArray(r.goals) ? r.goals : [],
+  }));
+
+  // Unique teams from match data
+  const teamMap = new Map();
+  for (const m of matches) {
+    if (!teamMap.has(m.homeTeam.tla)) teamMap.set(m.homeTeam.tla, m.homeTeam);
+    if (!teamMap.has(m.awayTeam.tla)) teamMap.set(m.awayTeam.tla, m.awayTeam);
+  }
+
+  return { teams: [...teamMap.values()], matches, standings: computeStandings(matches) };
+}
+
+function computeStandings(matches) {
+  const groups = {};
+  for (const m of matches) {
+    const g = m.group;
+    if (!g) continue;
+    if (!groups[g]) groups[g] = {};
+    const addTeam = (t) => {
+      if (!groups[g][t.tla]) groups[g][t.tla] = {
+        team: { tla: t.tla, shortName: t.shortName, name: t.name },
+        playedGames: 0, won: 0, draw: 0, lost: 0,
+        goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0,
+      };
+    };
+    addTeam(m.homeTeam);
+    addTeam(m.awayTeam);
+    if (m.status === 'FINISHED') {
+      const hg = m.score.fullTime.home ?? 0;
+      const ag = m.score.fullTime.away ?? 0;
+      const ht = groups[g][m.homeTeam.tla];
+      const at = groups[g][m.awayTeam.tla];
+      ht.playedGames++; at.playedGames++;
+      ht.goalsFor  += hg; ht.goalsAgainst += ag;
+      at.goalsFor  += ag; at.goalsAgainst += hg;
+      ht.goalDifference = ht.goalsFor - ht.goalsAgainst;
+      at.goalDifference = at.goalsFor - at.goalsAgainst;
+      if (hg > ag)       { ht.won++;  ht.points += 3; at.lost++; }
+      else if (ag > hg)  { at.won++;  at.points += 3; ht.lost++; }
+      else               { ht.draw++; ht.points += 1; at.draw++; at.points += 1; }
+    }
+  }
+  return Object.entries(groups).map(([g, teams]) => ({
+    group: g.replace(/^GROUP_/, 'Group '),
+    table: Object.values(teams).sort((a, b) =>
+      b.points - a.points ||
+      b.goalDifference - a.goalDifference ||
+      b.goalsFor - a.goalsFor
+    ),
+  }));
+}
+
+// ─── Fallback: direct football-data.org ──────────────────────────────────────
+
+async function footballFetch(path) {
+  const cacheKey = `wc26_fbd_${path}`;
+  const cached   = sessionStorage.getItem(cacheKey);
+  if (cached) {
+    const { ts, data } = JSON.parse(cached);
+    const ttl = (data?.matches || []).some(m => m.status === 'IN_PLAY' || m.status === 'PAUSED')
+      ? CACHE_TTL_LIVE : CACHE_TTL_IDLE;
+    if (Date.now() - ts < ttl) return data;
+  }
+  const res = await fetch(`https://api.football-data.org/v4/${path.replace(/^\//, '')}`, {
+    headers: { 'X-Auth-Token': CONFIG.FOOTBALL_API_TOKEN },
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    console.error(`[football] football-data.org ${res.status} for ${path}:`, body);
+    throw new Error(`Football API ${res.status}`);
+  }
+  const data = await res.json();
+  sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data }));
+  return data;
+}
+
+async function footballDataFallback() {
+  const [tData, mData, sData] = await Promise.allSettled([
+    footballFetch(`competitions/WC/teams`),
+    footballFetch(`competitions/WC/matches?season=2026`),
+    footballFetch(`competitions/WC/standings?season=2026`),
   ]);
-  return { teams, matches, standings };
+  return {
+    teams:     tData.status === 'fulfilled' ? (tData.value.teams    || []) : [],
+    matches:   mData.status === 'fulfilled' ? (mData.value.matches  || []) : [],
+    standings: sData.status === 'fulfilled' ? (sData.value.standings || []) : [],
+  };
 }
 
 // ─── Live polling ─────────────────────────────────────────────────────────────
+
+function hasLiveMatch(data) {
+  return (data?.matches || []).some(m => m.status === 'IN_PLAY' || m.status === 'PAUSED');
+}
 
 function startPolling(callback) {
   _pollCallback = callback;
@@ -95,12 +200,13 @@ function stopPolling() {
 async function _schedulePoll() {
   if (!_pollCallback) return;
   try {
+    _syncFired = false;          // allow a fresh sync each poll cycle
     const data = await getAllMatchData();
     _pollCallback(data);
-    const delay = hasLiveMatch({ matches: data.matches }) ? CACHE_TTL_LIVE : CACHE_TTL_IDLE;
+    const delay = hasLiveMatch(data) ? CACHE_TTL_LIVE : CACHE_TTL_IDLE;
     _pollTimer = setTimeout(_schedulePoll, delay);
   } catch (e) {
-    // On error back off 2 min
+    console.warn('[football] poll error:', e.message);
     _pollTimer = setTimeout(_schedulePoll, 120_000);
   }
 }
@@ -108,23 +214,18 @@ async function _schedulePoll() {
 // ─── Bracket helpers ──────────────────────────────────────────────────────────
 
 const STAGE_ORDER = [
-  'GROUP_STAGE',
-  'ROUND_OF_32',
-  'ROUND_OF_16',
-  'QUARTER_FINALS',
-  'SEMI_FINALS',
-  'THIRD_PLACE',
-  'FINAL',
+  'GROUP_STAGE', 'ROUND_OF_32', 'ROUND_OF_16',
+  'QUARTER_FINALS', 'SEMI_FINALS', 'THIRD_PLACE', 'FINAL',
 ];
 
 const STAGE_LABELS = {
-  GROUP_STAGE:   'Group Stage',
-  ROUND_OF_32:   'Round of 32',
-  ROUND_OF_16:   'Round of 16',
-  QUARTER_FINALS:'Quarter-Finals',
-  SEMI_FINALS:   'Semi-Finals',
-  THIRD_PLACE:   'Third-Place Play-off',
-  FINAL:         'Final',
+  GROUP_STAGE:    'Group Stage',
+  ROUND_OF_32:    'Round of 32',
+  ROUND_OF_16:    'Round of 16',
+  QUARTER_FINALS: 'Quarter-Finals',
+  SEMI_FINALS:    'Semi-Finals',
+  THIRD_PLACE:    'Third-Place Play-off',
+  FINAL:          'Final',
 };
 
 function groupMatchesByStage(matches) {
@@ -146,17 +247,14 @@ function getScore(match) {
 }
 
 function matchStatusClass(match) {
-  if (match.status === 'IN_PLAY') return 'live';
-  if (match.status === 'PAUSED') return 'live';
+  if (match.status === 'IN_PLAY')  return 'live';
+  if (match.status === 'PAUSED')   return 'live';
   if (match.status === 'FINISHED') return 'finished';
   return 'scheduled';
 }
 
-// Map football-data team tla → our FLAG_COLORS key (usually same, a few differ)
-const TLA_MAP = {
-  GBR: 'ENG', // fallback if API uses different codes
-};
+const TLA_MAP = { GBR: 'ENG' };
 
 function normTeamCode(tla) {
-  return TLA_MAP[tla] || tla;
+  return TLA_MAP[tla] || (tla || '').toUpperCase();
 }
