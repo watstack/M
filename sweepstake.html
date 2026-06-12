@@ -260,7 +260,7 @@
     .rc-snum { font-size:20px;color:var(--text);text-shadow:2px 2px 0 var(--rc-blk);transition:transform .1s,color .1s;min-width:26px;text-align:center; }
     .rc-snum.pop { transform:scale(1.7);color:var(--rc-orange); }
     .rc-sdash { font-size:11px;color:var(--muted); }
-    #rc-canvas { position:absolute;bottom:36%;left:0;width:100%;height:180px;z-index:6;image-rendering:pixelated;pointer-events:none; }
+    #rc-canvas { position:absolute;bottom:36%;left:0;width:100%;height:44%;z-index:6;image-rendering:pixelated;pointer-events:none; }
     #rc-flash { position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:20; }
     @keyframes rc-flash { 0%{opacity:.7;} 100%{opacity:0;} }
     #rc-flash.go { animation:rc-flash .35s ease-out forwards; }
@@ -286,6 +286,9 @@
     #rc-result { position:absolute;top:36%;left:0;right:0;text-align:center;font-size:26px;text-shadow:4px 4px 0 rgba(0,0,0,.85);z-index:22;opacity:0;pointer-events:none; }
     @keyframes rc-result-slam { 0%{opacity:0;transform:scaleY(5) scaleX(.2);} 14%{opacity:1;transform:scaleY(.75) scaleX(1.12);} 24%{transform:scale(1);} 78%{opacity:1;} 100%{opacity:0;transform:scale(1.04);} }
     #rc-result.go { animation:rc-result-slam 2s ease-out forwards; }
+    #rc-owner { position:absolute;top:44%;left:0;right:0;text-align:center;font-size:8px;color:#ffe080;text-shadow:1px 1px 0 rgba(0,0,0,.9);z-index:23;opacity:0;pointer-events:none;white-space:nowrap; }
+    @keyframes rc-owner-pop { 0%{opacity:0;transform:translateY(4px);} 18%{opacity:1;transform:translateY(0);} 72%{opacity:1;} 100%{opacity:0;} }
+    #rc-owner.go { animation:rc-owner-pop 2.2s ease-out forwards; }
     #rc-prog { position:absolute;bottom:0;left:0;height:3px;background:var(--rc-orange);z-index:15;box-shadow:0 0 8px var(--rc-orange);transition:width 10s linear; }
     .rc-px { position:absolute;width:5px;height:5px;border-radius:50%;pointer-events:none;z-index:18; }
     @keyframes rc-px-fly { 0%{opacity:1;transform:translate(0,0) scale(1);} 100%{opacity:0;transform:var(--t) scale(0);} }
@@ -299,6 +302,12 @@
     .rc-end-h { font-size:14px;color:var(--rc-orange);text-shadow:3px 3px 0 var(--rc-red); }
     .rc-end-s { font-size:6.5px;color:var(--muted);text-align:center;line-height:2.4; }
     .rc-replay-btn { font-family:var(--rc-fp);font-size:7px;color:#0a0805;background:var(--rc-orange);border:2px solid var(--rc-red);padding:10px 20px;cursor:pointer;letter-spacing:.05em; }
+
+    @media (max-width:640px) {
+      #recapPanel.show { padding-bottom:16px; }
+      #rc-wrap { border-left:none;border-right:none; }
+      .bracket-filter-btn { padding:7px 9px;font-size:0.36rem; }
+    }
 
     /* ── Bracket state ── */
     .bracket-nav {
@@ -1186,6 +1195,7 @@
             <div id="rc-ann"></div>
             <div id="rc-scorer"></div>
             <div id="rc-result"></div>
+            <div id="rc-owner"></div>
             <div id="rc-flash"></div>
 
             <div id="rc-prog" style="width:100%"></div>
@@ -2022,6 +2032,7 @@ function renderBracketState() {
   _bracketFilter = 'current';
   _lastStandings = [];
   document.getElementById('playerView').classList.remove('show');
+  document.getElementById('recapPanel').classList.remove('show');
   document.querySelector('.bracket-zoom-outer').style.display = '';
   document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'current'));
 
@@ -2146,6 +2157,7 @@ let _currentBracketStage = 'groups';
 let _bracketFilter = 'current';
 let _lastStandings = [];
 let _lastMatchData = null;
+let _autoHighlightsShown = false;
 
 function detectBracketStage(matches) {
   const order = ['r32', 'r16', 'qf', 'sf', 'final'];
@@ -2258,6 +2270,11 @@ async function loadBracketData() {
     _currentBracketStage = detectBracketStage(data.matches);
     renderBracketFull(data);
     applyBracketFilter();
+
+    if (!_autoHighlightsShown && (data.matches || []).some(m => m.status === 'FINISHED')) {
+      _autoHighlightsShown = true;
+      setBracketFilter('highlights');
+    }
 
     startPolling(freshData => {
       if (freshData.standings.length) saveGroupCache(freshData.standings);
@@ -2932,21 +2949,34 @@ const RC = (() => {
       const ac=getFlagColors(atla);
       const hs=m.score?.fullTime?.home||0;
       const as=m.score?.fullTime?.away||0;
-      const total=hs+as;
-      const mins=Array.from({length:total},()=>5+Math.round(Math.random()*80));
-      mins.sort((a,b)=>a-b);
-      let hi=0,ai=0;
-      const goals=mins.map(min=>{
-        if(hi<hs&&(ai>=as||Math.random()<0.55)){hi++;return{t:'home',sc:min+"'"};}
-        ai++;return{t:'away',sc:min+"'"};
-      });
+      let goals;
+      const apiGoals=m.goals;
+      if(apiGoals&&apiGoals.length===hs+as){
+        goals=apiGoals.slice().sort((a,b)=>(a.minute||0)-(b.minute||0)).map(g=>{
+          const side=g.team?.id===m.homeTeam?.id?'home':'away';
+          const name=g.scorer?.name||'';
+          const last=name.split(' ').pop()||'GOAL';
+          return{t:side,sc:last+'  '+g.minute+"'"};
+        });
+      }else{
+        const total=hs+as;
+        const mins=Array.from({length:total},()=>5+Math.round(Math.random()*80));
+        mins.sort((a,b)=>a-b);
+        let hi=0,ai=0;
+        goals=mins.map(min=>{
+          if(hi<hs&&(ai>=as||Math.random()<0.55)){hi++;return{t:'home',sc:'GOAL  '+min+"'"};}
+          ai++;return{t:'away',sc:'GOAL  '+min+"'"};
+        });
+      }
       const stageLabel={GROUP_STAGE:'Group Stage',ROUND_OF_32:'Rd of 32',ROUND_OF_16:'Rd of 16',QUARTER_FINALS:'Quarter Final',SEMI_FINALS:'Semi Final',FINAL:'Final',THIRD_PLACE:'3rd Place'}[m.stage]||m.stage||'';
       const dateLabel=m.utcDate?new Date(m.utcDate).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
       const hAvType=hAlloc?.participants?.avatar_type||1;
       const aAvType=aAlloc?.participants?.avatar_type||2;
+      const hOwner=hAlloc?.participants?.nickname||null;
+      const aOwner=aAlloc?.participants?.nickname||null;
       return{
-        home:{name:(m.homeTeam?.shortName||m.homeTeam?.name||htla).toUpperCase(),c1:hc.primary||'#334',c2:hc.secondary||'#778',avName:AV_NAMES[hAvType-1]||'striker'},
-        away:{name:(m.awayTeam?.shortName||m.awayTeam?.name||atla).toUpperCase(),c1:ac.primary||'#334',c2:ac.secondary||'#778',avName:AV_NAMES[aAvType-1]||'captain'},
+        home:{name:(m.homeTeam?.shortName||m.homeTeam?.name||htla).toUpperCase(),c1:hc.primary||'#334',c2:hc.secondary||'#778',avName:AV_NAMES[hAvType-1]||'striker',owner:hOwner},
+        away:{name:(m.awayTeam?.shortName||m.awayTeam?.name||atla).toUpperCase(),c1:ac.primary||'#334',c2:ac.secondary||'#778',avName:AV_NAMES[aAvType-1]||'captain',owner:aOwner},
         hs,as,goals,
         stage:stageLabel+(dateLabel?'  ·  '+dateLabel:''),
       };
@@ -3089,12 +3119,16 @@ const RC = (() => {
 
   function rcShowResult(m){
     const r=rcE('result');
-    let text,color;
-    if(m.hs>m.as){text=m.home.name+'  WIN!';color=m.home.c2;F.p1.setState('win');F.p2.setState('die');rcBurst(22,m.home.c2,22);}
-    else if(m.as>m.hs){text=m.away.name+'  WIN!';color=m.away.c2;F.p2.setState('win');F.p1.setState('die');rcBurst(78,m.away.c2,22);}
+    const ow=rcE('owner');
+    let text,color,owner=null;
+    if(m.hs>m.as){text=m.home.name+'  WIN!';color=m.home.c2;F.p1.setState('win');F.p2.setState('die');rcBurst(22,m.home.c2,22);owner=m.home.owner;}
+    else if(m.as>m.hs){text=m.away.name+'  WIN!';color=m.away.c2;F.p2.setState('win');F.p1.setState('die');rcBurst(78,m.away.c2,22);owner=m.away.owner;}
     else{text="IT'S  A  DRAW!";color='#ff9ad0';F.p1.setState('win');F.p2.setState('win');}
     r.textContent=text;r.style.color=color;
     r.classList.remove('go');r.offsetHeight;r.classList.add('go');
+    ow.classList.remove('go');ow.offsetHeight;
+    if(owner){ow.textContent='🏆  '+owner.toUpperCase()+'  TAKES  IT!';ow.classList.add('go');}
+    else{ow.textContent='';}
   }
 
   function rcFadeNext(){
