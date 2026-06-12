@@ -514,44 +514,50 @@ async function init() {
 }
 
 async function loadMarketsView() {
-  document.getElementById('marketsLoading').style.display = 'block';
+  const loadingEl = document.getElementById('marketsLoading');
+  loadingEl.textContent = 'Loading markets…';
+  loadingEl.style.display = 'block';
   document.getElementById('matchList').style.display = 'none';
   document.getElementById('noMatchMsg').style.display = 'none';
   document.getElementById('winnerSection').style.display = 'none';
 
   try {
-    // Fetch matches + odds in parallel
-    const [matches, allOddsData, outrightOdds] = await Promise.allSettled([
-      getMatches(),
-      fetchOddsForSport('soccer_fifa_world_cup_2026'),
-      fetchOutrightOdds('soccer_fifa_world_cup_2026'),
-    ]);
+    // Check if any match_result market has stale odds (null or fetched >12h ago)
+    const { data: staleRow } = await db
+      .from('bet_markets')
+      .select('odds_fetched_at')
+      .eq('tournament_id', _tournament.id)
+      .eq('market_type', 'match_result')
+      .order('odds_fetched_at', { ascending: true, nullsFirst: true })
+      .limit(1)
+      .maybeSingle();
 
-    const fixtureList = matches.status === 'fulfilled' ? (matches.value || []) : [];
-    const oddsEvents  = allOddsData.status === 'fulfilled' ? (allOddsData.value || []) : [];
-    const outrights   = outrightOdds.status === 'fulfilled' ? (outrightOdds.value || []) : [];
+    const isStale = !staleRow?.odds_fetched_at ||
+      Date.now() - new Date(staleRow.odds_fetched_at) > 12 * 3600_000;
 
-    if (matches.status === 'rejected') console.warn('Football API failed:', matches.reason);
+    if (isStale) {
+      loadingEl.textContent = 'Refreshing odds…';
+      try {
+        const scrapeRes = await fetch(
+          `/api/scrape-odds?tournament_id=${encodeURIComponent(_tournament.id)}`,
+          { method: 'POST' }
+        );
+        if (scrapeRes.ok) {
+          const info = await scrapeRes.json();
+          console.info('Odds refreshed:', info);
+        } else {
+          console.warn('Odds scrape returned', scrapeRes.status);
+        }
+      } catch (e) {
+        console.warn('Odds scrape failed:', e);
+      }
+    }
 
-    // Create markets for all non-cancelled fixtures (includes IN_PLAY, FINISHED, SCHEDULED, TIMED)
-    const relevant = fixtureList.filter(m =>
-      m.utcDate && !['POSTPONED','CANCELLED','SUSPENDED'].includes(m.status)
-    );
-
-    const results = await Promise.allSettled(
-      relevant.map(f => getOrCreateMatchMarkets(_tournament.id, f, oddsEvents))
-    );
-    const failed = results.filter(r => r.status === 'rejected');
-    if (failed.length) console.warn('Market creation errors:', failed.map(r => r.reason?.message));
-
-    await getOrCreateWinnerMarket(_tournament.id, outrights).catch(e => console.warn('Winner market error:', e));
-
-    // Load all markets
     const markets = await loadOpenMarkets(_tournament.id);
     renderMarketsView(markets);
   } catch (err) {
     console.error('loadMarketsView:', err);
-    document.getElementById('marketsLoading').style.display = 'none';
+    loadingEl.style.display = 'none';
     document.getElementById('noMatchMsg').style.display = 'block';
   }
 }
