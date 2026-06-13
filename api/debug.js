@@ -19,19 +19,19 @@ module.exports = async function handler(req, res) {
 
   try {
     const [wcRes, bmRes] = await Promise.all([
-      q('/wc_matches?select=id&limit=1&head=true'),
+      q('/wc_matches?select=id,status,utc_date&order=utc_date.asc&limit=5'),
       q('/bet_markets?select=id,market_type&limit=500'),
     ]);
 
-    const wcCount = parseInt(wcRes.headers.get('content-range')?.split('/')[1] ?? '?');
+    const wcData = wcRes.ok ? await wcRes.json() : { error: wcRes.status };
     const bm = bmRes.ok ? await bmRes.json() : [];
-    const byType = bm.reduce((acc, m) => {
+    const byType = Array.isArray(bm) ? bm.reduce((acc, m) => {
       acc[m.market_type] = (acc[m.market_type] || 0) + 1;
       return acc;
-    }, {});
+    }, {}) : {};
 
     return res.json({
-      wc_matches: wcCount,
+      wc_matches_sample: wcData,
       bet_markets: byType,
       has_fbd_token: hasFbdToken,
     });
