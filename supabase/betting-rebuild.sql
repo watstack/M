@@ -24,6 +24,8 @@ CREATE TABLE bet_markets (
   close_time      TIMESTAMPTZ,                     -- = kickoff_time for match markets
   status          TEXT NOT NULL DEFAULT 'open',   -- 'open'|'closed'|'settled'|'void'
   locked          BOOLEAN NOT NULL DEFAULT false, -- knockout slot not yet resolved
+  home_code       TEXT,                           -- resolved team code (null for unresolved KO slot)
+  away_code       TEXT,
   result          TEXT,                           -- winning selection after settlement
   odds_json       JSONB,                          -- { "home":2.40, "draw":3.10, "away":2.80 }
   odds_fetched_at TIMESTAMPTZ,

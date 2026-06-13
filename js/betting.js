@@ -197,9 +197,13 @@ function renderMatchCard(fixture, pair) {
   const mr = pair.match_result;
   const cs = pair.correct_score;
 
-  const home = sideDisplay(fixture.home);
-  const away = sideDisplay(fixture.away);
-  const locked = !home.resolved || !away.resolved;
+  // Prefer DB-resolved team codes (knockout slots fill in as the tournament
+  // progresses) over the static fixture's placeholder slot.
+  const homeSide = (mr && mr.home_code) ? { code: mr.home_code } : fixture.home;
+  const awaySide = (mr && mr.away_code) ? { code: mr.away_code } : fixture.away;
+  const home = sideDisplay(homeSide);
+  const away = sideDisplay(awaySide);
+  const locked = mr ? !!mr.locked : (!home.resolved || !away.resolved);
 
   const status    = mr ? mr.status : 'open';
   const isSettled = status === 'settled';
@@ -287,6 +291,51 @@ function oddsBtn(marketId, selection, label, price, disabled, isResult) {
   </button>`;
 }
 
+
+// ─── Admin settlement / resolution view ──────────────────────────────────────
+// Compact per-match controls, shown only when an admin token is present.
+function renderAdminView(marketsByNo) {
+  marketsByNo = marketsByNo || {};
+  const fixtures = (typeof WC2026_FIXTURES !== 'undefined' ? WC2026_FIXTURES : [])
+    .slice().sort((a, b) => a.match_no - b.match_no);
+
+  return fixtures.map(fx => {
+    const mr = (marketsByNo[fx.match_no] || {}).match_result;
+    const homeSide = (mr && mr.home_code) ? { code: mr.home_code } : fx.home;
+    const awaySide = (mr && mr.away_code) ? { code: mr.away_code } : fx.away;
+    const home = sideDisplay(homeSide), away = sideDisplay(awaySide);
+    const resolved = home.resolved && away.resolved;
+    const settled  = mr && mr.status === 'settled';
+    const isKo     = fx.stage !== 'group';
+    const stageLabel = fx.stage === 'group' ? `Grp ${fx.group}` : (STAGE_LABELS[fx.stage] || fx.stage);
+    const n = fx.match_no;
+
+    let controls;
+    if (settled) {
+      controls = `<span class="adm-settled">✓ ${escapeHtml(mr.result || 'settled')}</span>`;
+    } else if (resolved) {
+      controls = `
+        <input class="adm-in adm-score" id="adm-hs-${n}" type="number" min="0" placeholder="H">
+        <span class="adm-dash">–</span>
+        <input class="adm-in adm-score" id="adm-as-${n}" type="number" min="0" placeholder="A">
+        ${isKo ? `<select class="adm-in adm-win" id="adm-win-${n}" title="Who advances">
+          <option value="auto">adv: score</option><option value="home">home adv</option><option value="away">away adv</option>
+        </select>` : ''}
+        <button class="adm-btn" onclick="adminSettle(${n})">Settle</button>`;
+    } else {
+      controls = `
+        <input class="adm-in adm-code" id="adm-hc-${n}" placeholder="home" maxlength="3">
+        <input class="adm-in adm-code" id="adm-ac-${n}" placeholder="away" maxlength="3">
+        <button class="adm-btn" onclick="adminResolve(${n})">Resolve</button>`;
+    }
+
+    return `<div class="admin-row">
+      <div class="admin-meta"><span class="adm-no">#${n}</span><span class="adm-stage">${stageLabel}</span></div>
+      <div class="admin-name">${home.flag} ${escapeHtml(home.name)} <span class="adm-v">v</span> ${escapeHtml(away.name)} ${away.flag}</div>
+      <div class="admin-ctrls">${controls}</div>
+    </div>`;
+  }).join('');
+}
 
 function renderMyBetRow(bet) {
   const statusClass = { won: 'won', lost: 'lost', void: 'void', pending: 'pending' }[bet.status] || 'pending';

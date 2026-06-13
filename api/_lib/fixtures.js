@@ -554,7 +554,7 @@ module.exports = {
       "stage": "group",
       "group": "G",
       "matchday": 2,
-      "kickoff_utc": "2026-06-21T22:00:00Z",
+      "kickoff_utc": "2026-06-22T01:00:00Z",
       "venue": "BC Place, Vancouver",
       "home": {
         "code": "NZL"
@@ -568,7 +568,7 @@ module.exports = {
       "stage": "group",
       "group": "G",
       "matchday": 3,
-      "kickoff_utc": "2026-06-26T22:00:00Z",
+      "kickoff_utc": "2026-06-27T03:00:00Z",
       "venue": "Lumen Field, Seattle",
       "home": {
         "code": "EGY"
@@ -582,7 +582,7 @@ module.exports = {
       "stage": "group",
       "group": "G",
       "matchday": 3,
-      "kickoff_utc": "2026-06-26T22:00:00Z",
+      "kickoff_utc": "2026-06-27T03:00:00Z",
       "venue": "BC Place, Vancouver",
       "home": {
         "code": "NZL"

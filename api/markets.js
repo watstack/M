@@ -77,9 +77,13 @@ module.exports = async function handler(req, res) {
     }
 
     // 4. Build deterministic market rows from the static fixture list.
-    // status/result are omitted so existing settled markets are never clobbered.
+    // Group rows (teams known) are merge-upserted so odds refresh; knockout rows
+    // are insert-once (ignore-duplicates) so a later resolution of their teams is
+    // never clobbered by a subsequent /api/markets call.
+    // status/result are omitted so existing settled markets are never touched.
     let oddsMatched = 0;
-    const rows = [];
+    const groupRows = [];
+    const koRows = [];
     for (const fx of WC2026_FIXTURES) {
       const resolved = !!(fx.home.code && fx.away.code);
       const base = {
@@ -92,25 +96,33 @@ module.exports = async function handler(req, res) {
         locked: !resolved,
       };
 
-      const mr = { ...base, market_type: 'match_result' };
-      if (oddsStale && resolved && Array.isArray(h2hEvents)) {
-        const odds = h2hOddsForFixture(h2hEvents, fx);
-        if (odds) {
-          mr.odds_json = odds;
-          mr.odds_fetched_at = fetchedAt;
-          oddsMatched++;
+      if (resolved) {
+        base.home_code = fx.home.code;
+        base.away_code = fx.away.code;
+        const mr = { ...base, market_type: 'match_result' };
+        if (oddsStale && Array.isArray(h2hEvents)) {
+          const odds = h2hOddsForFixture(h2hEvents, fx);
+          if (odds) {
+            mr.odds_json = odds;
+            mr.odds_fetched_at = fetchedAt;
+            oddsMatched++;
+          }
         }
+        groupRows.push(mr);
+        groupRows.push({ ...base, market_type: 'correct_score' });
+      } else {
+        koRows.push({ ...base, market_type: 'match_result' });
+        koRows.push({ ...base, market_type: 'correct_score' });
       }
-      rows.push(mr);
-      rows.push({ ...base, market_type: 'correct_score' });
     }
 
-    await upsert(rest, rows, 'tournament_id,market_type,match_no');
+    if (groupRows.length) await upsert(rest, groupRows, 'merge-duplicates');
+    if (koRows.length)    await upsert(rest, koRows, 'ignore-duplicates');
 
     return res.status(200).json({
       ok: true,
       fixtures: WC2026_FIXTURES.length,
-      markets: rows.length,
+      markets: groupRows.length + koRows.length,
       oddsRefreshed: oddsStale,
       oddsMatched,
     });
@@ -120,10 +132,10 @@ module.exports = async function handler(req, res) {
   }
 };
 
-async function upsert(rest, payload, onConflict) {
-  const r = await rest(`/bet_markets?on_conflict=${onConflict}`, {
+async function upsert(rest, payload, resolution) {
+  const r = await rest(`/bet_markets?on_conflict=tournament_id,market_type,match_no`, {
     method: 'POST',
-    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+    headers: { Prefer: `resolution=${resolution},return=minimal` },
     body: JSON.stringify(payload),
   });
   if (!r.ok) {

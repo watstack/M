@@ -64,9 +64,9 @@ const _WC2026_GROUP_ROWS = [
   [37, 'G', 1, 'BEL', 'EGY', '2026-06-15T19:00:00Z', 'Lumen Field, Seattle'],
   [38, 'G', 1, 'IRN', 'NZL', '2026-06-16T01:00:00Z', 'SoFi Stadium, Los Angeles'],
   [39, 'G', 2, 'BEL', 'IRN', '2026-06-21T19:00:00Z', 'SoFi Stadium, Los Angeles'],
-  [40, 'G', 2, 'NZL', 'EGY', '2026-06-21T22:00:00Z', 'BC Place, Vancouver'],
-  [41, 'G', 3, 'EGY', 'IRN', '2026-06-26T22:00:00Z', 'Lumen Field, Seattle'],
-  [42, 'G', 3, 'NZL', 'BEL', '2026-06-26T22:00:00Z', 'BC Place, Vancouver'],
+  [40, 'G', 2, 'NZL', 'EGY', '2026-06-22T01:00:00Z', 'BC Place, Vancouver'],
+  [41, 'G', 3, 'EGY', 'IRN', '2026-06-27T03:00:00Z', 'Lumen Field, Seattle'],
+  [42, 'G', 3, 'NZL', 'BEL', '2026-06-27T03:00:00Z', 'BC Place, Vancouver'],
   // ── Group H ──
   [43, 'H', 1, 'ESP', 'CPV', '2026-06-15T16:00:00Z', 'Mercedes-Benz Stadium, Atlanta'],
   [44, 'H', 1, 'KSA', 'URU', '2026-06-15T22:00:00Z', 'Hard Rock Stadium, Miami'],
