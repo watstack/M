@@ -257,6 +257,47 @@
     .my-bet-payout { font-family: var(--font-mono); font-size: 0.85rem; }
     .my-bets-empty { color: var(--muted); text-align: center; padding: 40px 0; font-size: 0.9rem; }
 
+    /* ── Admin settle/resolve ── */
+    .admin-hint { color: var(--muted); font-size: 0.82rem; margin-bottom: 14px; line-height: 1.5; }
+    .admin-list { display: flex; flex-direction: column; gap: 6px; }
+    .admin-row {
+      display: grid;
+      grid-template-columns: 84px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      box-shadow: 2px 2px 0 rgba(0,0,0,.4);
+    }
+    .admin-meta { display: flex; flex-direction: column; gap: 2px; }
+    .adm-no { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text); }
+    .adm-stage { font-family: var(--font-pixel); font-size: 0.28rem; color: var(--muted); }
+    .admin-name { font-size: 0.85rem; font-weight: 700; min-width: 0; }
+    .adm-v { color: var(--muted); font-weight: 400; margin: 0 2px; }
+    .admin-ctrls { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+    .adm-in {
+      background: var(--mid); border: 2px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-family: var(--font-mono); font-size: 0.82rem; padding: 5px 6px;
+    }
+    .adm-in:focus { border-color: var(--green); outline: none; }
+    .adm-score { width: 38px; text-align: center; }
+    .adm-code  { width: 56px; text-transform: uppercase; }
+    .adm-win   { font-size: 0.7rem; padding: 5px 4px; }
+    .adm-dash  { color: var(--muted); }
+    .adm-btn {
+      background: var(--green); border: none; border-radius: var(--radius);
+      color: #0a0805; font-family: var(--font-pixel); font-size: 0.32rem;
+      padding: 7px 10px; cursor: pointer; box-shadow: 2px 2px 0 rgba(0,0,0,.5);
+    }
+    .adm-btn:hover { transform: translate(1px,1px); box-shadow: 1px 1px 0 rgba(0,0,0,.5); }
+    .adm-settled { font-family: var(--font-pixel); font-size: 0.3rem; color: #3cb04a; }
+    @media (max-width: 560px) {
+      .admin-row { grid-template-columns: 1fr; gap: 6px; }
+      .admin-ctrls { justify-content: flex-start; }
+    }
+
     /* ── Bet slip (bottom drawer) ── */
     .bet-slip {
       position: fixed;
@@ -399,6 +440,7 @@
   <div class="bet-tabs">
     <button class="bet-tab active" id="tabMarkets" onclick="showTab('markets')">Upcoming</button>
     <button class="bet-tab" id="tabMyBets" onclick="showTab('mybets')">My Bets</button>
+    <button class="bet-tab" id="tabAdmin" onclick="showTab('admin')" style="display:none">⚙ Admin</button>
   </div>
 
   <!-- Upcoming markets -->
@@ -414,6 +456,12 @@
   <!-- My bets -->
   <div id="panelMyBets" style="display:none">
     <div id="myBetsList" class="my-bets-list"></div>
+  </div>
+
+  <!-- Admin: settle / resolve (only shown when an admin token is present) -->
+  <div id="panelAdmin" style="display:none">
+    <p class="admin-hint">Enter the 90-minute score to settle a match. For knockout fixtures, set the two team codes to resolve the matchup, and pick which side advances when settling.</p>
+    <div id="adminList" class="admin-list"></div>
   </div>
 
 </div>
@@ -462,6 +510,8 @@ let _activeSelection = null;
 let _activeOdds = null;
 let _currentTab = 'markets';
 let _balanceSub = null;
+let _adminToken = null;
+let _marketsByNo = {};
 
 try {
   if (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL && window.supabase) {
@@ -517,6 +567,14 @@ async function init() {
       })
     .subscribe();
 
+  // Admin controls (settle/resolve) — only when an admin token is present
+  // (carried in the URL hash like the sweepstake, or remembered in localStorage).
+  const am = window.location.hash.match(/admin=([a-zA-Z0-9\-]+)/);
+  const fromHash = am ? am[1] : null;
+  if (fromHash) localStorage.setItem(`wc26_admin_${code}`, fromHash);
+  _adminToken = fromHash || localStorage.getItem(`wc26_admin_${code}`) || null;
+  if (_adminToken) document.getElementById('tabAdmin').style.display = '';
+
   await loadMarketsView();
 }
 
@@ -549,6 +607,8 @@ async function loadMarketsView() {
 function renderMarketsView(markets) {
   // Overlay any live market rows (odds/status) onto the static fixture scaffold.
   const marketsByNo = indexMarketsByMatchNo(markets);
+  _marketsByNo = marketsByNo;
+  if (_adminToken && _currentTab === 'admin') renderAdminPanel();
   const html = renderFixturesView(marketsByNo);
 
   document.getElementById('marketsLoading').style.display = 'none';
@@ -584,9 +644,50 @@ function showTab(tab) {
   _currentTab = tab;
   document.getElementById('panelMarkets').style.display = tab === 'markets' ? 'block' : 'none';
   document.getElementById('panelMyBets').style.display  = tab === 'mybets'  ? 'block' : 'none';
+  document.getElementById('panelAdmin').style.display   = tab === 'admin'   ? 'block' : 'none';
   document.getElementById('tabMarkets').classList.toggle('active', tab === 'markets');
   document.getElementById('tabMyBets').classList.toggle('active', tab === 'mybets');
+  document.getElementById('tabAdmin').classList.toggle('active', tab === 'admin');
   if (tab === 'mybets') loadMyBetsView();
+  if (tab === 'admin')  renderAdminPanel();
+}
+
+function renderAdminPanel() {
+  document.getElementById('adminList').innerHTML = renderAdminView(_marketsByNo);
+}
+
+async function adminSettle(matchNo) {
+  const hs = parseInt(document.getElementById(`adm-hs-${matchNo}`).value, 10);
+  const as = parseInt(document.getElementById(`adm-as-${matchNo}`).value, 10);
+  if (Number.isNaN(hs) || Number.isNaN(as)) { showToast('Enter both scores'); return; }
+  const winSel = document.getElementById(`adm-win-${matchNo}`);
+  const body = { code, adminToken: _adminToken, matchNo, homeScore: hs, awayScore: as };
+  if (winSel && winSel.value !== 'auto') body.winner = winSel.value;
+  try {
+    const r = await fetch('/api/settle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Settle failed');
+    showToast(`Settled #${matchNo}: ${j.settled} market(s)${j.propagated && j.propagated.length ? `, advanced ${j.propagated.join(',')}` : ''}`);
+    await loadMarketsView();
+    renderAdminPanel();
+  } catch (e) { showToast(e.message); }
+}
+
+async function adminResolve(matchNo) {
+  const hc = document.getElementById(`adm-hc-${matchNo}`).value.trim().toUpperCase();
+  const ac = document.getElementById(`adm-ac-${matchNo}`).value.trim().toUpperCase();
+  if (!hc && !ac) { showToast('Enter at least one team code'); return; }
+  const body = { code, adminToken: _adminToken, matchNo };
+  if (hc) body.homeCode = hc;
+  if (ac) body.awayCode = ac;
+  try {
+    const r = await fetch('/api/resolve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Resolve failed');
+    showToast(`Resolved #${matchNo}`);
+    await loadMarketsView();
+    renderAdminPanel();
+  } catch (e) { showToast(e.message); }
 }
 
 // ── Correct score accordion ───────────────────────────────────────────────────
