@@ -1,5 +1,7 @@
 // Betting page logic.
-// Expects: db, CONFIG, renderAvatar, teamFlagEmoji, getFlagColors, WC_2026_TEAMS, getMatches
+// Expects: db, CONFIG, renderAvatar, teamFlagEmoji, getFlagColors, WC_2026_TEAMS
+// Markets + odds are created/refreshed server-side by /api/markets; this file
+// only reads bet_markets and renders.
 
 // ─── Correct-score fixed odds lookup ─────────────────────────────────────────
 
@@ -48,140 +50,7 @@ function buildScoreGrid(matchId) {
   </div>`;
 }
 
-// ─── Odds helpers ─────────────────────────────────────────────────────────────
-
-async function fetchOddsForSport(sport) {
-  try {
-    const r = await fetch(`/api/odds?sport=${encodeURIComponent(sport)}&markets=h2h`);
-    if (!r.ok) return null;
-    return await r.json();
-  } catch { return null; }
-}
-
-async function fetchOutrightOdds(sport) {
-  try {
-    const r = await fetch(`/api/odds?sport=${encodeURIComponent(sport)}&type=outrights`);
-    if (!r.ok) return null;
-    return await r.json();
-  } catch { return null; }
-}
-
-function extractH2HOdds(oddsEvent) {
-  for (const bm of (oddsEvent?.bookmakers || [])) {
-    const mkt = (bm.markets || []).find(m => m.key === 'h2h');
-    if (!mkt) continue;
-    const outcomes = mkt.outcomes || [];
-    if (outcomes.length < 2) continue;
-    const draw = outcomes.find(o => o.name === 'Draw');
-    const nonDraw = outcomes.filter(o => o.name !== 'Draw');
-    if (nonDraw.length < 2) continue;
-    return {
-      home: +nonDraw[0].price.toFixed(2),
-      draw: draw ? +draw.price.toFixed(2) : null,
-      away: +nonDraw[1].price.toFixed(2),
-      homeTeam: nonDraw[0].name,
-      awayTeam: nonDraw[1].name,
-    };
-  }
-  return null;
-}
-
-function matchOddsEventToFixture(oddsEvents, fixture) {
-  if (!oddsEvents?.length) return null;
-  const homeNorm = (fixture.homeTeam?.name || '').toLowerCase();
-  const awayNorm = (fixture.awayTeam?.name || '').toLowerCase();
-  return oddsEvents.find(ev => {
-    const h = ev.home_team?.toLowerCase() || '';
-    const a = ev.away_team?.toLowerCase() || '';
-    return (h.includes(homeNorm.split(' ')[0]) || homeNorm.includes(h.split(' ')[0]))
-        && (a.includes(awayNorm.split(' ')[0]) || awayNorm.includes(a.split(' ')[0]));
-  }) || null;
-}
-
-// ─── Market DB helpers ────────────────────────────────────────────────────────
-
-async function getOrCreateMatchMarkets(tournamentId, fixture, oddsEvents) {
-  const matchId = String(fixture.id);
-  const kickoff = fixture.utcDate;
-  const matchName = `${fixture.homeTeam?.name || '?'} vs ${fixture.awayTeam?.name || '?'}`;
-
-  const { data: existing } = await db
-    .from('bet_markets')
-    .select('*')
-    .eq('tournament_id', tournamentId)
-    .eq('match_id', matchId)
-    .in('market_type', ['match_result', 'correct_score']);
-
-  const mrExisting = existing?.find(m => m.market_type === 'match_result');
-  const csExisting = existing?.find(m => m.market_type === 'correct_score');
-
-  const oddsEvent = matchOddsEventToFixture(oddsEvents, fixture);
-  const h2h = oddsEvent ? extractH2HOdds(oddsEvent) : null;
-  const oddsJson = h2h ? { home: h2h.home, draw: h2h.draw, away: h2h.away } : null;
-
-  const oddsStale = mrExisting
-    ? !mrExisting.odds_fetched_at || Date.now() - new Date(mrExisting.odds_fetched_at) > 3600_000
-    : true;
-
-  const inserts = [];
-  if (!mrExisting) {
-    inserts.push({
-      tournament_id: tournamentId, market_type: 'match_result', match_id: matchId,
-      match_name: matchName, kickoff_time: kickoff, close_time: kickoff,
-      odds_json: oddsJson, odds_fetched_at: new Date().toISOString(),
-    });
-  } else if (oddsStale && oddsJson) {
-    await db.from('bet_markets').update({ odds_json: oddsJson, odds_fetched_at: new Date().toISOString() })
-      .eq('id', mrExisting.id);
-  }
-
-  if (!csExisting) {
-    inserts.push({
-      tournament_id: tournamentId, market_type: 'correct_score', match_id: matchId,
-      match_name: matchName, kickoff_time: kickoff, close_time: kickoff,
-      odds_fetched_at: new Date().toISOString(),
-    });
-  }
-
-  if (inserts.length) {
-    await db.from('bet_markets').insert(inserts);
-  }
-}
-
-async function getOrCreateWinnerMarket(tournamentId, outrightOdds) {
-  const { data: existing } = await db
-    .from('bet_markets')
-    .select('*')
-    .eq('tournament_id', tournamentId)
-    .eq('market_type', 'tournament_winner')
-    .single();
-
-  let oddsJson = null;
-  if (outrightOdds?.length) {
-    const event = outrightOdds[0];
-    for (const bm of (event.bookmakers || [])) {
-      const mkt = (bm.markets || []).find(m => m.key === 'outrights');
-      if (!mkt) continue;
-      oddsJson = {};
-      for (const o of mkt.outcomes) oddsJson[o.name] = +o.price.toFixed(2);
-      break;
-    }
-  }
-
-  if (!existing) {
-    await db.from('bet_markets').insert({
-      tournament_id: tournamentId, market_type: 'tournament_winner',
-      match_name: 'FIFA World Cup 2026 Winner', status: 'open',
-      odds_json: oddsJson, odds_fetched_at: new Date().toISOString(),
-    });
-  } else if (oddsJson) {
-    const stale = !existing.odds_fetched_at || Date.now() - new Date(existing.odds_fetched_at) > 3600_000;
-    if (stale) {
-      await db.from('bet_markets').update({ odds_json: oddsJson, odds_fetched_at: new Date().toISOString() })
-        .eq('id', existing.id);
-    }
-  }
-}
+// ─── Market reads ─────────────────────────────────────────────────────────────
 
 async function loadOpenMarkets(tournamentId) {
   const { data, error } = await db
@@ -249,22 +118,16 @@ function escapeHtml(s) {
 
 // ─── Market card rendering ────────────────────────────────────────────────────
 
-function renderMatchCard(market, myBets, isOpen) {
-  const o = market.odds_json || {};
-  const isClosed = market.status !== 'open';
-  const isSettled = market.status === 'settled';
-  const countdown = formatCountdown(market.close_time);
-  const kickoff   = formatKickoff(market.kickoff_time);
-
-  const myMatchBets = myBets.filter(b => b.market_id === market.id || b.bet_markets?.match_name === market.match_name);
-
-  const oddsRow = (market.market_type === 'match_result')
-    ? `<div class="match-odds-row">
-        ${oddsBtn(market.id, 'home', 'Home', o.home, isClosed, isSettled && market.result === 'home')}
-        ${o.draw !== null && o.draw !== undefined ? oddsBtn(market.id, 'draw', 'Draw', o.draw, isClosed, isSettled && market.result === 'draw') : ''}
-        ${oddsBtn(market.id, 'away', 'Away', o.away, isClosed, isSettled && market.result === 'away')}
-      </div>`
-    : '';
+// group = { match_result: <market>, correct_score: <market> } for one match.
+function renderMatchCard(group) {
+  const mr = group.match_result;
+  if (!mr) return '';
+  const cs = group.correct_score;
+  const isClosed  = mr.status !== 'open';
+  const isSettled = mr.status === 'settled';
+  const o = mr.odds_json || {};
+  const kickoff   = formatKickoff(mr.kickoff_time);
+  const countdown = formatCountdown(mr.close_time);
 
   const statusChip = isSettled
     ? `<span class="market-chip settled">Settled</span>`
@@ -272,22 +135,24 @@ function renderMatchCard(market, myBets, isOpen) {
     ? `<span class="market-chip closed">Closed</span>`
     : `<span class="market-chip open">${countdown}</span>`;
 
-  const hasPair = market.market_type === 'match_result';
-
-  return `<div class="market-card" id="mc-${market.id}" data-open="${isOpen}">
+  return `<div class="market-card" id="mc-${mr.id}" data-kickoff="${mr.close_time || ''}">
     <div class="market-card-header">
-      <span class="match-name">${escapeHtml(market.match_name)}</span>
+      <span class="match-name">${escapeHtml(mr.match_name)}</span>
       <div class="match-meta">
         <span class="kickoff-time">${kickoff}</span>
         ${statusChip}
       </div>
     </div>
-    ${oddsRow}
-    ${hasPair && !isClosed ? `<div class="cs-toggle" onclick="toggleCorrectScore(this)">
+    <div class="match-odds-row">
+      ${o.home != null ? oddsBtn(mr.id, 'home', 'Home', o.home, isClosed, isSettled && mr.result === 'home') : oddsTbc('Home')}
+      ${o.draw != null ? oddsBtn(mr.id, 'draw', 'Draw', o.draw, isClosed, isSettled && mr.result === 'draw') : (isClosed ? '' : oddsTbc('Draw'))}
+      ${o.away != null ? oddsBtn(mr.id, 'away', 'Away', o.away, isClosed, isSettled && mr.result === 'away') : oddsTbc('Away')}
+    </div>
+    ${cs && !isClosed ? `<div class="cs-toggle" onclick="toggleCorrectScore(this)">
       <span>Correct Score</span><span class="cs-arrow">▾</span>
     </div>
-    <div class="cs-content hidden" data-cs-market="${market.id}" data-match-name="${escapeHtml(market.match_name)}" data-kickoff="${market.kickoff_time || ''}">
-      ${buildScoreGrid(market.id)}
+    <div class="cs-content hidden" data-cs-market="${cs.id}">
+      ${buildScoreGrid(cs.id)}
     </div>` : ''}
   </div>`;
 }
@@ -367,20 +232,16 @@ function renderMyBetRow(bet) {
 // ─── Auto-close past kickoff ──────────────────────────────────────────────────
 
 function autoClosePastKickoff() {
-  document.querySelectorAll('.market-card[data-open="true"]').forEach(card => {
-    const marketId = card.id.replace('mc-', '');
-    const csContent = card.querySelector(`[data-cs-market="${marketId}"]`);
-    const kickoff = csContent?.dataset.kickoff;
-    if (kickoff && new Date(kickoff) <= new Date()) {
-      card.querySelectorAll('.odds-btn, .score-btn, .winner-btn').forEach(b => {
-        b.disabled = true;
-        b.classList.add('disabled');
-      });
-      const chip = card.querySelector('.market-chip');
-      if (chip && !chip.classList.contains('settled')) {
-        chip.className = 'market-chip closed';
-        chip.textContent = 'Closed';
-      }
-    }
+  document.querySelectorAll('.market-card[data-kickoff]').forEach(card => {
+    const kickoff = card.dataset.kickoff;
+    if (!kickoff || new Date(kickoff) > new Date()) return;
+    const chip = card.querySelector('.market-chip');
+    if (!chip || !chip.classList.contains('open')) return;  // only flip still-open markets
+    card.querySelectorAll('.odds-btn, .score-btn, .winner-btn').forEach(b => {
+      b.disabled = true;
+      b.classList.add('disabled');
+    });
+    chip.className = 'market-chip closed';
+    chip.textContent = 'Closed';
   });
 }

@@ -442,7 +442,6 @@
 <script src="js/vendor/supabase.js"></script>
 <script src="js/flag-colors.js"></script>
 <script src="js/avatars.js"></script>
-<script src="js/football.js"></script>
 <script src="js/betting.js"></script>
 
 <script>
@@ -520,33 +519,15 @@ async function loadMarketsView() {
   document.getElementById('winnerSection').style.display = 'none';
 
   try {
-    // Fetch matches + odds in parallel
-    const [matches, allOddsData, outrightOdds] = await Promise.allSettled([
-      getMatches(),
-      fetchOddsForSport('soccer_fifa_world_cup_2026'),
-      fetchOutrightOdds('soccer_fifa_world_cup_2026'),
-    ]);
+    // Server creates/refreshes all markets + odds for this tournament (24h cache).
+    // Best-effort: even if it fails, fall through to read whatever already exists.
+    try {
+      const r = await fetch(`/api/markets?code=${encodeURIComponent(code)}`, { method: 'POST' });
+      if (!r.ok) console.warn('[markets] /api/markets returned', r.status);
+    } catch (e) {
+      console.warn('[markets] /api/markets failed:', e.message);
+    }
 
-    const fixtureList = matches.status === 'fulfilled' ? (matches.value || []) : [];
-    const oddsEvents  = allOddsData.status === 'fulfilled' ? (allOddsData.value || []) : [];
-    const outrights   = outrightOdds.status === 'fulfilled' ? (outrightOdds.value || []) : [];
-
-    if (matches.status === 'rejected') console.warn('Football API failed:', matches.reason);
-
-    // Create markets for all non-cancelled fixtures (includes IN_PLAY, FINISHED, SCHEDULED, TIMED)
-    const relevant = fixtureList.filter(m =>
-      m.utcDate && !['POSTPONED','CANCELLED','SUSPENDED'].includes(m.status)
-    );
-
-    const results = await Promise.allSettled(
-      relevant.map(f => getOrCreateMatchMarkets(_tournament.id, f, oddsEvents))
-    );
-    const failed = results.filter(r => r.status === 'rejected');
-    if (failed.length) console.warn('Market creation errors:', failed.map(r => r.reason?.message));
-
-    await getOrCreateWinnerMarket(_tournament.id, outrights).catch(e => console.warn('Winner market error:', e));
-
-    // Load all markets
     const markets = await loadOpenMarkets(_tournament.id);
     renderMarketsView(markets);
   } catch (err) {
@@ -557,7 +538,6 @@ async function loadMarketsView() {
 }
 
 function renderMarketsView(markets) {
-  const myBets = []; // loaded separately for performance
   const matchMarkets = markets.filter(m => ['match_result','correct_score'].includes(m.market_type));
   const winnerMarket = markets.find(m => m.market_type === 'tournament_winner');
 
@@ -576,45 +556,7 @@ function renderMarketsView(markets) {
     return;
   }
 
-  let html = '';
-  for (const matchId of matchIds) {
-    const mr = matchGroups[matchId].match_result;
-    if (!mr) continue;
-    const cs = matchGroups[matchId].correct_score;
-    const isOpen = mr.status === 'open';
-    const isClosed = mr.status !== 'open';
-    const isSettled = mr.status === 'settled';
-
-    const o = mr.odds_json || {};
-    const countdown = formatCountdown(mr.close_time);
-    const kickoff   = formatKickoff(mr.kickoff_time);
-    const statusChip = isSettled
-      ? `<span class="market-chip settled">Settled</span>`
-      : isClosed
-      ? `<span class="market-chip closed">Closed</span>`
-      : `<span class="market-chip open">${countdown}</span>`;
-
-    html += `<div class="market-card" id="mc-${mr.id}" data-kickoff="${mr.close_time || ''}">
-      <div class="market-card-header">
-        <span class="match-name">${escapeHtml(mr.match_name)}</span>
-        <div class="match-meta">
-          <span class="kickoff-time">${kickoff}</span>
-          ${statusChip}
-        </div>
-      </div>
-      <div class="match-odds-row">
-        ${o.home != null ? oddsBtn(mr.id, 'home', 'Home', o.home, isClosed, isSettled && mr.result === 'home') : oddsTbc('Home')}
-        ${o.draw != null ? oddsBtn(mr.id, 'draw', 'Draw', o.draw, isClosed, isSettled && mr.result === 'draw') : (isClosed ? '' : oddsTbc('Draw'))}
-        ${o.away != null ? oddsBtn(mr.id, 'away', 'Away', o.away, isClosed, isSettled && mr.result === 'away') : oddsTbc('Away')}
-      </div>
-      ${cs && !isClosed ? `<div class="cs-toggle" onclick="toggleCorrectScore(this)">
-        <span>Correct Score</span><span class="cs-arrow">▾</span>
-      </div>
-      <div class="cs-content hidden" data-cs-market="${cs.id}">
-        ${buildScoreGrid(cs.id)}
-      </div>` : ''}
-    </div>`;
-  }
+  const html = matchIds.map(id => renderMatchCard(matchGroups[id])).join('');
 
   const matchListEl = document.getElementById('matchList');
   matchListEl.innerHTML = html || '';
