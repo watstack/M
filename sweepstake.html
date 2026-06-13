@@ -1403,23 +1403,7 @@ function setupCopy(btnId, text) {
   });
 }
 
-function teamFlagEmoji(tla) {
-  const flags = {
-    ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',GER:'🇩🇪',FRA:'🇫🇷',ESP:'🇪🇸',NED:'🇳🇱',POR:'🇵🇹',BEL:'🇧🇪',ITA:'🇮🇹',
-    POL:'🇵🇱',SUI:'🇨🇭',CRO:'🇭🇷',DEN:'🇩🇰',AUT:'🇦🇹',SRB:'🇷🇸',TUR:'🇹🇷',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
-    HUN:'🇭🇺',SVN:'🇸🇮',BRA:'🇧🇷',ARG:'🇦🇷',COL:'🇨🇴',URU:'🇺🇾',CHI:'🇨🇱',ECU:'🇪🇨',
-    VEN:'🇻🇪',PAR:'🇵🇾',BOL:'🇧🇴',PER:'🇵🇪',MAR:'🇲🇦',SEN:'🇸🇳',CMR:'🇨🇲',NGA:'🇳🇬',
-    GHA:'🇬🇭',EGY:'🇪🇬',CIV:'🇨🇮',TUN:'🇹🇳',RSA:'🇿🇦',COD:'🇨🇩',MLI:'🇲🇱',AGO:'🇦🇴',
-    ZAM:'🇿🇲',ALG:'🇩🇿',BEN:'🇧🇯',MRT:'🇲🇷',COM:'🇰🇲',JPN:'🇯🇵',KOR:'🇰🇷',AUS:'🇦🇺',
-    IRN:'🇮🇷',KSA:'🇸🇦',QAT:'🇶🇦',UZB:'🇺🇿',IRQ:'🇮🇶',JOR:'🇯🇴',UAE:'🇦🇪',OMA:'🇴🇲',
-    BHR:'🇧🇭',KUW:'🇰🇼',CHN:'🇨🇳',TJK:'🇹🇯',KGZ:'🇰🇬',PAL:'🇵🇸',BAN:'🇧🇩',IND:'🇮🇳',
-    THA:'🇹🇭',IDN:'🇮🇩',PHI:'🇵🇭',USA:'🇺🇸',MEX:'🇲🇽',CAN:'🇨🇦',HON:'🇭🇳',PAN:'🇵🇦',
-    CRC:'🇨🇷',JAM:'🇯🇲',GUA:'🇬🇹',TRI:'🇹🇹',CUB:'🇨🇺',SLV:'🇸🇻',NCA:'🇳🇮',NZL:'🇳🇿',
-    FIJ:'🇫🇯',PNG:'🇵🇬',
-    CZE:'🇨🇿',BIH:'🇧🇦',SWE:'🇸🇪',NOR:'🇳🇴',HAI:'🇭🇹',CUW:'🇨🇼',CPV:'🇨🇻',
-  };
-  return flags[tla] || '🏳';
-}
+// teamFlagEmoji is provided by js/flag-colors.js (loaded above).
 
 function switchTab(btn) {
   document.querySelectorAll('.bracket-nav button').forEach(b => b.classList.remove('active'));

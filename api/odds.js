@@ -31,8 +31,9 @@ module.exports = async function handler(req, res) {
     const upstream = await fetch(`${endpoint}?${params}`);
     const data = await upstream.json();
 
-    // Cache 1 hour at CDN edge — free tier is 500 req/month
-    res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=7200');
+    // Cache 24h at CDN edge — odds only need a daily refresh, and this dedupes
+    // the upstream call across all tournaments (free tier is 500 req/month)
+    res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=172800');
     return res.status(upstream.status).json(data);
   } catch (err) {
     return res.status(502).json({ error: 'Failed to reach odds API' });

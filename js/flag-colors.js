@@ -113,6 +113,26 @@ function getFlagColors(code) {
   return FLAG_COLORS[code] || FLAG_COLORS._DEFAULT;
 }
 
+// Flag emoji for a team TLA. Loaded on every page that uses flag-colors.js
+// (single source of truth — sweepstake and betting pages both rely on this).
+function teamFlagEmoji(tla) {
+  const flags = {
+    ENG:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',GER:'🇩🇪',FRA:'🇫🇷',ESP:'🇪🇸',NED:'🇳🇱',POR:'🇵🇹',BEL:'🇧🇪',ITA:'🇮🇹',
+    POL:'🇵🇱',SUI:'🇨🇭',CRO:'🇭🇷',DEN:'🇩🇰',AUT:'🇦🇹',SRB:'🇷🇸',TUR:'🇹🇷',SCO:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+    HUN:'🇭🇺',SVN:'🇸🇮',BRA:'🇧🇷',ARG:'🇦🇷',COL:'🇨🇴',URU:'🇺🇾',CHI:'🇨🇱',ECU:'🇪🇨',
+    VEN:'🇻🇪',PAR:'🇵🇾',BOL:'🇧🇴',PER:'🇵🇪',MAR:'🇲🇦',SEN:'🇸🇳',CMR:'🇨🇲',NGA:'🇳🇬',
+    GHA:'🇬🇭',EGY:'🇪🇬',CIV:'🇨🇮',TUN:'🇹🇳',RSA:'🇿🇦',COD:'🇨🇩',MLI:'🇲🇱',AGO:'🇦🇴',
+    ZAM:'🇿🇲',ALG:'🇩🇿',BEN:'🇧🇯',MRT:'🇲🇷',COM:'🇰🇲',JPN:'🇯🇵',KOR:'🇰🇷',AUS:'🇦🇺',
+    IRN:'🇮🇷',KSA:'🇸🇦',QAT:'🇶🇦',UZB:'🇺🇿',IRQ:'🇮🇶',JOR:'🇯🇴',UAE:'🇦🇪',OMA:'🇴🇲',
+    BHR:'🇧🇭',KUW:'🇰🇼',CHN:'🇨🇳',TJK:'🇹🇯',KGZ:'🇰🇬',PAL:'🇵🇸',BAN:'🇧🇩',IND:'🇮🇳',
+    THA:'🇹🇭',IDN:'🇮🇩',PHI:'🇵🇭',USA:'🇺🇸',MEX:'🇲🇽',CAN:'🇨🇦',HON:'🇭🇳',PAN:'🇵🇦',
+    CRC:'🇨🇷',JAM:'🇯🇲',GUA:'🇬🇹',TRI:'🇹🇹',CUB:'🇨🇺',SLV:'🇸🇻',NCA:'🇳🇮',NZL:'🇳🇿',
+    FIJ:'🇫🇯',PNG:'🇵🇬',
+    CZE:'🇨🇿',BIH:'🇧🇦',SWE:'🇸🇪',NOR:'🇳🇴',HAI:'🇭🇹',CUW:'🇨🇼',CPV:'🇨🇻',
+  };
+  return flags[tla] || '🏳';
+}
+
 // Exact 48 teams qualified for WC 2026.
 // Used as the draw fallback when the football API is unavailable.
 const WC_2026_TEAMS = [
