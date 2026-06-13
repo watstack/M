@@ -7,7 +7,7 @@
 // dedupes the upstream Odds API call across all tournaments.
 
 const { fetchESPNMatches } = require('./_lib/espn');
-const { h2hOddsForRow, outrightOddsMap } = require('./_lib/odds-match');
+const { h2hOddsForRow } = require('./_lib/odds-match');
 
 const SPORT = 'soccer_fifa_world_cup_2026';
 const ODDS_TTL_MS = 24 * 60 * 60 * 1000; // 24h
@@ -89,21 +89,12 @@ module.exports = async function handler(req, res) {
     if (identity.length) {
       await upsert(rest, identity, 'tournament_id,market_type,match_id');
     }
-    // Tournament winner identity row
-    await upsert(rest, [{
-      tournament_id: tournamentId,
-      market_type: 'tournament_winner',
-      match_name: 'FIFA World Cup 2026 Winner',
-    }], 'tournament_id,market_type');
 
     // 5. Refresh odds (only when stale)
     let oddsRefreshed = false;
     if (oddsStale) {
       const base = selfBase(req);
-      const [h2hEvents, outrightEvents] = await Promise.all([
-        fetchJson(`${base}/api/odds?sport=${SPORT}&markets=h2h`),
-        fetchJson(`${base}/api/odds?sport=${SPORT}&type=outrights`),
-      ]);
+      const h2hEvents = await fetchJson(`${base}/api/odds?sport=${SPORT}&markets=h2h`);
       const fetchedAt = new Date().toISOString();
 
       // Match-result odds: only rows we could match (payload always carries odds)
@@ -124,25 +115,12 @@ module.exports = async function handler(req, res) {
         await upsert(rest, oddsRows, 'tournament_id,market_type,match_id');
         oddsRefreshed = true;
       }
-
-      // Tournament-winner odds
-      const winnerMap = Array.isArray(outrightEvents) ? outrightOddsMap(outrightEvents) : null;
-      if (winnerMap && Object.keys(winnerMap).length) {
-        await upsert(rest, [{
-          tournament_id: tournamentId,
-          market_type: 'tournament_winner',
-          match_name: 'FIFA World Cup 2026 Winner',
-          odds_json: winnerMap,
-          odds_fetched_at: fetchedAt,
-        }], 'tournament_id,market_type');
-        oddsRefreshed = true;
-      }
     }
 
     return res.status(200).json({
       ok: true,
       fixtures: fixtures.length,
-      markets: identity.length + 1,
+      markets: identity.length,
       oddsRefreshed,
     });
   } catch (err) {

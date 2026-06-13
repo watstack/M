@@ -174,42 +174,6 @@ function oddsBtn(marketId, selection, label, price, disabled, isResult) {
   </button>`;
 }
 
-function renderWinnerCard(market) {
-  const o = market.odds_json || {};
-  const isClosed = market.status !== 'open';
-  const isSettled = market.status === 'settled';
-  const teams = Object.entries(o).sort((a, b) => a[1] - b[1]);
-
-  return `<div class="market-card winner-card" id="mc-${market.id}">
-    <div class="market-card-header">
-      <span class="match-name">FIFA World Cup 2026 Winner</span>
-      ${isSettled ? '<span class="market-chip settled">Settled</span>' : '<span class="market-chip open">Open</span>'}
-    </div>
-    <div class="winner-grid">
-      ${teams.map(([teamName, price]) => {
-        const tla = findTeamTla(teamName);
-        const flag = tla ? teamFlagEmoji(tla) : '';
-        const isResult = isSettled && market.result === teamName;
-        return `<button class="winner-btn${isClosed ? ' disabled' : ''}${isResult ? ' result-winner' : ''}"
-          data-market-id="${market.id}" data-selection="${escapeHtml(teamName)}" data-odds="${price}"
-          onclick="selectBet(this)" ${isClosed ? 'disabled' : ''}>
-          <span class="winner-flag">${flag}</span>
-          <span class="winner-name">${escapeHtml(teamName)}</span>
-          <span class="winner-price">${price}x</span>
-        </button>`;
-      }).join('')}
-    </div>
-  </div>`;
-}
-
-function findTeamTla(teamName) {
-  const norm = teamName.toLowerCase();
-  for (const tla of WC_2026_TEAMS) {
-    const fc = getFlagColors(tla);
-    if (fc && fc.name && fc.name.toLowerCase().includes(norm.split(' ')[0])) return tla;
-  }
-  return null;
-}
 
 function renderMyBetRow(bet) {
   const statusClass = { won: 'won', lost: 'lost', void: 'void', pending: 'pending' }[bet.status] || 'pending';
@@ -237,7 +201,7 @@ function autoClosePastKickoff() {
     if (!kickoff || new Date(kickoff) > new Date()) return;
     const chip = card.querySelector('.market-chip');
     if (!chip || !chip.classList.contains('open')) return;  // only flip still-open markets
-    card.querySelectorAll('.odds-btn, .score-btn, .winner-btn').forEach(b => {
+    card.querySelectorAll('.odds-btn, .score-btn').forEach(b => {
       b.disabled = true;
       b.classList.add('disabled');
     });

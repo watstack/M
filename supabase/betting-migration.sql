@@ -23,15 +23,11 @@ CREATE TABLE IF NOT EXISTS bet_markets (
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Prevent duplicate markets for the same match+type in a tournament
-CREATE UNIQUE INDEX IF NOT EXISTS bet_markets_uniq
-ON bet_markets(tournament_id, market_type, match_id)
-WHERE match_id IS NOT NULL;
-
--- One tournament_winner market per tournament
-CREATE UNIQUE INDEX IF NOT EXISTS bet_markets_winner_uniq
-ON bet_markets(tournament_id, market_type)
-WHERE market_type = 'tournament_winner';
+-- Prevent duplicate markets for the same match+type in a tournament.
+-- Non-partial index required for PostgREST upsert (ON CONFLICT cannot use partial indexes).
+-- match_id is always non-null for match_result/correct_score rows.
+CREATE UNIQUE INDEX IF NOT EXISTS bet_markets_match_uniq
+ON bet_markets(tournament_id, market_type, match_id);
 
 -- ─── 3. Bets ─────────────────────────────────────────────────────────────────
 
