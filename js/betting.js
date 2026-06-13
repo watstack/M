@@ -58,9 +58,21 @@ async function loadOpenMarkets(tournamentId) {
     .select('*')
     .eq('tournament_id', tournamentId)
     .in('status', ['open', 'closed', 'settled'])
-    .order('kickoff_time', { ascending: true, nullsLast: true });
+    .order('match_no', { ascending: true, nullsLast: true });
   if (error) throw error;
   return data || [];
+}
+
+// Index DB market rows by match_no → { match_result, correct_score }.
+// The page scaffold is driven by the static WC2026_FIXTURES list; these rows
+// (when present) supply the bet_markets UUID, live odds, status and result.
+function indexMarketsByMatchNo(markets) {
+  const byNo = {};
+  for (const m of markets || []) {
+    if (m.match_no == null) continue;
+    (byNo[m.match_no] ||= {})[m.market_type] = m;
+  }
+  return byNo;
 }
 
 async function loadMyBets(tournamentId, participantId) {
@@ -116,44 +128,145 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+// ─── Stage layout metadata ────────────────────────────────────────────────────
+
+const STAGE_KNOCKOUT = ['r32', 'r16', 'qf', 'sf', 'third', 'final'];
+const STAGE_LABELS = {
+  r32:   'Round of 32',
+  r16:   'Round of 16',
+  qf:    'Quarter-Finals',
+  sf:    'Semi-Finals',
+  third: 'Third-Place Play-off',
+  final: 'Final',
+};
+
+// Resolve one side of a fixture for display.
+// A side is { code:'MEX' } (resolved team) or { slot, label } (knockout placeholder).
+function sideDisplay(side) {
+  side = side || {};
+  if (side.code) {
+    const fc = (typeof FLAG_COLORS !== 'undefined' && FLAG_COLORS[side.code]) || null;
+    const flag = (typeof teamFlagEmoji === 'function') ? teamFlagEmoji(side.code) : '🏳';
+    return { name: (fc && fc.name) || side.code, flag, code: side.code, resolved: true };
+  }
+  return { name: side.label || 'TBC', flag: '🏳', code: null, resolved: false };
+}
+
+// ─── Full fixtures scaffold ──────────────────────────────────────────────────
+// Drives the page off the static WC2026_FIXTURES list so every match always
+// renders. marketsByNo (from indexMarketsByMatchNo) overlays live odds/status.
+function renderFixturesView(marketsByNo) {
+  marketsByNo = marketsByNo || {};
+  const fixtures = (typeof WC2026_FIXTURES !== 'undefined' ? WC2026_FIXTURES : [])
+    .slice().sort((a, b) => a.match_no - b.match_no);
+  if (!fixtures.length) return '';
+
+  let html = '';
+
+  // Group stage, sub-grouped by group letter.
+  const groupFx = fixtures.filter(f => f.stage === 'group');
+  if (groupFx.length) {
+    html += `<div class="bet-section-title">Group Stage</div>`;
+    const byGroup = {};
+    for (const f of groupFx) (byGroup[f.group] ||= []).push(f);
+    for (const letter of Object.keys(byGroup).sort()) {
+      html += `<div class="bet-group-title">Group ${letter}</div>`;
+      const rows = byGroup[letter].sort((a, b) =>
+        (a.matchday - b.matchday) || (a.match_no - b.match_no));
+      html += rows.map(f => renderMatchCard(f, marketsByNo[f.match_no])).join('');
+    }
+  }
+
+  // Knockout stages.
+  for (const stage of STAGE_KNOCKOUT) {
+    const rows = fixtures.filter(f => f.stage === stage);
+    if (!rows.length) continue;
+    html += `<div class="bet-section-title">${STAGE_LABELS[stage]}</div>`;
+    html += rows.map(f => renderMatchCard(f, marketsByNo[f.match_no])).join('');
+  }
+
+  return html;
+}
+
 // ─── Market card rendering ────────────────────────────────────────────────────
 
-// group = { match_result: <market>, correct_score: <market> } for one match.
-function renderMatchCard(group) {
-  const mr = group.match_result;
-  if (!mr) return '';
-  const cs = group.correct_score;
-  const isClosed  = mr.status !== 'open';
-  const isSettled = mr.status === 'settled';
-  const o = mr.odds_json || {};
-  const kickoff   = formatKickoff(mr.kickoff_time);
-  const countdown = formatCountdown(mr.close_time);
+// fixture = static WC2026_FIXTURES row; pair = { match_result, correct_score }
+// DB market rows for that match_no (may be undefined before markets are created).
+function renderMatchCard(fixture, pair) {
+  pair = pair || {};
+  const mr = pair.match_result;
+  const cs = pair.correct_score;
 
-  const statusChip = isSettled
+  const home = sideDisplay(fixture.home);
+  const away = sideDisplay(fixture.away);
+  const locked = !home.resolved || !away.resolved;
+
+  const status    = mr ? mr.status : 'open';
+  const isSettled = status === 'settled';
+  const isClosed  = status !== 'open';
+  const o = (mr && mr.odds_json) || {};
+  const matchName = `${home.name} vs ${away.name}`;
+  const kickoff   = formatKickoff(fixture.kickoff_utc);
+  const venue     = fixture.venue ? `<span class="match-venue">${escapeHtml(fixture.venue)}</span>` : '';
+
+  const statusChip = locked
+    ? `<span class="market-chip locked">Locked</span>`
+    : isSettled
     ? `<span class="market-chip settled">Settled</span>`
     : isClosed
     ? `<span class="market-chip closed">Closed</span>`
-    : `<span class="market-chip open">${countdown}</span>`;
+    : `<span class="market-chip open">${formatCountdown((mr && mr.close_time) || fixture.kickoff_utc)}</span>`;
 
-  return `<div class="market-card" id="mc-${mr.id}" data-kickoff="${mr.close_time || ''}">
+  // Bettable only when a DB market exists, teams are resolved, and it's still open.
+  const canBet  = !!(mr && mr.id) && !locked && !isClosed;
+  const marketId = mr && mr.id;
+
+  const resultBtn = (sel, label) => {
+    if (canBet && o[sel] != null) {
+      return oddsBtn(marketId, sel, label, o[sel], false, isSettled && mr.result === sel);
+    }
+    // Settled with odds but closed: show winner highlight when possible.
+    if (isSettled && mr && o[sel] != null) {
+      return oddsBtn(marketId, sel, label, o[sel], true, mr.result === sel);
+    }
+    return oddsTbc(label);
+  };
+
+  const csAccordion = (cs && cs.id && !locked && !isClosed)
+    ? `<div class="cs-toggle" onclick="toggleCorrectScore(this)">
+        <span>Correct Score</span><span class="cs-arrow">▾</span>
+      </div>
+      <div class="cs-content hidden" data-cs-market="${cs.id}">
+        ${buildScoreGrid(cs.id)}
+      </div>`
+    : '';
+
+  return `<div class="market-card${locked ? ' locked' : ''}" id="mc-${marketId || 'm' + fixture.match_no}" data-kickoff="${fixture.kickoff_utc || ''}">
     <div class="market-card-header">
-      <span class="match-name">${escapeHtml(mr.match_name)}</span>
+      <div class="match-teams">
+        <span class="team-side">
+          <span class="team-flag">${home.flag}</span>
+          <span class="team-name${home.resolved ? '' : ' tbc'}">${escapeHtml(home.name)}</span>
+        </span>
+        <span class="vs">v</span>
+        <span class="team-side">
+          <span class="team-flag">${away.flag}</span>
+          <span class="team-name${away.resolved ? '' : ' tbc'}">${escapeHtml(away.name)}</span>
+        </span>
+      </div>
       <div class="match-meta">
         <span class="kickoff-time">${kickoff}</span>
+        ${venue}
         ${statusChip}
       </div>
     </div>
+    <span class="match-name" hidden>${escapeHtml(matchName)}</span>
     <div class="match-odds-row">
-      ${o.home != null ? oddsBtn(mr.id, 'home', 'Home', o.home, isClosed, isSettled && mr.result === 'home') : oddsTbc('Home')}
-      ${o.draw != null ? oddsBtn(mr.id, 'draw', 'Draw', o.draw, isClosed, isSettled && mr.result === 'draw') : (isClosed ? '' : oddsTbc('Draw'))}
-      ${o.away != null ? oddsBtn(mr.id, 'away', 'Away', o.away, isClosed, isSettled && mr.result === 'away') : oddsTbc('Away')}
+      ${resultBtn('home', 'Home')}
+      ${resultBtn('draw', 'Draw')}
+      ${resultBtn('away', 'Away')}
     </div>
-    ${cs && !isClosed ? `<div class="cs-toggle" onclick="toggleCorrectScore(this)">
-      <span>Correct Score</span><span class="cs-arrow">▾</span>
-    </div>
-    <div class="cs-content hidden" data-cs-market="${cs.id}">
-      ${buildScoreGrid(cs.id)}
-    </div>` : ''}
+    ${csAccordion}
   </div>`;
 }
 

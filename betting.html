@@ -130,6 +130,39 @@
     .market-chip.open    { background: rgba(255,106,31,.15); border: 1px solid rgba(255,106,31,.4); color: var(--green); }
     .market-chip.closed  { background: rgba(255,59,92,.1);   border: 1px solid rgba(255,59,92,.3);  color: var(--red); }
     .market-chip.settled { background: rgba(255,154,208,.1); border: 1px solid rgba(255,154,208,.3); color: var(--gold); }
+    .market-chip.locked  { background: rgba(128,112,96,.15); border: 1px solid rgba(128,112,96,.4); color: var(--muted); }
+
+    /* ── Group / stage sub-headings ── */
+    .bet-group-title {
+      font-family: var(--font-pixel);
+      font-size: 0.38rem;
+      color: var(--green);
+      letter-spacing: .08em;
+      margin: 16px 0 8px;
+      padding-left: 2px;
+    }
+
+    /* ── Team header ── */
+    .match-teams {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      flex: 1;
+      min-width: 0;
+    }
+    .team-side { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .team-flag { font-size: 1.15rem; line-height: 1; }
+    .team-name { font-weight: 700; font-size: 0.95rem; }
+    .team-name.tbc { color: var(--muted); font-weight: 400; font-style: italic; font-size: 0.82rem; }
+    .vs { font-family: var(--font-pixel); font-size: 0.32rem; color: var(--muted); }
+    .market-card.locked { opacity: .82; }
+    .match-venue {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--muted);
+      opacity: .8;
+    }
 
     /* ── Odds row ── */
     .match-odds-row {
@@ -416,6 +449,7 @@
 <script src="js/vendor/supabase.js"></script>
 <script src="js/flag-colors.js"></script>
 <script src="js/avatars.js"></script>
+<script src="js/wc2026-fixtures.js"></script>
 <script src="js/betting.js"></script>
 
 <script>
@@ -492,11 +526,9 @@ async function loadMarketsView() {
   document.getElementById('noMatchMsg').style.display = 'none';
 
   try {
-    // Ensure wc_matches is populated before market creation.
-    try { await fetch('/api/sync'); } catch (_) {}
-
-    // Server creates/refreshes all markets + odds for this tournament (24h cache).
-    // Best-effort: even if it fails, fall through to read whatever already exists.
+    // Server creates/refreshes all markets + odds for this tournament (24h cache),
+    // deterministically from the static WC2026_FIXTURES list. Best-effort: even if
+    // it fails, the page still renders the full static scaffold below.
     try {
       const r = await fetch(`/api/markets?code=${encodeURIComponent(code)}`, { method: 'POST' });
       if (!r.ok) console.warn('[markets] /api/markets returned', r.status);
@@ -514,28 +546,21 @@ async function loadMarketsView() {
 }
 
 function renderMarketsView(markets) {
-  const matchMarkets = markets.filter(m => ['match_result','correct_score'].includes(m.market_type));
+  // Overlay any live market rows (odds/status) onto the static fixture scaffold.
+  const marketsByNo = indexMarketsByMatchNo(markets);
+  const html = renderFixturesView(marketsByNo);
 
-  // Group by match (pair match_result + correct_score per match_id)
-  const matchGroups = {};
-  for (const m of matchMarkets) {
-    if (!matchGroups[m.match_id]) matchGroups[m.match_id] = {};
-    matchGroups[m.match_id][m.market_type] = m;
-  }
-
-  const matchIds = Object.keys(matchGroups);
   document.getElementById('marketsLoading').style.display = 'none';
 
-  if (!matchIds.length) {
+  const matchListEl = document.getElementById('matchList');
+  if (!html) {
     document.getElementById('noMatchMsg').style.display = 'block';
+    matchListEl.style.display = 'none';
     return;
   }
 
-  const html = matchIds.map(id => renderMatchCard(matchGroups[id])).join('');
-
-  const matchListEl = document.getElementById('matchList');
-  matchListEl.innerHTML = html || '';
-  matchListEl.style.display = matchIds.length ? 'block' : 'none';
+  matchListEl.innerHTML = html;
+  matchListEl.style.display = 'block';
 
   autoClosePastKickoff();
   setInterval(autoClosePastKickoff, 30_000);
