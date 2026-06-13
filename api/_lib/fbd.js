@@ -1,0 +1,51 @@
+// football-data.org v4 match fetch + normalize to wc_matches row format.
+// Used by api/sync.js as a fallback when ESPN is unavailable.
+
+const FBD_BASE = 'https://api.football-data.org/v4';
+
+async function fetchFBDMatches(token) {
+  try {
+    const r = await fetch(`${FBD_BASE}/competitions/WC/matches?season=2026`, {
+      headers: { 'X-Auth-Token': token },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!r.ok) {
+      console.warn(`[fbd] fetch failed: ${r.status}`);
+      return [];
+    }
+    const { matches = [] } = await r.json();
+    return matches.map(normalizeFBDMatch).filter(Boolean);
+  } catch (e) {
+    console.warn('[fbd] fetch error:', e.message);
+    return [];
+  }
+}
+
+function normalizeFBDMatch(m) {
+  if (!m?.id || !m?.utcDate) return null;
+  const isPlayed = ['FINISHED', 'IN_PLAY', 'PAUSED'].includes(m.status);
+  const goals = (m.goals || []).map(g => ({
+    minute: g.minute ?? null,
+    scorer: { name: g.scorer?.name || '' },
+    team: { id: String(g.team?.id || '') },
+  }));
+  return {
+    id: String(m.id),
+    home_tla: (m.homeTeam?.tla || '').toUpperCase(),
+    home_name: m.homeTeam?.shortName || m.homeTeam?.name || '',
+    home_id: String(m.homeTeam?.id || ''),
+    away_tla: (m.awayTeam?.tla || '').toUpperCase(),
+    away_name: m.awayTeam?.shortName || m.awayTeam?.name || '',
+    away_id: String(m.awayTeam?.id || ''),
+    home_score: isPlayed ? (m.score?.fullTime?.home ?? null) : null,
+    away_score: isPlayed ? (m.score?.fullTime?.away ?? null) : null,
+    status: m.status || 'SCHEDULED',
+    utc_date: m.utcDate,
+    stage: m.stage || 'GROUP_STAGE',
+    group_name: m.group || null,
+    goals: JSON.stringify(goals),
+    synced_at: new Date().toISOString(),
+  };
+}
+
+module.exports = { fetchFBDMatches };

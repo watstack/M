@@ -1,12 +1,13 @@
 // Server-side market creation + 24h odds refresh for a tournament.
 // The browser POSTs /api/markets?code=XXX on load; this ensures bet_markets rows
-// exist for every scheduled match (match_result + correct_score) plus the
-// tournament_winner market, and refreshes odds at most once per 24h.
+// exist for every scheduled match (match_result + correct_score) and refreshes
+// odds at most once per 24h.
 //
 // Odds are fetched through this app's own /api/odds proxy so its 24h CDN cache
 // dedupes the upstream Odds API call across all tournaments.
 
 const { fetchESPNMatches } = require('./_lib/espn');
+const { fetchFBDMatches }  = require('./_lib/fbd');
 const { h2hOddsForRow } = require('./_lib/odds-match');
 
 const SPORT = 'soccer_fifa_world_cup_2026';
@@ -45,10 +46,13 @@ module.exports = async function handler(req, res) {
     if (!tourns.length) return res.status(404).json({ error: 'Tournament not found' });
     const tournamentId = tourns[0].id;
 
-    // 2. Ensure match data exists
+    // 2. Ensure match data exists. FBD is primary (1 fast request); ESPN fallback.
     let rows = await readMatches(rest);
     if (!rows.length) {
-      const fresh = await fetchESPNMatches();
+      let fresh = [];
+      const token = process.env.FOOTBALL_API_TOKEN;
+      if (token) fresh = await fetchFBDMatches(token);
+      if (!fresh.length) fresh = await fetchESPNMatches();
       if (fresh.length) {
         await rest('/wc_matches', {
           method: 'POST',
