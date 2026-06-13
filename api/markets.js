@@ -1,7 +1,7 @@
 // Server-side market creation + 24h odds refresh for a tournament.
 // The browser POSTs /api/markets?code=XXX on load; this ensures bet_markets rows
-// exist for every scheduled match (match_result + correct_score) plus the
-// tournament_winner market, and refreshes odds at most once per 24h.
+// exist for every scheduled match (match_result + correct_score) and refreshes
+// odds at most once per 24h.
 //
 // Odds are fetched through this app's own /api/odds proxy so its 24h CDN cache
 // dedupes the upstream Odds API call across all tournaments.
