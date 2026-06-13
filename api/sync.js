@@ -18,15 +18,18 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    let matches = await fetchESPNMatches();
-    let source = 'espn';
+    // FBD is primary (1 fast request). ESPN is fallback (no auth but 45 date fetches).
+    let matches = [];
+    let source = 'none';
 
+    const token = process.env.FOOTBALL_API_TOKEN;
+    if (token) {
+      matches = await fetchFBDMatches(token);
+      source = 'fbd';
+    }
     if (matches.length === 0) {
-      const token = process.env.FOOTBALL_API_TOKEN;
-      if (token) {
-        matches = await fetchFBDMatches(token);
-        source = 'fbd';
-      }
+      matches = await fetchESPNMatches();
+      source = 'espn';
     }
 
     if (matches.length === 0) {

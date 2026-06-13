@@ -46,14 +46,13 @@ module.exports = async function handler(req, res) {
     if (!tourns.length) return res.status(404).json({ error: 'Tournament not found' });
     const tournamentId = tourns[0].id;
 
-    // 2. Ensure match data exists (ESPN primary, FBD fallback)
+    // 2. Ensure match data exists. FBD is primary (1 fast request); ESPN fallback.
     let rows = await readMatches(rest);
     if (!rows.length) {
-      let fresh = await fetchESPNMatches();
-      if (!fresh.length) {
-        const token = process.env.FOOTBALL_API_TOKEN;
-        if (token) fresh = await fetchFBDMatches(token);
-      }
+      let fresh = [];
+      const token = process.env.FOOTBALL_API_TOKEN;
+      if (token) fresh = await fetchFBDMatches(token);
+      if (!fresh.length) fresh = await fetchESPNMatches();
       if (fresh.length) {
         await rest('/wc_matches', {
           method: 'POST',
