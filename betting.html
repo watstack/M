@@ -203,29 +203,7 @@
     .score-btn.selected { border-color: var(--gold); background: rgba(255,154,208,.12); }
     .score-odds { font-size: 0.7rem; color: var(--gold); }
 
-    /* ── Tournament winner ── */
-    .winner-card .market-card-header { border-bottom: 1px solid var(--border); }
-    .winner-grid { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 16px; }
-    .winner-btn {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--mid);
-      border: 2px solid var(--border);
-      border-radius: var(--radius);
-      padding: 8px 12px;
-      cursor: pointer;
-      font-size: 0.88rem;
-      box-shadow: 2px 2px 0 rgba(0,0,0,.4);
-      transition: transform .08s, box-shadow .08s;
-    }
-    .winner-btn:hover:not(:disabled) { border-color: var(--green); transform: translate(1px,1px); box-shadow: 1px 1px 0 rgba(0,0,0,.4); }
-    .winner-btn.result-winner { border-color: var(--gold); background: rgba(255,154,208,.12); }
-    .winner-flag { font-size: 1.1rem; }
-    .winner-name { font-weight: 700; }
-    .winner-price { font-family: var(--font-mono); font-size: 0.78rem; color: var(--green); }
-
-    /* ── My bets ── */
+/* ── My bets ── */
     .my-bets-list { display: flex; flex-direction: column; gap: 10px; }
     .my-bet-row {
       background: var(--panel);
@@ -398,10 +376,6 @@
       <div class="no-markets-icon">⚽</div>
       <p>No upcoming matches with open markets yet.</p>
     </div>
-    <div id="winnerSection" style="display:none">
-      <div class="bet-section-title">Tournament Winner</div>
-      <div id="winnerList"></div>
-    </div>
   </div>
 
   <!-- My bets -->
@@ -516,9 +490,11 @@ async function loadMarketsView() {
   document.getElementById('marketsLoading').style.display = 'block';
   document.getElementById('matchList').style.display = 'none';
   document.getElementById('noMatchMsg').style.display = 'none';
-  document.getElementById('winnerSection').style.display = 'none';
 
   try {
+    // Ensure wc_matches is populated before market creation.
+    try { await fetch('/api/sync'); } catch (_) {}
+
     // Server creates/refreshes all markets + odds for this tournament (24h cache).
     // Best-effort: even if it fails, fall through to read whatever already exists.
     try {
@@ -539,7 +515,6 @@ async function loadMarketsView() {
 
 function renderMarketsView(markets) {
   const matchMarkets = markets.filter(m => ['match_result','correct_score'].includes(m.market_type));
-  const winnerMarket = markets.find(m => m.market_type === 'tournament_winner');
 
   // Group by match (pair match_result + correct_score per match_id)
   const matchGroups = {};
@@ -551,7 +526,7 @@ function renderMarketsView(markets) {
   const matchIds = Object.keys(matchGroups);
   document.getElementById('marketsLoading').style.display = 'none';
 
-  if (!matchIds.length && !winnerMarket) {
+  if (!matchIds.length) {
     document.getElementById('noMatchMsg').style.display = 'block';
     return;
   }
@@ -561,11 +536,6 @@ function renderMarketsView(markets) {
   const matchListEl = document.getElementById('matchList');
   matchListEl.innerHTML = html || '';
   matchListEl.style.display = matchIds.length ? 'block' : 'none';
-
-  if (winnerMarket) {
-    document.getElementById('winnerList').innerHTML = renderWinnerCard(winnerMarket);
-    document.getElementById('winnerSection').style.display = 'block';
-  }
 
   autoClosePastKickoff();
   setInterval(autoClosePastKickoff, 30_000);
@@ -605,7 +575,7 @@ function toggleCorrectScore(toggleEl) {
 
 function selectBet(btn) {
   // Clear previously selected
-  document.querySelectorAll('.odds-btn.selected, .score-btn.selected, .winner-btn.selected')
+  document.querySelectorAll('.odds-btn.selected, .score-btn.selected')
     .forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
 
@@ -633,7 +603,7 @@ function labelForSelection(sel, matchName) {
 
 function closeBetSlip() {
   document.getElementById('betSlip').classList.add('hidden');
-  document.querySelectorAll('.odds-btn.selected, .score-btn.selected, .winner-btn.selected')
+  document.querySelectorAll('.odds-btn.selected, .score-btn.selected')
     .forEach(b => b.classList.remove('selected'));
   _activeMarketId = _activeSelection = _activeOdds = null;
 }
