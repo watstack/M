@@ -197,9 +197,13 @@ function renderMatchCard(fixture, pair) {
   const mr = pair.match_result;
   const cs = pair.correct_score;
 
-  const home = sideDisplay(fixture.home);
-  const away = sideDisplay(fixture.away);
-  const locked = !home.resolved || !away.resolved;
+  // Prefer DB-resolved team codes (knockout slots fill in as the tournament
+  // progresses) over the static fixture's placeholder slot.
+  const homeSide = (mr && mr.home_code) ? { code: mr.home_code } : fixture.home;
+  const awaySide = (mr && mr.away_code) ? { code: mr.away_code } : fixture.away;
+  const home = sideDisplay(homeSide);
+  const away = sideDisplay(awaySide);
+  const locked = mr ? !!mr.locked : (!home.resolved || !away.resolved);
 
   const status    = mr ? mr.status : 'open';
   const isSettled = status === 'settled';
