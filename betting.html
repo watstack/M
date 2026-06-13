@@ -525,24 +525,25 @@ async function loadMarketsView() {
   document.getElementById('matchList').style.display = 'none';
   document.getElementById('noMatchMsg').style.display = 'none';
 
+  // Server creates/refreshes all markets + odds for this tournament (24h cache),
+  // deterministically from the static WC2026_FIXTURES list. Best-effort: even if
+  // it fails, the page still renders the full static scaffold below.
   try {
-    // Server creates/refreshes all markets + odds for this tournament (24h cache),
-    // deterministically from the static WC2026_FIXTURES list. Best-effort: even if
-    // it fails, the page still renders the full static scaffold below.
-    try {
-      const r = await fetch(`/api/markets?code=${encodeURIComponent(code)}`, { method: 'POST' });
-      if (!r.ok) console.warn('[markets] /api/markets returned', r.status);
-    } catch (e) {
-      console.warn('[markets] /api/markets failed:', e.message);
-    }
-
-    const markets = await loadOpenMarkets(_tournament.id);
-    renderMarketsView(markets);
-  } catch (err) {
-    console.error('loadMarketsView:', err);
-    document.getElementById('marketsLoading').style.display = 'none';
-    document.getElementById('noMatchMsg').style.display = 'block';
+    const r = await fetch(`/api/markets?code=${encodeURIComponent(code)}`, { method: 'POST' });
+    if (!r.ok) console.warn('[markets] /api/markets returned', r.status);
+  } catch (e) {
+    console.warn('[markets] /api/markets failed:', e.message);
   }
+
+  // Read live market rows (odds/status) — non-fatal: the page renders the full
+  // static scaffold regardless, with markets overlaid when present.
+  let markets = [];
+  try {
+    markets = await loadOpenMarkets(_tournament.id);
+  } catch (e) {
+    console.warn('[markets] read failed, showing static scaffold only:', e.message);
+  }
+  renderMarketsView(markets);
 }
 
 function renderMarketsView(markets) {
