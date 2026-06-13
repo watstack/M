@@ -110,14 +110,14 @@ describe('footballFetch caching', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ matches: [{ status: 'FINISHED' }], teams: [], standings: [] });
-    expect(storage.getItem('wc26_api_/competitions/WC/matches')).not.toBeNull();
+    expect(storage.getItem('wc26_fbd_/competitions/WC/matches')).not.toBeNull();
   });
 
   it('cache hit: skips fetch when data is fresh (IDLE TTL)', async () => {
     const storage = makeStorageMock();
     const freshData = { matches: [], teams: [], standings: [] };
     storage.setItem(
-      'wc26_api_/competitions/WC/matches',
+      'wc26_fbd_/competitions/WC/matches',
       JSON.stringify({ ts: Date.now(), data: freshData }),
     );
     const fetchMock = vi.fn();
@@ -133,7 +133,7 @@ describe('footballFetch caching', () => {
     const storage = makeStorageMock();
     const staleTs = Date.now() - 400_000; // 400s > 300s IDLE TTL
     storage.setItem(
-      'wc26_api_/competitions/WC/matches',
+      'wc26_fbd_/competitions/WC/matches',
       JSON.stringify({ ts: staleTs, data: { matches: [], teams: [], standings: [] } }),
     );
     const fetchMock = vi.fn().mockResolvedValue({
@@ -151,7 +151,7 @@ describe('footballFetch caching', () => {
     const storage = makeStorageMock();
     const staleTs = Date.now() - 70_000; // 70s > 60s LIVE TTL
     storage.setItem(
-      'wc26_api_/competitions/WC/matches',
+      'wc26_fbd_/competitions/WC/matches',
       JSON.stringify({ ts: staleTs, data: { matches: [{ status: 'IN_PLAY' }] } }),
     );
     const fetchMock = vi.fn().mockResolvedValue({
@@ -167,10 +167,10 @@ describe('footballFetch caching', () => {
 
   it('throws on non-OK response', async () => {
     const storage = makeStorageMock();
-    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 429 });
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 429, text: async () => '' });
     const ctx = loadFiles(['js/football.js'], { sessionStorage: storage, fetch: fetchMock });
 
     await expect(ctx.footballFetch('/competitions/WC/matches'))
-      .rejects.toThrow('Football API error: 429');
+      .rejects.toThrow('Football API 429');
   });
 });

@@ -7,6 +7,7 @@
 // dedupes the upstream Odds API call across all tournaments.
 
 const { fetchESPNMatches } = require('./_lib/espn');
+const { fetchFBDMatches }  = require('./_lib/fbd');
 const { h2hOddsForRow } = require('./_lib/odds-match');
 
 const SPORT = 'soccer_fifa_world_cup_2026';
@@ -45,10 +46,14 @@ module.exports = async function handler(req, res) {
     if (!tourns.length) return res.status(404).json({ error: 'Tournament not found' });
     const tournamentId = tourns[0].id;
 
-    // 2. Ensure match data exists
+    // 2. Ensure match data exists (ESPN primary, FBD fallback)
     let rows = await readMatches(rest);
     if (!rows.length) {
-      const fresh = await fetchESPNMatches();
+      let fresh = await fetchESPNMatches();
+      if (!fresh.length) {
+        const token = process.env.FOOTBALL_API_TOKEN;
+        if (token) fresh = await fetchFBDMatches(token);
+      }
       if (fresh.length) {
         await rest('/wc_matches', {
           method: 'POST',
