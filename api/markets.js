@@ -1,18 +1,27 @@
 // Server-side market creation + 24h odds refresh for a tournament.
-// The browser POSTs /api/markets?code=XXX on load; this ensures bet_markets rows
-// exist for every scheduled match (match_result + correct_score) and refreshes
-// odds at most once per 24h.
 //
-// Odds are fetched through this app's own /api/odds proxy so its 24h CDN cache
-// dedupes the upstream Odds API call across all tournaments.
+// The browser POSTs /api/markets?code=XXX on load. This deterministically
+// ensures a match_result + correct_score market exists for every one of the 104
+// static WC2026 fixtures (keyed by match_no — no wc_matches, no fuzzy sync), and
+// refreshes 1X2 odds at most once per 24h.
+//
+// Knockout fixtures whose teams aren't resolved yet are created `locked` and get
+// no odds. Odds are fetched through this app's own /api/odds proxy so its 24h CDN
+// cache dedupes the upstream Odds API call across all tournaments.
 
-const { fetchESPNMatches } = require('./_lib/espn');
-const { fetchFBDMatches }  = require('./_lib/fbd');
-const { h2hOddsForRow } = require('./_lib/odds-match');
+const { WC2026_FIXTURES, CODE_NAMES } = require('./_lib/fixtures');
+const { h2hOddsForFixture } = require('./_lib/odds-match');
 
 const SPORT = 'soccer_fifa_world_cup_2026';
 const ODDS_TTL_MS = 24 * 60 * 60 * 1000; // 24h
-const SKIP_STATUSES = ['POSTPONED', 'CANCELLED', 'SUSPENDED'];
+
+const teamName = code => CODE_NAMES[code] || code;
+
+function matchNameFor(fx) {
+  const h = fx.home.code ? teamName(fx.home.code) : fx.home.label;
+  const a = fx.away.code ? teamName(fx.away.code) : fx.away.label;
+  return `${h} vs ${a}`;
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -46,99 +55,70 @@ module.exports = async function handler(req, res) {
     if (!tourns.length) return res.status(404).json({ error: 'Tournament not found' });
     const tournamentId = tourns[0].id;
 
-    // 2. Ensure match data exists. FBD is primary (1 fast request); ESPN fallback.
-    let rows = await readMatches(rest);
-    if (!rows.length) {
-      let fresh = [];
-      const token = process.env.FOOTBALL_API_TOKEN;
-      if (token) fresh = await fetchFBDMatches(token);
-      if (!fresh.length) fresh = await fetchESPNMatches();
-      if (fresh.length) {
-        await rest('/wc_matches', {
-          method: 'POST',
-          headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-          body: JSON.stringify(fresh),
-        });
-        rows = await readMatches(rest);
-      }
-    }
-    const fixtures = rows.filter(r => r.utc_date && !SKIP_STATUSES.includes(r.status));
-
-    // 3. Decide whether odds are stale (refresh at most every 24h)
+    // 2. Decide whether odds are stale (refresh at most every 24h)
     const exRes = await rest(
       `/bet_markets?tournament_id=eq.${tournamentId}` +
-      `&select=id,market_type,match_id,odds_fetched_at`
+      `&market_type=eq.match_result&select=odds_fetched_at`
     );
     const existing = exRes.ok ? await exRes.json() : [];
-    const hasMatchMarkets = existing.some(m => m.market_type === 'match_result');
     const newest = existing.reduce((acc, m) => {
       const t = m.odds_fetched_at ? new Date(m.odds_fetched_at).getTime() : 0;
       return t > acc ? t : acc;
     }, 0);
-    const oddsStale = !hasMatchMarkets || (Date.now() - newest > ODDS_TTL_MS);
+    const oddsStale = !existing.length || (Date.now() - newest > ODDS_TTL_MS);
 
-    // 4. Ensure identity rows exist for every fixture (never touches odds/status)
-    const identity = [];
-    for (const r of fixtures) {
-      const base = {
-        tournament_id: tournamentId,
-        match_id: String(r.id),
-        match_name: `${r.home_name || '?'} vs ${r.away_name || '?'}`,
-        kickoff_time: r.utc_date,
-        close_time: r.utc_date,
-      };
-      identity.push({ ...base, market_type: 'match_result' });
-      identity.push({ ...base, market_type: 'correct_score' });
-    }
-    if (identity.length) {
-      await upsert(rest, identity, 'tournament_id,market_type,match_id');
-    }
-
-    // 5. Refresh odds (only when stale)
-    let oddsRefreshed = false;
+    // 3. Fetch h2h odds when stale (only resolved fixtures get matched)
+    let h2hEvents = null;
+    let fetchedAt = null;
     if (oddsStale) {
       const base = selfBase(req);
-      const h2hEvents = await fetchJson(`${base}/api/odds?sport=${SPORT}&markets=h2h`);
-      const fetchedAt = new Date().toISOString();
-
-      // Match-result odds: only rows we could match (payload always carries odds)
-      const oddsRows = [];
-      for (const r of fixtures) {
-        const odds = Array.isArray(h2hEvents) ? h2hOddsForRow(h2hEvents, r) : null;
-        if (!odds) continue;
-        oddsRows.push({
-          tournament_id: tournamentId,
-          market_type: 'match_result',
-          match_id: String(r.id),
-          match_name: `${r.home_name || '?'} vs ${r.away_name || '?'}`,
-          odds_json: odds,
-          odds_fetched_at: fetchedAt,
-        });
-      }
-      if (oddsRows.length) {
-        await upsert(rest, oddsRows, 'tournament_id,market_type,match_id');
-        oddsRefreshed = true;
-      }
+      h2hEvents = await fetchJson(`${base}/api/odds?sport=${SPORT}&markets=h2h`);
+      fetchedAt = new Date().toISOString();
     }
+
+    // 4. Build deterministic market rows from the static fixture list.
+    // status/result are omitted so existing settled markets are never clobbered.
+    let oddsMatched = 0;
+    const rows = [];
+    for (const fx of WC2026_FIXTURES) {
+      const resolved = !!(fx.home.code && fx.away.code);
+      const base = {
+        tournament_id: tournamentId,
+        match_no: fx.match_no,
+        stage: fx.stage,
+        match_name: matchNameFor(fx),
+        kickoff_time: fx.kickoff_utc,
+        close_time: fx.kickoff_utc,
+        locked: !resolved,
+      };
+
+      const mr = { ...base, market_type: 'match_result' };
+      if (oddsStale && resolved && Array.isArray(h2hEvents)) {
+        const odds = h2hOddsForFixture(h2hEvents, fx);
+        if (odds) {
+          mr.odds_json = odds;
+          mr.odds_fetched_at = fetchedAt;
+          oddsMatched++;
+        }
+      }
+      rows.push(mr);
+      rows.push({ ...base, market_type: 'correct_score' });
+    }
+
+    await upsert(rest, rows, 'tournament_id,market_type,match_no');
 
     return res.status(200).json({
       ok: true,
-      fixtures: fixtures.length,
-      markets: identity.length,
-      oddsRefreshed,
+      fixtures: WC2026_FIXTURES.length,
+      markets: rows.length,
+      oddsRefreshed: oddsStale,
+      oddsMatched,
     });
   } catch (err) {
     console.error('[markets] Error:', err.message);
     return res.status(500).json({ error: err.message });
   }
 };
-
-async function readMatches(rest) {
-  const r = await rest('/wc_matches?select=*&order=utc_date.asc&limit=300');
-  if (!r.ok) return [];
-  const data = await r.json();
-  return Array.isArray(data) ? data : [];
-}
 
 async function upsert(rest, payload, onConflict) {
   const r = await rest(`/bet_markets?on_conflict=${onConflict}`, {

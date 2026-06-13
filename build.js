@@ -5,8 +5,33 @@
 import { writeFileSync, readFileSync, mkdirSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { createContext, runInContext } from 'vm';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Derive the server-side (CommonJS) fixtures module from the browser sources of
+// truth (js/wc2026-fixtures.js + js/flag-colors.js) so the two never drift.
+{
+  const sandbox = { module: { exports: {} } };
+  sandbox.exports = sandbox.module.exports;
+  createContext(sandbox);
+  // Extract the code→name map from FLAG_COLORS (lexical const → expose explicitly).
+  const flagSrc = readFileSync(join(__dirname, 'js', 'flag-colors.js'), 'utf8');
+  runInContext(flagSrc + '\n;this.__FC = FLAG_COLORS;', sandbox);
+  const CODE_NAMES = {};
+  for (const [code, v] of Object.entries(sandbox.__FC || {})) {
+    if (v && v.name) CODE_NAMES[code] = v.name;
+  }
+  // Build the fixtures array.
+  const browserSrc = readFileSync(join(__dirname, 'js', 'wc2026-fixtures.js'), 'utf8');
+  runInContext(browserSrc, sandbox);
+  const { WC2026_FIXTURES, BRACKET_FEED } = sandbox.module.exports;
+  const out = `// AUTO-GENERATED from js/wc2026-fixtures.js + js/flag-colors.js by build.js — do not edit.\n` +
+    `// Server-side copy of the static WC 2026 fixture scaffold for api/ functions.\n\n` +
+    `module.exports = ${JSON.stringify({ WC2026_FIXTURES, BRACKET_FEED, CODE_NAMES }, null, 2)};\n`;
+  writeFileSync(join(__dirname, 'api', '_lib', 'fixtures.js'), out, 'utf8');
+  console.log(`✓ api/_lib/fixtures.js generated (${WC2026_FIXTURES.length} fixtures, ${Object.keys(CODE_NAMES).length} names)`);
+}
 
 const url   = process.env.SUPABASE_URL        || '';
 const key   = process.env.SUPABASE_ANON_KEY   || '';
