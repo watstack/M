@@ -1385,6 +1385,14 @@ const adminToken = (() => {
   return fromHash || (code ? localStorage.getItem(`wc26_admin_${code}`) : null);
 })();
 
+(() => {
+   const m = window.location.hash.match(/me=([0-9a-fA-F-]+)/);
+   if (m && code) {
+     localStorage.setItem(`wc26_${code}`, m[1]);
+     history.replaceState(null, '', location.pathname + location.search);
+   }
+ })();
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 function showToast(msg) {
   const t = document.getElementById('toast');
