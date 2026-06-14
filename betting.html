@@ -526,6 +526,12 @@ if (!code) {
   document.querySelector('.bet-page').innerHTML = '<p style="padding:48px;text-align:center;color:var(--muted)">No tournament code. <a href="index.html">Go home</a></p>';
 }
 
+const _me = location.hash.match(/me=([0-9a-fA-F-]+)/);
+ if (code && _me) {
+   localStorage.setItem(`wc26_${code}`, _me[1]);
+   history.replaceState(null, '', location.pathname + location.search);
+ }
+
 async function init() {
   if (!code || !db) return;
 
