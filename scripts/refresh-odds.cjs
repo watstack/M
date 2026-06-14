@@ -160,11 +160,17 @@ async function main() {
   let totalMatched = 0;
   for (const t of tournaments) {
     const { groupRows, koRows, oddsMatched } = buildRows(t.id, h2hEvents, fetchedAt);
-    // Group rows merge (so odds refresh); knockout rows insert-once (so a later
-    // team resolution is never clobbered). status/result are never sent, so
-    // already-settled markets are left untouched.
-    if (groupRows.length) await upsert(groupRows, 'merge-duplicates');
-    if (koRows.length) await upsert(koRows, 'ignore-duplicates');
+    // PostgREST bulk insert requires every object in an array to share the same
+    // key set (error PGRST102), so split group rows by whether they carry odds.
+    // Both batches merge (so odds refresh); rows without odds simply omit the
+    // odds_json key, so a later run that doesn't match never nulls live odds.
+    // Knockout rows insert-once (so a later team resolution is never clobbered).
+    // status/result are never sent, so already-settled markets are untouched.
+    const withOdds = groupRows.filter(r => 'odds_json' in r);
+    const noOdds   = groupRows.filter(r => !('odds_json' in r));
+    if (withOdds.length) await upsert(withOdds, 'merge-duplicates');
+    if (noOdds.length)   await upsert(noOdds, 'merge-duplicates');
+    if (koRows.length)   await upsert(koRows, 'ignore-duplicates');
     totalMatched += oddsMatched;
     console.log(`  ${t.code}: ${groupRows.length + koRows.length} markets, ${oddsMatched} odds matched`);
   }
