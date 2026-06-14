@@ -245,7 +245,7 @@ function renderMatchCard(fixture, pair) {
       </div>`
     : '';
 
-  return `<div class="market-card${locked ? ' locked' : ''}" id="mc-${marketId || 'm' + fixture.match_no}" data-kickoff="${fixture.kickoff_utc || ''}">
+  return `<div class="market-card${locked ? ' locked' : ''}" id="mc-${marketId || 'm' + fixture.match_no}" data-kickoff="${(mr && mr.close_time) || fixture.kickoff_utc || ''}">
     <div class="market-card-header">
       <div class="match-teams">
         <span class="team-side">
