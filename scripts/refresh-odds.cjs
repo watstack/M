@@ -13,7 +13,7 @@
 // and odds-matching logic as the serverless handler so odds are identical.
 
 const { WC2026_FIXTURES, CODE_NAMES } = require('../api/_lib/fixtures.js');
-const { h2hOddsForFixture } = require('../api/_lib/odds-match.js');
+const { h2hOddsForFixture, codeForName } = require('../api/_lib/odds-match.js');
 
 // The Odds API only serves "in-season" sports, under keys it controls (the
 // World Cup is NOT necessarily `soccer_fifa_world_cup_2026`). Rather than
@@ -98,6 +98,24 @@ async function fetchH2HEvents() {
   return events;
 }
 
+// The real kickoff time for a fixture, from the matched Odds API event's
+// commence_time (authoritative). The static fixture kickoff times can be wrong,
+// which makes the betting page auto-close a market before it has kicked off.
+function commenceTimeForFixture(events, fx) {
+  const fHome = fx && fx.home && fx.home.code;
+  const fAway = fx && fx.away && fx.away.code;
+  if (!fHome || !fAway || !Array.isArray(events)) return null;
+  for (const ev of events) {
+    const evHome = codeForName(ev.home_team);
+    const evAway = codeForName(ev.away_team);
+    if (!evHome || !evAway) continue;
+    if ((evHome === fHome && evAway === fAway) || (evHome === fAway && evAway === fHome)) {
+      return ev.commence_time || null;
+    }
+  }
+  return null;
+}
+
 // Mirror of /api/markets row-building, for one tournament.
 function buildRows(tournamentId, h2hEvents, fetchedAt) {
   const groupRows = [];
@@ -119,6 +137,10 @@ function buildRows(tournamentId, h2hEvents, fetchedAt) {
     if (resolved) {
       base.home_code = fx.home.code;
       base.away_code = fx.away.code;
+      // Correct kickoff/close from the live feed when we can match this fixture,
+      // so the page's auto-close fires at the real kickoff, not a stale time.
+      const commence = commenceTimeForFixture(h2hEvents, fx);
+      if (commence) { base.kickoff_time = commence; base.close_time = commence; }
       const mr = { ...base, market_type: 'match_result' };
       const odds = h2hOddsForFixture(h2hEvents, fx);
       if (odds) {
