@@ -15,7 +15,11 @@
 const { WC2026_FIXTURES, CODE_NAMES } = require('../api/_lib/fixtures.js');
 const { h2hOddsForFixture } = require('../api/_lib/odds-match.js');
 
-const SPORT = 'soccer_fifa_world_cup_2026';
+// The Odds API only serves "in-season" sports, under keys it controls (the
+// World Cup is NOT necessarily `soccer_fifa_world_cup_2026`). Rather than
+// hardcode a key that may 404 as "Unknown sport", we discover the live key at
+// runtime. An explicit ODDS_SPORT_KEY env var overrides discovery if ever needed.
+const SPORT_OVERRIDE = process.env.ODDS_SPORT_KEY || null;
 
 const teamName = code => CODE_NAMES[code] || code;
 function matchNameFor(fx) {
@@ -52,13 +56,36 @@ async function upsert(payload, resolution) {
   }
 }
 
+// Discover the live FIFA World Cup match-odds sport key. The /v4/sports list is
+// free (no quota cost). Prefer a World-Cup soccer sport that is NOT an outright
+// (has_outrights === false → match/h2h odds, not the tournament-winner market).
+async function resolveSportKey() {
+  if (SPORT_OVERRIDE) { console.log(`[odds] using ODDS_SPORT_KEY override: ${SPORT_OVERRIDE}`); return SPORT_OVERRIDE; }
+  const r = await fetch(`https://api.the-odds-api.com/v4/sports/?apiKey=${ODDS_API_KEY}`);
+  if (!r.ok) throw new Error(`Odds API sports list ${r.status}: ${await r.text().catch(() => '')}`);
+  const sports = await r.json();
+  const soccer = (Array.isArray(sports) ? sports : []).filter(s => /^soccer_/.test(s.key || ''));
+  console.log('[odds] in-season soccer sports:', soccer.map(s => s.key).join(', ') || '(none)');
+  const isWC = s => /world.?cup/i.test(`${s.key} ${s.title}`);
+  const wc = soccer.find(s => isWC(s) && s.has_outrights === false)
+         || soccer.find(s => isWC(s) && !/winner|outright/i.test(`${s.key} ${s.title}`))
+         || soccer.find(isWC);
+  return wc ? wc.key : null;
+}
+
 // Fetch the full h2h slate once and reuse it for every tournament — they all
 // share the same fixtures, so this is a single upstream call per run.
 async function fetchH2HEvents() {
+  const sport = await resolveSportKey();
+  if (!sport) {
+    console.warn('[odds] no in-season FIFA World Cup sport found on The Odds API — markets will be scaffolded without odds this run (lines open closer to kickoff)');
+    return [];
+  }
+  console.log(`[odds] using sport key: ${sport}`);
   const params = new URLSearchParams({
     apiKey: ODDS_API_KEY, regions: 'uk', oddsFormat: 'decimal', markets: 'h2h',
   });
-  const url = `https://api.the-odds-api.com/v4/sports/${SPORT}/odds/?${params}`;
+  const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?${params}`;
   const r = await fetch(url);
   const remaining = r.headers.get('x-requests-remaining');
   if (!r.ok) {
