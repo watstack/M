@@ -11,7 +11,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Derive the server-side (CommonJS) fixtures module from the browser sources of
 // truth (js/wc2026-fixtures.js + js/flag-colors.js) so the two never drift.
-{
+// Non-fatal: api/_lib/fixtures.js is committed, so a failure here must never
+// break the build (which would also drop js/config.js below).
+try {
   const sandbox = { module: { exports: {} } };
   sandbox.exports = sandbox.module.exports;
   createContext(sandbox);
@@ -31,6 +33,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
     `module.exports = ${JSON.stringify({ WC2026_FIXTURES, BRACKET_FEED, CODE_NAMES }, null, 2)};\n`;
   writeFileSync(join(__dirname, 'api', '_lib', 'fixtures.js'), out, 'utf8');
   console.log(`✓ api/_lib/fixtures.js generated (${WC2026_FIXTURES.length} fixtures, ${Object.keys(CODE_NAMES).length} names)`);
+} catch (e) {
+  console.warn('⚠  api/_lib/fixtures.js generation skipped (using committed copy):', e.message);
 }
 
 const url   = process.env.SUPABASE_URL        || '';
