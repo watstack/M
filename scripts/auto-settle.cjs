@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Auto-settle finished WC 2026 matches across all tournaments.
-// Runs every 15 min via .github/workflows/auto-settle.yml.
-// Syncs ESPN/FBD match data, then settles any closed bet_markets
+// Runs every hour via .github/workflows/auto-settle.yml.
+// Syncs ESPN/FBD match data, then settles any open/closed bet_markets
 // for matches finished ≥ 3 hours ago.
 
 const { fetchESPNMatches } = require('../api/_lib/espn.js');
@@ -39,17 +39,18 @@ async function main() {
   const synced = await syncMatches(rest);
   console.log(`[auto-settle] synced ${synced} matches`);
 
+  const now    = new Date().toISOString();
   const cutoff = new Date(Date.now() - THREE_HOURS_MS).toISOString();
   const [finRes, mkRes] = await Promise.all([
     rest(`/wc_matches?status=eq.FINISHED&utc_date=lt.${cutoff}&select=home_tla,away_tla,home_score,away_score`),
-    rest(`/bet_markets?status=eq.closed&select=id,tournament_id,match_no,market_type,stage,home_code,away_code`),
+    rest(`/bet_markets?status=in.(open,closed)&close_time=lte.${now}&select=id,tournament_id,match_no,market_type,stage,home_code,away_code`),
   ]);
   if (!finRes.ok) throw new Error(`wc_matches query ${finRes.status}`);
   if (!mkRes.ok)  throw new Error(`bet_markets query ${mkRes.status}`);
 
   const finished = await finRes.json();
   const markets  = await mkRes.json();
-  console.log(`[auto-settle] ${finished.length} finished matches, ${markets.length} closed markets`);
+  console.log(`[auto-settle] ${finished.length} finished matches, ${markets.length} unsettled markets`);
   if (!finished.length || !markets.length) return;
 
   // Index finished matches by "HOME_TLA-AWAY_TLA" for fast lookup.
