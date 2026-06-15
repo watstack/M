@@ -259,14 +259,17 @@
 
     /* ── All bets (community view) ── */
     .all-bets-filter {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+      display: flex; flex-wrap: nowrap; gap: 8px; margin-bottom: 16px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; padding-bottom: 4px;
     }
+    .all-bets-filter::-webkit-scrollbar { display: none; }
     .filter-pill {
-      display: flex; align-items: center; gap: 6px;
+      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
       background: var(--panel); border: 2px solid var(--border);
       border-radius: var(--radius); padding: 5px 10px; cursor: pointer;
       font-size: 0.82rem; font-weight: 700;
-      box-shadow: 2px 2px 0 rgba(0,0,0,.4);
+      box-shadow: 2px 2px 0 rgba(0,0,0,.4); white-space: nowrap;
     }
     .filter-pill.active { border-color: var(--green); background: rgba(255,106,31,.12); }
     .filter-pill:hover:not(.active) { border-color: var(--muted); }
