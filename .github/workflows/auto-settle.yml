@@ -1,12 +1,12 @@
 name: Auto-settle finished matches
 
-# Runs every 15 minutes. Syncs ESPN/FBD match results and settles any
-# bet_markets for matches finished ≥ 3 hours ago, across all tournaments.
+# Runs every hour. Syncs ESPN/FBD match results and settles any open or
+# closed bet_markets for matches finished ≥ 3 hours ago, across all tournaments.
 # Admin UI (/api/settle) remains available for manual overrides.
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '0 * * * *'
   workflow_dispatch: {}
 
 concurrency:
