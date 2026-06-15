@@ -229,7 +229,10 @@
 
     /* ── Highlights / Recap panel ── */
     #recapPanel { display: none; }
-    #recapPanel.show { display: flex; justify-content: center; padding-bottom: 40px; }
+    #recapPanel.show { display: flex; flex-direction: column; align-items: center; padding-bottom: 40px; }
+    #rc-close-bar { width:min(640px,100%); display:flex; justify-content:flex-end; padding:6px 0; }
+    #rc-close-btn { font-family:var(--rc-fp,monospace); font-size:0.38rem; color:var(--muted); background:none; border:1px solid #333; padding:6px 12px; cursor:pointer; letter-spacing:.05em; min-height:36px; }
+    #rc-close-btn:hover { color:var(--text); border-color:var(--muted); }
     #rc-wrap {
       --rc-blk:#0a0808; --rc-border:#3a1f3a; --rc-orange:#ff6a1f;
       --rc-red:#ff3b5c; --rc-gold:#ff9ad0; --rc-snd:#e8c97a;
@@ -307,6 +310,7 @@
       #recapPanel.show { padding-bottom:16px; }
       #rc-wrap { border-left:none;border-right:none; }
       .bracket-filter-btn { padding:7px 9px;font-size:0.36rem; }
+      #rc-skip { padding:14px 22px; }
     }
 
     /* ── Bracket state ── */
@@ -1136,6 +1140,9 @@
 
         <!-- Highlights / daily recap battle view -->
         <div id="recapPanel">
+          <div id="rc-close-bar">
+            <button id="rc-close-btn" onclick="setBracketFilter('current')">✕ CLOSE</button>
+          </div>
           <div id="rc-wrap">
             <div class="rc-sky"></div>
             <div class="rc-lights">
@@ -1166,6 +1173,7 @@
               <div class="rc-end-h">RECAP COMPLETE</div>
               <div class="rc-end-s" id="rc-end-s">ALL RESULTS SHOWN</div>
               <button class="rc-replay-btn" onclick="RC.replay()">▶ REPLAY</button>
+              <button class="rc-replay-btn" style="background:none;color:var(--muted);border-color:#444" onclick="setBracketFilter('current')">✕ CLOSE</button>
             </div>
 
             <div id="rc-hud">
