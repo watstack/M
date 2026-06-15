@@ -108,6 +108,7 @@ let drawDone                 = 0;
 let drawCurrentParticipantId = null;
 
 const code = new URLSearchParams(window.location.search).get('code') || '';
+const pidParam = new URLSearchParams(window.location.search).get('pid') || '';
 const adminToken = (() => {
   const h = window.location.hash;
   const m = h.match(/admin=([a-zA-Z0-9\-]+)/);
@@ -980,6 +981,10 @@ async function init() {
   setLoadingStatus('Loading participants…');
   try {
     myParticipantId = loadSession(code);
+    if (!myParticipantId && pidParam) {
+      myParticipantId = pidParam;
+      saveSession(code, pidParam);
+    }
 
     [allParticipants, allAllocations] = await withTimeout(Promise.all([
       getParticipants(tournament.id),
