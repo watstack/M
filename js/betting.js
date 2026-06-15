@@ -342,9 +342,9 @@ function renderAdminView(marketsByNo) {
 async function loadAllSettledBets(tournamentId) {
   const { data, error } = await db
     .from('bets')
-    .select('*, bet_markets(match_name, market_type, result, status, kickoff_time, match_no), participants(id, nickname, avatar_type)')
+    .select('*, bet_markets!inner(match_name, market_type, result, status, kickoff_time, match_no)')
     .eq('tournament_id', tournamentId)
-    .in('status', ['won', 'lost', 'void']);
+    .eq('bet_markets.status', 'settled');
   if (error) throw error;
   return (data || []).sort((a, b) => {
     const ta = a.bet_markets?.kickoff_time || '';
@@ -354,7 +354,7 @@ async function loadAllSettledBets(tournamentId) {
 }
 
 function renderAllBetRow(bet) {
-  const p = bet.participants || {};
+  const p = bet._participant || {};
   const mkt = bet.bet_markets || {};
   const statusClass = { won: 'won', lost: 'lost', void: 'void' }[bet.status] || 'pending';
   const payout = bet.status === 'won'

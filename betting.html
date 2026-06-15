@@ -259,18 +259,19 @@
 
     /* ── All bets (community view) ── */
     .all-bets-filter {
-      display: flex; flex-wrap: nowrap; gap: 8px; margin-bottom: 16px;
       overflow-x: auto; -webkit-overflow-scrolling: touch;
-      scrollbar-width: none; padding-bottom: 4px;
+      scrollbar-width: none; white-space: nowrap;
+      padding-bottom: 8px; margin-bottom: 16px;
     }
     .all-bets-filter::-webkit-scrollbar { display: none; }
     .filter-pill {
-      display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+      display: inline-flex; align-items: center; gap: 6px; vertical-align: middle;
       background: var(--panel); border: 2px solid var(--border);
       border-radius: var(--radius); padding: 5px 10px; cursor: pointer;
-      font-size: 0.82rem; font-weight: 700;
-      box-shadow: 2px 2px 0 rgba(0,0,0,.4); white-space: nowrap;
+      font-size: 0.82rem; font-weight: 700; white-space: nowrap;
+      box-shadow: 2px 2px 0 rgba(0,0,0,.4); margin-right: 8px;
     }
+    .filter-pill:last-child { margin-right: 0; }
     .filter-pill.active { border-color: var(--green); background: rgba(255,106,31,.12); }
     .filter-pill:hover:not(.active) { border-color: var(--muted); }
     .all-bet-user {
@@ -825,14 +826,16 @@ async function confirmBet() {
 async function loadAllBetsView() {
   document.getElementById('allBetsList').innerHTML = '<p class="my-bets-empty">Loading…</p>';
   try {
-    const [bets, { data: parts }] = await Promise.all([
+    const [bets, partsRes] = await Promise.all([
       loadAllSettledBets(_tournament.id),
       db.from('participants').select('id, nickname, avatar_type')
         .eq('tournament_id', _tournament.id)
         .order('created_at'),
     ]);
-    _allBets = bets;
-    _allBetsParticipants = parts || [];
+    const parts = partsRes.data || [];
+    const partMap = Object.fromEntries(parts.map(p => [p.id, p]));
+    _allBets = bets.map(b => ({ ...b, _participant: partMap[b.participant_id] || {} }));
+    _allBetsParticipants = parts;
     _allBetsFilterPid = null;
     renderAllBetsFilter();
     renderAllBetsList(null);
