@@ -42,7 +42,7 @@ async function main() {
   const cutoff = new Date(Date.now() - THREE_HOURS_MS).toISOString();
   const [finRes, mkRes] = await Promise.all([
     rest(`/wc_matches?status=eq.FINISHED&utc_date=lt.${cutoff}&select=home_tla,away_tla,home_score,away_score`),
-    rest(`/bet_markets?status=eq.closed&select=id,tournament_id,match_no,market_type,stage,home_code,away_code`),
+    rest(`/bet_markets?status=in.(open,closed)&select=id,tournament_id,match_no,market_type,stage,home_code,away_code`),
   ]);
   if (!finRes.ok) throw new Error(`wc_matches query ${finRes.status}`);
   if (!mkRes.ok)  throw new Error(`bet_markets query ${mkRes.status}`);

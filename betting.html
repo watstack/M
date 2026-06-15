@@ -662,18 +662,72 @@ function renderAdminPanel() {
   document.getElementById('adminList').innerHTML = renderAdminView(_marketsByNo);
 }
 
+function _adminTeamName(matchNo, which, code) {
+  if (code) return (typeof FLAG_COLORS !== 'undefined' && FLAG_COLORS[code]?.name) || code;
+  const fx = typeof FIXTURE_BY_NO !== 'undefined' && FIXTURE_BY_NO[matchNo];
+  const side = fx && fx[which];
+  return (side && (side.label || (side.code && ((typeof FLAG_COLORS !== 'undefined' && FLAG_COLORS[side.code]?.name) || side.code)))) || 'TBC';
+}
+
+async function _adminSetMatchTeams(tId, matchNo, codes) {
+  if (Object.keys(codes).length) {
+    await db.from('bet_markets').update(codes).eq('tournament_id', tId).eq('match_no', matchNo);
+  }
+  const { data: row } = await db.from('bet_markets')
+    .select('home_code,away_code').eq('tournament_id', tId).eq('match_no', matchNo)
+    .eq('market_type', 'match_result').maybeSingle();
+  if (!row) return;
+  const both = !!(row.home_code && row.away_code);
+  const match_name = `${_adminTeamName(matchNo, 'home', row.home_code)} vs ${_adminTeamName(matchNo, 'away', row.away_code)}`;
+  await db.from('bet_markets').update({ locked: !both, match_name }).eq('tournament_id', tId).eq('match_no', matchNo);
+}
+
 async function adminSettle(matchNo) {
   const hs = parseInt(document.getElementById(`adm-hs-${matchNo}`).value, 10);
   const as = parseInt(document.getElementById(`adm-as-${matchNo}`).value, 10);
   if (Number.isNaN(hs) || Number.isNaN(as)) { showToast('Enter both scores'); return; }
-  const winSel = document.getElementById(`adm-win-${matchNo}`);
-  const body = { code, adminToken: _adminToken, matchNo, homeScore: hs, awayScore: as };
-  if (winSel && winSel.value !== 'auto') body.winner = winSel.value;
+  if (!db || !_tournament) { showToast('Not initialised'); return; }
   try {
-    const r = await fetch('/api/settle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.error || 'Settle failed');
-    showToast(`Settled #${matchNo}: ${j.settled} market(s)${j.propagated && j.propagated.length ? `, advanced ${j.propagated.join(',')}` : ''}`);
+    const tId = _tournament.id;
+    const { data: markets, error: mErr } = await db.from('bet_markets')
+      .select('id,market_type,stage,home_code,away_code')
+      .eq('tournament_id', tId).eq('match_no', matchNo).neq('status', 'settled');
+    if (mErr) throw new Error(mErr.message);
+    if (!markets?.length) { showToast(`#${matchNo}: no open markets`); return; }
+
+    const matchResult  = hs > as ? 'home' : as > hs ? 'away' : 'draw';
+    const correctScore = `${hs}-${as}`;
+    let settled = 0;
+    for (const m of markets) {
+      const result = m.market_type === 'correct_score' ? correctScore : matchResult;
+      const { error } = await db.rpc('settle_market', { p_market_id: m.id, p_result: result });
+      if (!error) settled++;
+    }
+
+    const any = markets[0];
+    const isKo = any.stage && any.stage !== 'group';
+    const propagated = [];
+    if (isKo && any.home_code && any.away_code) {
+      const winSel = document.getElementById(`adm-win-${matchNo}`);
+      const advSide = (winSel && winSel.value !== 'auto') ? winSel.value : (hs > as ? 'home' : as > hs ? 'away' : null);
+      if (advSide) {
+        const winnerCode = advSide === 'home' ? any.home_code : any.away_code;
+        const loserCode  = advSide === 'home' ? any.away_code : any.home_code;
+        for (const [ds, [homeSlot, awaySlot]] of Object.entries(BRACKET_FEED)) {
+          const codes = {};
+          if (homeSlot === `W${matchNo}`) codes.home_code = winnerCode;
+          if (awaySlot === `W${matchNo}`) codes.away_code = winnerCode;
+          if (homeSlot === `L${matchNo}`) codes.home_code = loserCode;
+          if (awaySlot === `L${matchNo}`) codes.away_code = loserCode;
+          if (Object.keys(codes).length) {
+            await _adminSetMatchTeams(tId, Number(ds), codes);
+            propagated.push(Number(ds));
+          }
+        }
+      }
+    }
+
+    showToast(`Settled #${matchNo}: ${settled} market(s)${propagated.length ? `, advanced ${propagated.join(',')}` : ''}`);
     await loadMarketsView();
     renderAdminPanel();
   } catch (e) { showToast(e.message); }
@@ -683,13 +737,12 @@ async function adminResolve(matchNo) {
   const hc = document.getElementById(`adm-hc-${matchNo}`).value.trim().toUpperCase();
   const ac = document.getElementById(`adm-ac-${matchNo}`).value.trim().toUpperCase();
   if (!hc && !ac) { showToast('Enter at least one team code'); return; }
-  const body = { code, adminToken: _adminToken, matchNo };
-  if (hc) body.homeCode = hc;
-  if (ac) body.awayCode = ac;
+  if (!db || !_tournament) { showToast('Not initialised'); return; }
   try {
-    const r = await fetch('/api/resolve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.error || 'Resolve failed');
+    const codes = {};
+    if (hc) codes.home_code = hc;
+    if (ac) codes.away_code = ac;
+    await _adminSetMatchTeams(_tournament.id, matchNo, codes);
     showToast(`Resolved #${matchNo}`);
     await loadMarketsView();
     renderAdminPanel();
