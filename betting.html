@@ -257,6 +257,25 @@
     .my-bet-payout { font-family: var(--font-mono); font-size: 0.85rem; }
     .my-bets-empty { color: var(--muted); text-align: center; padding: 40px 0; font-size: 0.9rem; }
 
+    /* ── All bets (community view) ── */
+    .all-bets-filter {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+    }
+    .filter-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--panel); border: 2px solid var(--border);
+      border-radius: var(--radius); padding: 5px 10px; cursor: pointer;
+      font-size: 0.82rem; font-weight: 700;
+      box-shadow: 2px 2px 0 rgba(0,0,0,.4);
+    }
+    .filter-pill.active { border-color: var(--green); background: rgba(255,106,31,.12); }
+    .filter-pill:hover:not(.active) { border-color: var(--muted); }
+    .all-bet-user {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 6px;
+    }
+    .all-bet-nick { font-size: 0.82rem; font-weight: 700; color: var(--muted); }
+
     /* ── Admin settle/resolve ── */
     .admin-hint { color: var(--muted); font-size: 0.82rem; margin-bottom: 14px; line-height: 1.5; }
     .admin-list { display: flex; flex-direction: column; gap: 6px; }
@@ -440,6 +459,7 @@
   <div class="bet-tabs">
     <button class="bet-tab active" id="tabMarkets" onclick="showTab('markets')">Upcoming</button>
     <button class="bet-tab" id="tabMyBets" onclick="showTab('mybets')">My Bets</button>
+    <button class="bet-tab" id="tabAllBets" onclick="showTab('allbets')">All Bets</button>
     <button class="bet-tab" id="tabAdmin" onclick="showTab('admin')" style="display:none">⚙ Admin</button>
   </div>
 
@@ -456,6 +476,12 @@
   <!-- My bets -->
   <div id="panelMyBets" style="display:none">
     <div id="myBetsList" class="my-bets-list"></div>
+  </div>
+
+  <!-- All settled bets (community view) -->
+  <div id="panelAllBets" style="display:none">
+    <div id="allBetsFilter" class="all-bets-filter"></div>
+    <div id="allBetsList" class="my-bets-list"></div>
   </div>
 
   <!-- Admin: settle / resolve (only shown when an admin token is present) -->
@@ -512,6 +538,9 @@ let _currentTab = 'markets';
 let _balanceSub = null;
 let _adminToken = null;
 let _marketsByNo = {};
+let _allBets = [];
+let _allBetsFilterPid = null;
+let _allBetsParticipants = [];
 
 try {
   if (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL && window.supabase) {
@@ -648,14 +677,17 @@ async function loadMyBetsView() {
 
 function showTab(tab) {
   _currentTab = tab;
-  document.getElementById('panelMarkets').style.display = tab === 'markets' ? 'block' : 'none';
-  document.getElementById('panelMyBets').style.display  = tab === 'mybets'  ? 'block' : 'none';
-  document.getElementById('panelAdmin').style.display   = tab === 'admin'   ? 'block' : 'none';
+  document.getElementById('panelMarkets').style.display  = tab === 'markets'  ? 'block' : 'none';
+  document.getElementById('panelMyBets').style.display   = tab === 'mybets'   ? 'block' : 'none';
+  document.getElementById('panelAllBets').style.display  = tab === 'allbets'  ? 'block' : 'none';
+  document.getElementById('panelAdmin').style.display    = tab === 'admin'    ? 'block' : 'none';
   document.getElementById('tabMarkets').classList.toggle('active', tab === 'markets');
   document.getElementById('tabMyBets').classList.toggle('active', tab === 'mybets');
+  document.getElementById('tabAllBets').classList.toggle('active', tab === 'allbets');
   document.getElementById('tabAdmin').classList.toggle('active', tab === 'admin');
-  if (tab === 'mybets') loadMyBetsView();
-  if (tab === 'admin')  renderAdminPanel();
+  if (tab === 'mybets')  loadMyBetsView();
+  if (tab === 'allbets') loadAllBetsView();
+  if (tab === 'admin')   renderAdminPanel();
 }
 
 function renderAdminPanel() {
@@ -783,6 +815,58 @@ async function confirmBet() {
     btn.disabled = false;
     btn.textContent = 'Place Bet';
   }
+}
+
+// ── All Bets (community view) ─────────────────────────────────────────────────
+
+async function loadAllBetsView() {
+  document.getElementById('allBetsList').innerHTML = '<p class="my-bets-empty">Loading…</p>';
+  try {
+    const [bets, { data: parts }] = await Promise.all([
+      loadAllSettledBets(_tournament.id),
+      db.from('participants').select('id, nickname, avatar_type')
+        .eq('tournament_id', _tournament.id)
+        .order('created_at'),
+    ]);
+    _allBets = bets;
+    _allBetsParticipants = parts || [];
+    _allBetsFilterPid = null;
+    renderAllBetsFilter();
+    renderAllBetsList(null);
+  } catch (e) {
+    document.getElementById('allBetsList').innerHTML = '<p class="my-bets-empty">Failed to load bets</p>';
+    console.error('[allbets]', e);
+  }
+}
+
+function renderAllBetsFilter() {
+  const el = document.getElementById('allBetsFilter');
+  const pills = [
+    `<button class="filter-pill active" onclick="filterAllBets(null, this)">All</button>`,
+    ..._allBetsParticipants.map(p =>
+      `<button class="filter-pill" onclick="filterAllBets('${p.id}', this)">
+        ${renderAvatar(p.avatar_type, null, 20)} ${escapeHtml(p.nickname)}
+      </button>`
+    ),
+  ];
+  el.innerHTML = pills.join('');
+}
+
+function filterAllBets(pid, btn) {
+  _allBetsFilterPid = pid;
+  document.querySelectorAll('#allBetsFilter .filter-pill').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderAllBetsList(pid);
+}
+
+function renderAllBetsList(pid) {
+  const el = document.getElementById('allBetsList');
+  const filtered = pid ? _allBets.filter(b => b.participant_id === pid) : _allBets;
+  if (!filtered.length) {
+    el.innerHTML = '<p class="my-bets-empty">No settled bets yet</p>';
+    return;
+  }
+  el.innerHTML = filtered.map(renderAllBetRow).join('');
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────

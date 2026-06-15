@@ -337,6 +337,49 @@ function renderAdminView(marketsByNo) {
   }).join('');
 }
 
+// ─── All settled bets (community view) ───────────────────────────────────────
+
+async function loadAllSettledBets(tournamentId) {
+  const { data, error } = await db
+    .from('bets')
+    .select('*, bet_markets(match_name, market_type, result, status, kickoff_time, match_no), participants(id, nickname, avatar_type)')
+    .eq('tournament_id', tournamentId)
+    .in('status', ['won', 'lost', 'void']);
+  if (error) throw error;
+  return (data || []).sort((a, b) => {
+    const ta = a.bet_markets?.kickoff_time || '';
+    const tb = b.bet_markets?.kickoff_time || '';
+    return ta < tb ? -1 : ta > tb ? 1 : 0;
+  });
+}
+
+function renderAllBetRow(bet) {
+  const p = bet.participants || {};
+  const mkt = bet.bet_markets || {};
+  const statusClass = { won: 'won', lost: 'lost', void: 'void' }[bet.status] || 'pending';
+  const payout = bet.status === 'won'
+    ? `+${bet.potential_payout} 🪙`
+    : bet.status === 'lost'
+    ? `-${bet.stake} 🪙`
+    : `${bet.potential_payout} 🪙`;
+  return `<div class="my-bet-row all-bet-row">
+    <div class="all-bet-user">
+      ${renderAvatar(p.avatar_type, null, 28)}
+      <span class="all-bet-nick">${escapeHtml(p.nickname || '?')}</span>
+    </div>
+    <div class="my-bet-match">${escapeHtml(mkt.match_name || '')}</div>
+    <div class="my-bet-detail">
+      <span class="my-bet-selection">${escapeHtml(bet.selection)}</span>
+      <span class="my-bet-odds">${bet.odds}x</span>
+      <span class="my-bet-stake">${bet.stake} 🪙</span>
+    </div>
+    <div class="my-bet-result">
+      <span class="bet-status ${statusClass}">${bet.status}</span>
+      <span class="my-bet-payout">${payout}</span>
+    </div>
+  </div>`;
+}
+
 function renderMyBetRow(bet) {
   const statusClass = { won: 'won', lost: 'lost', void: 'void', pending: 'pending' }[bet.status] || 'pending';
   const payout = bet.status === 'won' ? `+${bet.potential_payout} 🪙` : bet.status === 'lost' ? `-${bet.stake} 🪙` : `${bet.potential_payout} 🪙 if wins`;
