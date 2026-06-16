@@ -100,11 +100,9 @@
     }
     .market-card-header {
       display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 10px;
+      flex-direction: column;
+      gap: 6px;
       padding: 14px 16px 10px;
-      flex-wrap: wrap;
     }
     .match-name {
       font-weight: 700;
@@ -147,13 +145,12 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      flex-wrap: wrap;
-      flex: 1;
       min-width: 0;
+      overflow: hidden;
     }
-    .team-side { display: flex; align-items: center; gap: 6px; min-width: 0; }
-    .team-flag { font-size: 1.15rem; line-height: 1; }
-    .team-name { font-weight: 700; font-size: 0.95rem; }
+    .team-side { display: flex; align-items: center; gap: 6px; min-width: 0; overflow: hidden; }
+    .team-flag { font-size: 1.15rem; line-height: 1; flex-shrink: 0; }
+    .team-name { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .team-name.tbc { color: var(--muted); font-weight: 400; font-style: italic; font-size: 0.82rem; }
     .vs { font-family: var(--font-pixel); font-size: 0.32rem; color: var(--muted); }
     .market-card.locked { opacity: .82; }
