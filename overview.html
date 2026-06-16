@@ -84,6 +84,8 @@
     }
     .fix-card.live-card  { border-color: var(--live-pulse); }
     .fix-card.my-card    { border-color: var(--gold); }
+    .fix-card.past-card  { opacity: 0.55; }
+    .fix-card-time.ft    { color: var(--muted); font-size: 0.6rem; }
     .fix-card-teams {
       display: flex; justify-content: space-between; align-items: center;
       font-size: 1.1rem; line-height: 1;
@@ -138,7 +140,7 @@
     }
 
     .hub-teams {
-      display: flex; flex-wrap: wrap; gap: 6px; padding: 14px 16px 0;
+      display: flex; flex-wrap: wrap; gap: 6px; padding: 14px 16px;
     }
     .hub-teams:empty { display: none; }
 
@@ -153,7 +155,7 @@
     .hub-go-btn-gold { color: var(--gold); border-color: rgba(255,154,60,.35); }
     .hub-go-btn-gold:hover { background: var(--gold); color: #0a0805; }
 
-    .hub-bet-stats { padding: 10px 16px 0; }
+    .hub-bet-stats { padding: 10px 16px; }
     .hub-bet-stat-row {
       display: flex; align-items: center; gap: 10px;
       padding: 7px 0; border-bottom: 1px solid var(--border);
@@ -321,8 +323,6 @@
           <a id="ovBracketTopBtn" href="#" class="hub-go-btn">Bracket →</a>
         </div>
         <div class="hub-teams" id="ovTeams"></div>
-        <div class="hub-list-label">Next match</div>
-        <div class="hub-list" id="ovSweepMatches"></div>
       </div>
 
       <!-- Betting hub card -->
@@ -338,8 +338,6 @@
           </a>
         </div>
         <div class="hub-bet-stats" id="ovBetStats"></div>
-        <div class="hub-list-label" id="ovBetListLabel">Next up</div>
-        <div class="hub-list" id="ovBetMatches"></div>
       </div>
     </div>
   </div>
