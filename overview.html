@@ -65,84 +65,38 @@
       border-radius: var(--radius);
     }
 
-    /* ── Hero: next kickoff ── */
-    .nm-card {
-      position: relative;
-      background:
-        radial-gradient(120% 90% at 50% -10%, rgba(255,106,31,.16), transparent 60%),
-        var(--mid);
-      border: 3px solid #3a1f3a;
-      border-radius: var(--radius);
-      padding: 16px 18px 14px;
+    /* ── Fixture carousel ── */
+    .fix-carousel-wrap {
+      margin: 0 -20px;
+      padding: 14px 20px 0;
+      border-bottom: 1px solid var(--border);
       margin-bottom: 16px;
-      overflow: hidden;
-      box-shadow:
-        inset 2px 2px 0 rgba(255,255,255,.06),
-        inset -3px -3px 0 rgba(0,0,0,.5),
-        6px 6px 0 rgba(0,0,0,.5);
     }
-    .nm-card::before {
-      content: ""; position: absolute; top: -3px; left: 16px;
-      width: 46px; height: 6px; background: var(--grad-duotone);
+    .fix-carousel {
+      display: flex; gap: 10px; overflow-x: auto; padding-bottom: 14px;
+      scrollbar-width: none;
     }
-    .nm-top {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 8px; margin-bottom: 14px;
+    .fix-carousel::-webkit-scrollbar { display: none; }
+    .fix-card {
+      flex-shrink: 0; width: 108px; background: var(--mid);
+      border: 2px solid var(--border); border-radius: var(--radius);
+      padding: 10px 10px 8px; display: flex; flex-direction: column; gap: 5px;
     }
-    .nm-eyebrow {
-      font-family: var(--font-pixel); font-size: 0.5rem; letter-spacing: .07em;
-      color: var(--gold); text-transform: uppercase;
-      display: inline-flex; align-items: center; gap: 6px;
+    .fix-card.live-card  { border-color: var(--live-pulse); }
+    .fix-card.my-card    { border-color: var(--gold); }
+    .fix-card-teams {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 1.1rem; line-height: 1;
     }
-    .nm-eyebrow.live { color: var(--live-pulse); }
-    .nm-eyebrow.live::before {
-      content: ""; width: 8px; height: 8px; border-radius: 50%;
-      background: var(--live-pulse); animation: pulse-dot 1.1s ease-in-out infinite;
+    .fix-card-score {
+      font-family: var(--font-pixel); font-size: 0.58rem; color: var(--text);
+      text-align: center; letter-spacing: .05em; line-height: 1.3;
     }
-    .nm-stage {
-      font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted);
-      text-align: right;
+    .fix-card-score.live { color: var(--live-pulse); }
+    .fix-card-time {
+      font-family: var(--font-mono); font-size: 0.62rem; color: var(--muted);
+      text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .nm-body {
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 6px;
-    }
-    .nm-side {
-      flex: 1; min-width: 0; display: flex; flex-direction: column;
-      align-items: center; gap: 8px; padding-top: 4px;
-    }
-    .nm-flag { font-size: 2.5rem; line-height: 1; }
-    .nm-team {
-      font-family: var(--font-display); font-weight: 800; font-size: 0.92rem;
-      text-transform: uppercase; letter-spacing: .03em; text-align: center;
-      max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    }
-    .nm-center {
-      flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
-      gap: 6px; padding: 6px 4px 0;
-    }
-    .nm-countdown {
-      font-family: var(--font-pixel); font-size: clamp(0.78rem, 3.4vw, 1.05rem);
-      color: var(--text); letter-spacing: .02em; line-height: 1; white-space: nowrap;
-      text-shadow: 2px 2px 0 var(--pixel-black);
-    }
-    .nm-countdown.live { color: var(--live-pulse); }
-    .nm-vs {
-      font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: .18em;
-      color: var(--muted);
-    }
-    .nm-foot {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 12px;
-      border-top: 1px solid var(--border);
-    }
-    .nm-when { font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); }
-    .nm-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-    .nm-tag {
-      font-size: 0.64rem; font-weight: 700; padding: 3px 8px; border-radius: 10px;
-      text-transform: uppercase; letter-spacing: .04em;
-    }
-    .nm-tag.team { color: var(--green-lt); background: rgba(255,106,31,.14); }
-    .nm-tag.bet  { color: var(--gold);     background: rgba(255,154,208,.14); }
 
     /* ── Hub cards ── */
     .hub-card {
@@ -188,25 +142,34 @@
     }
     .hub-teams:empty { display: none; }
 
-    .hub-betbar {
-      display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px;
-      padding: 14px 16px 0; font-family: var(--font-mono); font-size: 0.78rem;
-      color: var(--muted);
+    .hub-go-btn {
+      font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700;
+      color: var(--text); background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; padding: 4px 10px; white-space: nowrap;
+      flex-shrink: 0; text-decoration: none;
+      transition: background .12s, color .12s;
     }
-    .hub-betbar:empty { display: none; }
-    .hub-betbar b { color: var(--text); font-weight: 700; }
-    .hub-form { display: inline-flex; align-items: center; gap: 4px; }
-    .hub-form-dot {
-      width: 16px; height: 16px; border-radius: 4px; font-size: 0.58rem;
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; color: #0a0805; font-family: var(--font-body);
+    .hub-go-btn:hover { background: var(--gold); color: #0a0805; }
+    .hub-go-btn-gold { color: var(--gold); border-color: rgba(255,154,60,.35); }
+    .hub-go-btn-gold:hover { background: var(--gold); color: #0a0805; }
+
+    .hub-bet-stats { padding: 10px 16px 0; }
+    .hub-bet-stat-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 0; border-bottom: 1px solid var(--border);
+      font-family: var(--font-mono);
     }
-    .hub-form-dot.w { background: var(--pixel-green); }
-    .hub-form-dot.l { background: var(--red); }
+    .hub-bet-stat-row:last-child { border-bottom: none; }
+    .hub-bet-stat-label { flex: 1; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .hub-bet-stat-val   { font-size: 0.76rem; color: var(--text); font-weight: 700; }
+    .hub-bet-stat-pill  { font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 8px; }
+    .hub-bet-stat-pill.pending { background: rgba(255,154,60,.18);  color: var(--gold); }
+    .hub-bet-stat-pill.won     { background: rgba(80,200,120,.18);  color: var(--pixel-green); }
+    .hub-bet-stat-pill.lost    { background: rgba(220,60,60,.18);   color: var(--red); }
 
     .hub-list-label {
       font-family: var(--font-pixel); font-size: 0.42rem; color: var(--muted);
-      letter-spacing: .1em; text-transform: uppercase; padding: 14px 16px 4px;
+      letter-spacing: .1em; text-transform: uppercase; padding: 12px 16px 4px;
     }
     .hub-list { padding: 0 16px; }
 
@@ -242,14 +205,7 @@
       font-family: var(--font-mono);
     }
 
-    .hub-cta-wrap { padding: 16px 16px 0; }
-
     .ov-loading { padding: 16px; font-size: 0.85rem; color: var(--muted); }
-
-    @media (max-width: 420px) {
-      .nm-flag { font-size: 2.1rem; }
-      .nm-team { font-size: 0.82rem; }
-    }
   </style>
 </head>
 <body>
@@ -342,74 +298,48 @@
 
   <!-- Overview dashboard (joined + live) -->
   <div class="ov-state" id="stateOverview">
+
+    <!-- Fixture carousel — full-bleed under site header -->
+    <div class="fix-carousel-wrap">
+      <div class="fix-carousel" id="ovFixCarousel"></div>
+    </div>
+
     <div class="ov-wrap">
       <div class="ov-header">
         <h1 class="ov-title" id="ovTourneyName"></h1>
         <span class="ov-code-badge" id="ovCode"></span>
       </div>
 
-      <!-- Hero: the very next match to kick off, tournament-wide -->
-      <div class="nm-card" id="ovNextMatch" hidden>
-        <div class="nm-top">
-          <span class="nm-eyebrow" id="nmEyebrow">⚡ Next kickoff</span>
-          <span class="nm-stage" id="nmStage"></span>
-        </div>
-        <div class="nm-body">
-          <div class="nm-side">
-            <span class="nm-flag" id="nmHomeFlag"></span>
-            <span class="nm-team" id="nmHomeName"></span>
-          </div>
-          <div class="nm-center">
-            <span class="nm-countdown" id="nmCountdown">--:--:--</span>
-            <span class="nm-vs">VS</span>
-          </div>
-          <div class="nm-side">
-            <span class="nm-flag" id="nmAwayFlag"></span>
-            <span class="nm-team" id="nmAwayName"></span>
-          </div>
-        </div>
-        <div class="nm-foot">
-          <span class="nm-when" id="nmWhen"></span>
-          <span class="nm-tags" id="nmTags"></span>
-        </div>
-      </div>
-
       <!-- Sweepstake hub card -->
       <div class="hub-card hub-sweep">
-        <a class="hub-head" id="ovBracketLink" href="#">
+        <div class="hub-head">
           <span class="hub-icon">🏆</span>
           <span class="hub-titles">
             <span class="hub-kicker">Sweepstake</span>
             <span class="hub-sub">Your teams &amp; the bracket</span>
           </span>
-          <span class="hub-stat" id="ovRank">—</span>
-          <span class="hub-go">›</span>
-        </a>
-        <div class="hub-teams" id="ovTeams"></div>
-        <div class="hub-list-label">Your upcoming matches</div>
-        <div class="hub-list" id="ovSweepMatches"></div>
-        <div class="hub-cta-wrap">
-          <a id="ovBracketBtn" href="#" class="btn btn-full">Go to bracket →</a>
+          <a id="ovBracketTopBtn" href="#" class="hub-go-btn">Bracket →</a>
         </div>
+        <div class="hub-teams" id="ovTeams"></div>
+        <div class="hub-list-label">Next match</div>
+        <div class="hub-list" id="ovSweepMatches"></div>
       </div>
 
       <!-- Betting hub card -->
       <div class="hub-card hub-bet">
-        <a class="hub-head" id="ovBetLink" href="#">
+        <div class="hub-head">
           <span class="hub-icon hub-icon-bet">⚡</span>
           <span class="hub-titles">
             <span class="hub-kicker">Betting</span>
             <span class="hub-sub">Markets &amp; your bets</span>
           </span>
-          <span class="hub-stat hub-stat-coin" id="ovBalance">—</span>
-          <span class="hub-go">›</span>
-        </a>
-        <div class="hub-betbar" id="ovBetBar"></div>
-        <div class="hub-list-label" id="ovBetListLabel">Your open bets</div>
-        <div class="hub-list" id="ovBetMatches"></div>
-        <div class="hub-cta-wrap">
-          <a id="ovBetBtn" href="#" class="btn btn-full btn-gold">Go to betting ⚡</a>
+          <a id="ovBetTopBtn" href="#" class="hub-go-btn hub-go-btn-gold">
+            <span id="ovBalance">—</span> · ⚡ Bet
+          </a>
         </div>
+        <div class="hub-bet-stats" id="ovBetStats"></div>
+        <div class="hub-list-label" id="ovBetListLabel">Next up</div>
+        <div class="hub-list" id="ovBetMatches"></div>
       </div>
     </div>
   </div>
