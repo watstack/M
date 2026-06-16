@@ -68,30 +68,59 @@
       color: var(--muted);
     }
 
-    /* ── Bracket filter ── */
-    .bracket-filter {
+    /* ── Bracket page header & tabs (mirrors betting.html) ── */
+    .bet-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 0 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .bet-back {
+      font-family: var(--font-pixel);
+      font-size: 0.42rem;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 8px 12px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 2px 2px 0 rgba(0,0,0,.5);
+    }
+    .bet-back:hover { color: var(--text); }
+    .bet-title {
+      font-family: var(--font-pixel);
+      font-size: 0.55rem;
+      flex: 1;
+      text-align: center;
+    }
+    .bet-participant {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+    }
+    .bet-tabs {
       display: flex;
       gap: 8px;
       margin-bottom: 16px;
       flex-wrap: wrap;
     }
-    .bracket-filter-btn {
+    .bet-tab {
       background: var(--panel);
-      border: 2px solid #2c3e54;
-      border-radius: var(--radius);
+      border: 2px solid var(--border);
       color: var(--muted);
       font-family: var(--font-pixel);
       font-size: 0.42rem;
       padding: 8px 14px;
+      border-radius: var(--radius);
       cursor: pointer;
       box-shadow: 3px 3px 0 rgba(0,0,0,.6);
-      transition: transform .08s, box-shadow .08s;
     }
-    .bracket-filter-btn:hover { transform: translate(1px,1px); box-shadow: 2px 2px 0 rgba(0,0,0,.6); color: var(--text); }
-    .bracket-filter-btn.active {
-      background: var(--green); border-color: var(--green);
-      color: #0a0805; box-shadow: 2px 2px 0 rgba(0,0,0,.5);
-    }
+    .bet-tab.active { background: var(--green); border-color: var(--green); color: #0a0805; box-shadow: 2px 2px 0 rgba(0,0,0,.5); }
+    .bet-tab:hover:not(.active) { color: var(--text); }
 
     /* ── Players grid view ── */
     #playerView { display: none; padding-bottom: 40px; }
@@ -797,45 +826,6 @@
       min-width: 0;
       padding-right: 0;
     }
-    @media (min-width: 1024px) {
-      .live-tabs { display: none !important; }
-    }
-
-    /* ── Mobile live tabs ── */
-    .live-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    .live-tab {
-      background: var(--panel);
-      border: 2px solid var(--border);
-      color: var(--muted);
-      font-family: var(--font-pixel);
-      font-size: 0.38rem;
-      padding: 8px 12px;
-      border-radius: var(--radius);
-      cursor: pointer;
-      box-shadow: 2px 2px 0 rgba(0,0,0,.5);
-      text-decoration: none;
-      display: inline-block;
-    }
-    .live-tab.live-tab-active { background: var(--green); border-color: var(--green); color: #0a0805; box-shadow: 1px 1px 0 rgba(0,0,0,.5); }
-    .live-tab:hover:not(.live-tab-active) { color: var(--text); }
-    /* Bet & Leaderboard link in bracket header (desktop only) */
-    .bet-link-header {
-      font-family: var(--font-pixel);
-      font-size: 0.32rem;
-      color: var(--green);
-      text-decoration: none;
-      padding: 6px 12px;
-      border: 2px solid var(--green);
-      border-radius: var(--radius);
-      box-shadow: 2px 2px 0 rgba(0,0,0,.4);
-      display: none;
-    }
-    @media (min-width: 1024px) { .bet-link-header { display: inline-block; } }
-    .bet-link-header:hover { background: rgba(60,176,74,.1); }
   </style>
 </head>
 <body>
@@ -1018,34 +1008,33 @@
   <!-- STATE 4: Live bracket -->
   <div class="state" id="stateBracket">
 
-    <!-- Mobile tab bar (hidden on desktop via CSS) -->
-    <div class="live-tabs">
-      <button class="live-tab live-tab-active" id="ltBracket">Bracket</button>
-      <a class="live-tab" id="ltBet" href="#">Bet &amp; Leaderboard ⚡</a>
+    <!-- Header (mirrors betting.html) -->
+    <div class="bet-header">
+      <a id="bracketBetLink" href="#" class="bet-back">Betting ⚡</a>
+      <span class="bet-title">Bracket</span>
+      <div id="bracketFlags" style="display:flex;gap:4px;align-items:center;flex-wrap:wrap"></div>
+      <div class="bet-participant" id="bracketParticipant" style="display:none">
+        <span id="bracketAvatar"></span>
+        <span id="bracketNickname"></span>
+      </div>
     </div>
 
     <div class="live-layout">
       <!-- Bracket column -->
       <div class="live-bracket-col" id="liveBracketPanel">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-          <h1 id="bracketTourneyName" style="flex:1"></h1>
-          <a id="betLinkDesktop" href="#" class="bet-link-header">Bet &amp; Leaderboard ⚡</a>
-          <span id="bracketLiveTag" style="display:none">
-            <span class="live-badge"><span class="live-dot"></span>Live</span>
-          </span>
+
+        <!-- Tabs (mirrors bet-tabs) -->
+        <div class="bet-tabs" id="bracketFilter">
+          <button class="bet-tab bracket-filter-btn active" data-filter="current" onclick="setBracketFilter('current')">Current Stage</button>
+          <button class="bet-tab bracket-filter-btn" data-filter="all" onclick="setBracketFilter('all')">All</button>
+          <button class="bet-tab bracket-filter-btn" data-filter="players" onclick="setBracketFilter('players')">Players</button>
+          <button class="bet-tab bracket-filter-btn" data-filter="highlights" onclick="setBracketFilter('highlights')">Highlights</button>
         </div>
 
+        <!-- Your teams (persistent below tabs) -->
         <div id="myTeamsPanel" class="my-teams" style="display:none">
           <h3>Your teams</h3>
           <div class="my-team-cards" id="myTeamCards"></div>
-        </div>
-
-        <!-- Bracket filter -->
-        <div class="bracket-filter" id="bracketFilter">
-          <button class="bracket-filter-btn active" data-filter="current" onclick="setBracketFilter('current')">Current stage</button>
-          <button class="bracket-filter-btn" data-filter="all" onclick="setBracketFilter('all')">All</button>
-          <button class="bracket-filter-btn" data-filter="players" onclick="setBracketFilter('players')">Players</button>
-          <button class="bracket-filter-btn" data-filter="highlights" onclick="setBracketFilter('highlights')">Highlights</button>
         </div>
 
         <!-- Full bracket tree (groups → knockout → final) -->
@@ -1939,13 +1928,16 @@ function renderBracketState() {
   document.getElementById('stateBracket').classList.add('active');
   document.body.className = '';
   Music.play('mortal');
-  document.getElementById('bracketTourneyName').textContent = tournament.name;
-
   if (isAdmin) {
     const reopenEl = document.getElementById('reopenBtn');
     reopenEl.style.display = 'inline-flex';
     reopenEl.onclick = handleReopen;
   }
+
+  // Wire up betting link in header
+  const betUrl = `betting.html?code=${tournament.code}`;
+  const bracketBetLink = document.getElementById('bracketBetLink');
+  if (bracketBetLink) bracketBetLink.href = betUrl;
 
   if (myParticipantId) {
     const myTeams = allAllocations.filter(a => a.participant_id === myParticipantId);
@@ -1960,6 +1952,21 @@ function renderBracketState() {
         </div>`;
       }).join('');
     }
+
+    // Populate header: avatar, nickname, team flags
+    const me = allParticipants.find(p => p.id === myParticipantId);
+    if (me) {
+      document.getElementById('bracketAvatar').innerHTML = renderAvatar(me.avatar_type, null, 28);
+      document.getElementById('bracketNickname').textContent = me.nickname;
+      document.getElementById('bracketParticipant').style.display = 'flex';
+    }
+    const flagsEl = document.getElementById('bracketFlags');
+    if (flagsEl) {
+      const myTeams2 = allAllocations.filter(a => a.participant_id === myParticipantId);
+      flagsEl.innerHTML = myTeams2.map(a =>
+        `<span style="font-size:1.2rem">${teamFlagEmoji(a.team_code)}</span>`
+      ).join('');
+    }
   }
 
   _bracketFilter = 'current';
@@ -1968,13 +1975,6 @@ function renderBracketState() {
   document.getElementById('recapPanel').classList.remove('show');
   document.querySelector('.bracket-zoom-outer').style.display = '';
   document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'current'));
-
-  // Wire up betting links
-  const betUrl = `betting.html?code=${tournament.code}`;
-  const ldDesktop = document.getElementById('betLinkDesktop');
-  const ltBet     = document.getElementById('ltBet');
-  if (ldDesktop) ldDesktop.href = betUrl;
-  if (ltBet)     ltBet.href     = betUrl;
 
   loadBracketData().then(() => setTimeout(BracketZoom.fit, 60));
 }
