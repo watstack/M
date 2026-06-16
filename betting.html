@@ -257,6 +257,49 @@
     .my-bet-payout { font-family: var(--font-mono); font-size: 0.85rem; }
     .my-bets-empty { color: var(--muted); text-align: center; padding: 40px 0; font-size: 0.9rem; }
 
+    /* ── Parlay betslip legs ── */
+    .slip-legs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+    .slip-leg {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 8px 10px; background: var(--panel);
+      border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .slip-leg-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+    .slip-leg-label { font-size: 0.88rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .slip-leg-odds { font-family: var(--font-mono); font-size: 0.78rem; color: var(--green); }
+    .slip-leg-remove {
+      background: none; border: none; color: var(--muted);
+      font-size: 0.9rem; cursor: pointer; padding: 4px; line-height: 1; flex-shrink: 0;
+    }
+    .slip-leg-remove:hover { color: var(--red); }
+    .slip-total-odds {
+      font-family: var(--font-mono); font-size: 0.85rem; color: var(--gold);
+      margin-bottom: 12px; padding: 6px 10px;
+      background: rgba(255,154,208,.06); border: 1px solid rgba(255,154,208,.15);
+      border-radius: var(--radius);
+    }
+
+    /* ── Parlay bets in My Bets ── */
+    .parlay-bet-row { border-color: rgba(255,154,208,.35); }
+    .parlay-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+    }
+    .parlay-label { font-family: var(--font-pixel); font-size: 0.32rem; color: var(--gold); letter-spacing: .05em; }
+    .parlay-total-odds { font-family: var(--font-mono); font-size: 0.85rem; color: var(--green); font-weight: 700; }
+    .parlay-legs {
+      display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;
+      padding-left: 8px; border-left: 2px solid rgba(255,154,208,.25);
+    }
+    .parlay-leg { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; padding: 3px 0; }
+    .parlay-leg-icon { font-size: 0.72rem; width: 14px; text-align: center; flex-shrink: 0; }
+    .parlay-leg-icon.won     { color: #3cb04a; }
+    .parlay-leg-icon.lost    { color: var(--red); }
+    .parlay-leg-icon.void    { color: var(--muted); }
+    .parlay-leg-icon.pending { color: var(--gold); }
+    .parlay-leg-match { flex: 1; min-width: 0; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .parlay-leg-sel { font-weight: 700; flex-shrink: 0; }
+    .parlay-leg-odds { font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); flex-shrink: 0; }
+
     /* ── All bets (community view) ── */
     .all-bets-filter {
       display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
@@ -495,11 +538,11 @@
 <!-- Bet slip drawer -->
 <div id="betSlip" class="bet-slip hidden">
   <div class="bet-slip-title">
-    <span>Place Bet</span>
+    <span id="slipTitle">Bet Slip</span>
     <button class="close-slip-btn" onclick="closeBetSlip()">✕</button>
   </div>
-  <div class="bet-slip-selection" id="slipSelection"></div>
-  <div class="bet-slip-odds" id="slipOdds"></div>
+  <div id="slipLegs" class="slip-legs"></div>
+  <div id="slipTotalOdds" class="slip-total-odds" style="display:none"></div>
   <div class="stake-presets">
     <button class="preset-btn" onclick="setStake(50)">50</button>
     <button class="preset-btn" onclick="setStake(100)">100</button>
@@ -531,9 +574,7 @@
 let db = null;
 let _tournament = null;
 let _participant = null;
-let _activeMarketId = null;
-let _activeSelection = null;
-let _activeOdds = null;
+let _parlayLegs = []; // [{marketId, selection, odds, matchName, label}]
 let _currentTab = 'markets';
 let _balanceSub = null;
 let _adminToken = null;
@@ -664,13 +705,19 @@ function renderMarketsView(markets) {
 
 async function loadMyBetsView() {
   if (!_participant) return;
-  const bets = await loadMyBets(_tournament.id, _participant.id);
+  const { singleBets, parlayBets } = await loadMyBets(_tournament.id, _participant.id);
   const el = document.getElementById('myBetsList');
-  if (!bets.length) {
+  if (!singleBets.length && !parlayBets.length) {
     el.innerHTML = '<p class="my-bets-empty">No bets placed yet</p>';
     return;
   }
-  el.innerHTML = bets.map(renderMyBetRow).join('');
+  const allItems = [
+    ...singleBets.map(b => ({ type: 'single', placed_at: b.placed_at, data: b })),
+    ...parlayBets.map(p => ({ type: 'parlay', placed_at: p.placed_at, data: p })),
+  ].sort((a, b) => (b.placed_at || '') > (a.placed_at || '') ? 1 : -1);
+  el.innerHTML = allItems.map(item =>
+    item.type === 'parlay' ? renderParlayBetRow(item.data) : renderMyBetRow(item.data)
+  ).join('');
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -738,24 +785,88 @@ function toggleCorrectScore(toggleEl) {
 
 // ── Bet slip ──────────────────────────────────────────────────────────────────
 
-function selectBet(btn) {
-  // Clear previously selected
-  document.querySelectorAll('.odds-btn.selected, .score-btn.selected')
-    .forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
+function calcTotalOdds() {
+  return _parlayLegs.reduce((acc, l) => acc * l.odds, 1);
+}
 
-  _activeMarketId  = btn.dataset.marketId;
-  _activeSelection = btn.dataset.selection;
-  _activeOdds      = parseFloat(btn.dataset.odds);
+function renderBetSlip() {
+  const n = _parlayLegs.length;
+  const isMulti = n > 1;
 
-  const marketCard = btn.closest('.market-card');
-  const matchName  = marketCard?.querySelector('.match-name')?.textContent || '';
-  const selLabel   = labelForSelection(_activeSelection, matchName);
+  document.getElementById('slipTitle').textContent =
+    isMulti ? `Multi (${n} legs)` : 'Bet Slip';
 
-  document.getElementById('slipSelection').textContent = selLabel;
-  document.getElementById('slipOdds').textContent = `Odds: ${_activeOdds}x`;
+  document.getElementById('slipLegs').innerHTML = _parlayLegs.map((leg, idx) =>
+    `<div class="slip-leg">
+      <div class="slip-leg-info">
+        <span class="slip-leg-label">${escapeHtml(leg.label)}</span>
+        <span class="slip-leg-odds">${leg.odds}x</span>
+      </div>
+      <button class="slip-leg-remove" onclick="removeLeg(${idx})" aria-label="Remove">✕</button>
+    </div>`
+  ).join('');
+
+  const totalOddsEl = document.getElementById('slipTotalOdds');
+  if (isMulti) {
+    totalOddsEl.textContent = `Total odds: ${calcTotalOdds().toFixed(2)}x`;
+    totalOddsEl.style.display = 'block';
+  } else {
+    totalOddsEl.style.display = 'none';
+  }
   updatePayout();
-  document.getElementById('betSlip').classList.remove('hidden');
+}
+
+function selectBet(btn) {
+  const marketId  = btn.dataset.marketId;
+  const selection = btn.dataset.selection;
+  const odds      = parseFloat(btn.dataset.odds);
+  const marketCard = btn.closest('.market-card');
+  const matchName  = marketCard?.querySelector('.match-name')?.textContent?.trim() || '';
+  const label      = labelForSelection(selection, matchName);
+
+  const idx = _parlayLegs.findIndex(l => l.marketId === marketId);
+  if (idx >= 0) {
+    const existing = _parlayLegs[idx];
+    // Deselect previous button for this market
+    document.querySelectorAll(
+      `.odds-btn[data-market-id="${marketId}"][data-selection="${existing.selection}"],` +
+      `.score-btn[data-market-id="${marketId}"][data-selection="${existing.selection}"]`
+    ).forEach(b => b.classList.remove('selected'));
+
+    if (existing.selection === selection) {
+      // Same button clicked again: toggle off
+      _parlayLegs.splice(idx, 1);
+    } else {
+      // Different selection for same market: replace
+      btn.classList.add('selected');
+      _parlayLegs[idx] = { marketId, selection, odds, matchName, label };
+    }
+  } else {
+    btn.classList.add('selected');
+    _parlayLegs.push({ marketId, selection, odds, matchName, label });
+  }
+
+  if (_parlayLegs.length === 0) {
+    closeBetSlip();
+  } else {
+    renderBetSlip();
+    document.getElementById('betSlip').classList.remove('hidden');
+  }
+}
+
+function removeLeg(idx) {
+  const leg = _parlayLegs[idx];
+  if (!leg) return;
+  document.querySelectorAll(
+    `.odds-btn[data-market-id="${leg.marketId}"][data-selection="${leg.selection}"],` +
+    `.score-btn[data-market-id="${leg.marketId}"][data-selection="${leg.selection}"]`
+  ).forEach(b => b.classList.remove('selected'));
+  _parlayLegs.splice(idx, 1);
+  if (_parlayLegs.length === 0) {
+    document.getElementById('betSlip').classList.add('hidden');
+  } else {
+    renderBetSlip();
+  }
 }
 
 function labelForSelection(sel, matchName) {
@@ -768,14 +879,19 @@ function labelForSelection(sel, matchName) {
 
 function closeBetSlip() {
   document.getElementById('betSlip').classList.add('hidden');
-  document.querySelectorAll('.odds-btn.selected, .score-btn.selected')
-    .forEach(b => b.classList.remove('selected'));
-  _activeMarketId = _activeSelection = _activeOdds = null;
+  _parlayLegs.forEach(leg => {
+    document.querySelectorAll(
+      `.odds-btn[data-market-id="${leg.marketId}"][data-selection="${leg.selection}"],` +
+      `.score-btn[data-market-id="${leg.marketId}"][data-selection="${leg.selection}"]`
+    ).forEach(b => b.classList.remove('selected'));
+  });
+  _parlayLegs = [];
 }
 
 function updatePayout() {
   const stake = parseInt(document.getElementById('stakeInput').value, 10) || 0;
-  const payout = _activeOdds ? Math.round(stake * _activeOdds) : 0;
+  const totalOdds = _parlayLegs.length > 0 ? calcTotalOdds() : 0;
+  const payout = totalOdds ? Math.round(stake * totalOdds) : 0;
   document.getElementById('payoutAmt').textContent = payout ? `${payout.toLocaleString()} 🪙` : '—';
 }
 
@@ -790,7 +906,7 @@ function setStakeAllIn() {
 }
 
 async function confirmBet() {
-  if (!_activeMarketId || !_activeSelection || !_activeOdds) return;
+  if (_parlayLegs.length === 0) return;
   const stake = parseInt(document.getElementById('stakeInput').value, 10);
   if (!stake || stake < 1) { showToast('Enter a valid stake'); return; }
   if (_participant && stake > _participant.coin_balance) { showToast('Not enough coins'); return; }
@@ -800,10 +916,21 @@ async function confirmBet() {
   btn.textContent = 'Placing…';
 
   try {
-    await placeBet(_activeMarketId, _participant.id, _activeSelection, stake, _activeOdds);
-    showToast('Bet placed! Good luck 🎰');
+    if (_parlayLegs.length === 1) {
+      const leg = _parlayLegs[0];
+      await placeBet(leg.marketId, _participant.id, leg.selection, stake, leg.odds);
+      showToast('Bet placed! Good luck 🎰');
+    } else {
+      const totalOdds = calcTotalOdds();
+      const legs = _parlayLegs.map(l => ({
+        market_id: l.marketId,
+        selection: l.selection,
+        odds:      l.odds,
+      }));
+      await placeParlay(_participant.id, legs, stake, totalOdds);
+      showToast(`Multi placed! ${_parlayLegs.length} legs — Good luck 🎰`);
+    }
     closeBetSlip();
-    // Refresh balance from DB
     const { data: fresh } = await db.from('participants').select('coin_balance').eq('id', _participant.id).single();
     if (fresh) {
       _participant.coin_balance = fresh.coin_balance;

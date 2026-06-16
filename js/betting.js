@@ -76,14 +76,24 @@ function indexMarketsByMatchNo(markets) {
 }
 
 async function loadMyBets(tournamentId, participantId) {
-  const { data, error } = await db
-    .from('bets')
-    .select('*, bet_markets(match_name, market_type, result, status)')
-    .eq('tournament_id', tournamentId)
-    .eq('participant_id', participantId)
-    .order('placed_at', { ascending: false });
-  if (error) throw error;
-  return data || [];
+  const [singlesResult, parlaysResult] = await Promise.all([
+    db.from('bets')
+      .select('*, bet_markets(match_name, market_type, result, status)')
+      .eq('tournament_id', tournamentId)
+      .eq('participant_id', participantId)
+      .order('placed_at', { ascending: false }),
+    db.from('parlay_bets')
+      .select('*, parlay_bet_legs(*, bet_markets(match_name, market_type, result, status))')
+      .eq('tournament_id', tournamentId)
+      .eq('participant_id', participantId)
+      .order('placed_at', { ascending: false }),
+  ]);
+  if (singlesResult.error) throw singlesResult.error;
+  if (parlaysResult.error) throw parlaysResult.error;
+  return {
+    singleBets: singlesResult.data || [],
+    parlayBets: parlaysResult.data || [],
+  };
 }
 
 // ─── Bet placement ────────────────────────────────────────────────────────────
@@ -101,6 +111,25 @@ async function placeBet(marketId, participantId, selection, stake, odds) {
     if (msg.includes('market_closed')) throw new Error('Betting on this match has closed');
     if (msg.includes('insufficient_balance')) throw new Error('Not enough coins');
     if (msg.includes('market_not_found')) throw new Error('Market not found');
+    throw error;
+  }
+  return data;
+}
+
+async function placeParlay(participantId, legs, stake, totalOdds) {
+  const { data, error } = await db.rpc('place_parlay', {
+    p_participant_id: participantId,
+    p_legs:           legs,
+    p_stake:          stake,
+    p_total_odds:     totalOdds,
+  });
+  if (error) {
+    const msg = error.message || '';
+    if (msg.includes('market_closed'))        throw new Error('One or more markets have closed');
+    if (msg.includes('market_locked'))        throw new Error('One or more markets are not yet available');
+    if (msg.includes('insufficient_balance')) throw new Error('Not enough coins');
+    if (msg.includes('market_not_found'))     throw new Error('Market not found');
+    if (msg.includes('parlay_too_few_legs'))  throw new Error('A multi needs at least 2 selections');
     throw error;
   }
   return data;
@@ -393,6 +422,42 @@ function renderMyBetRow(bet) {
     </div>
     <div class="my-bet-result">
       <span class="bet-status ${statusClass}">${bet.status}</span>
+      <span class="my-bet-payout">${payout}</span>
+    </div>
+  </div>`;
+}
+
+function renderParlayBetRow(parlay) {
+  const legs = parlay.parlay_bet_legs || [];
+  const statusClass = { won: 'won', lost: 'lost', void: 'void', pending: 'pending' }[parlay.status] || 'pending';
+  const payout = parlay.status === 'won'
+    ? `+${parlay.potential_payout} 🪙`
+    : parlay.status === 'lost'
+    ? `-${parlay.stake} 🪙`
+    : `${parlay.potential_payout} 🪙 if all win`;
+  const legIcon = { won: '✓', lost: '✗', void: '—', pending: '⏳' };
+  const legsHtml = legs.map(leg => {
+    const mkt = leg.bet_markets || {};
+    const icon = legIcon[leg.status] || '⏳';
+    return `<div class="parlay-leg">
+      <span class="parlay-leg-icon ${leg.status || 'pending'}">${icon}</span>
+      <span class="parlay-leg-match">${escapeHtml(mkt.match_name || '')}</span>
+      <span class="parlay-leg-sel">${escapeHtml(leg.selection)}</span>
+      <span class="parlay-leg-odds">${leg.odds}x</span>
+    </div>`;
+  }).join('');
+  return `<div class="my-bet-row parlay-bet-row">
+    <div class="parlay-header">
+      <span class="parlay-label">Multi (${legs.length} legs)</span>
+      <span class="parlay-total-odds">${Number(parlay.total_odds).toFixed(2)}x</span>
+    </div>
+    <div class="parlay-legs">${legsHtml}</div>
+    <div class="my-bet-detail">
+      <span class="my-bet-odds">${Number(parlay.total_odds).toFixed(2)}x total</span>
+      <span class="my-bet-stake">${parlay.stake} 🪙</span>
+    </div>
+    <div class="my-bet-result">
+      <span class="bet-status ${statusClass}">${parlay.status}</span>
       <span class="my-bet-payout">${payout}</span>
     </div>
   </div>`;
