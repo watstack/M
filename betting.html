@@ -493,7 +493,7 @@
 <div class="bet-page">
 
   <div class="bet-header">
-    <a id="backLink" href="#" class="bet-back">← Bracket</a>
+    <a id="backLink" href="#" class="bet-back">← Overview</a>
     <span class="bet-title">Betting</span>
     <div class="bet-balance">🪙 <span class="bet-balance-num" id="balanceAmt">—</span></div>
     <div class="bet-participant">
@@ -608,7 +608,7 @@ const _me = location.hash.match(/me=([0-9a-fA-F-]+)/);
 async function init() {
   if (!code || !db) return;
 
-  document.getElementById('backLink').href = `sweepstake.html?code=${code}`;
+  document.getElementById('backLink').href = `overview.html?code=${code}`;
 
   // Load tournament
   const { data: tourn, error: tErr } = await db.from('tournaments').select('*').eq('code', code).single();

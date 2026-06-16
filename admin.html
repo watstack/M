@@ -250,7 +250,7 @@
 
       const origin = window.location.origin;
       const base   = window.location.pathname.replace(/\/[^/]*$/, '');
-      const inviteUrl = `${origin}${base}/sweepstake.html?code=${tournament.code}`;
+      const inviteUrl = `${origin}${base}/overview.html?code=${tournament.code}`;
       const adminUrl  = `${origin}${base}/sweepstake.html?code=${tournament.code}#admin=${tournament.admin_token}`;
 
       document.getElementById('inviteUrlDisplay').textContent = inviteUrl;
