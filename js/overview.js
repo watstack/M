@@ -227,6 +227,16 @@
     return `${pad(h)}:${pad(m)}:${pad(sec)}`;
   }
 
+  // Absolute date + time, e.g. "Wed 24 Jun, 8pm" — shown alongside the
+  // countdown for matches that aren't kicking off soon.
+  function formatDateTime(utcStr) {
+    const d = new Date(utcStr);
+    if (isNaN(d)) return '';
+    const day  = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    const time = d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '');
+    return `${day}, ${time}`;
+  }
+
   function fixtureById(no) {
     return (window.WC2026_FIXTURES || []).find(f => f.match_no === no) || null;
   }
@@ -422,6 +432,7 @@
       </div>
       <div class="hub-row-time">
         <span class="cd" data-kickoff="${kickoff}"></span>
+        <span class="date" hidden>${formatDateTime(kickoff)}</span>
       </div>
     </div>`;
   }
@@ -489,10 +500,15 @@
   function tick() {
     const now = Date.now();
     renderHero(now);
-    document.querySelectorAll('#stateOverview .hub-row-time .cd[data-kickoff]').forEach(el => {
+    document.querySelectorAll('#stateOverview .hub-row-time').forEach(cell => {
+      const el = cell.querySelector('.cd');
+      if (!el) return;
       const ms = new Date(el.dataset.kickoff).getTime() - now;
       el.textContent = cdShort(ms);
       el.classList.toggle('soon', ms > 0 && ms <= 3600000);
+      // Far-off matches: show the calendar date too, so "2d" isn't the only cue.
+      const dt = cell.querySelector('.date');
+      if (dt) dt.hidden = !(ms > 86400000);
     });
   }
 
