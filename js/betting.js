@@ -367,20 +367,16 @@ function renderAdminView(marketsByNo) {
   }).join('');
 }
 
-// ─── All settled bets (community view) ───────────────────────────────────────
+// ─── All bets community view (all statuses) ───────────────────────────────────
 
-async function loadAllSettledBets(tournamentId) {
+async function loadAllBets(tournamentId) {
   const { data, error } = await db
     .from('bets')
     .select('*, bet_markets(match_name, market_type, result, status, kickoff_time, match_no), participants(id, nickname, avatar_type)')
     .eq('tournament_id', tournamentId)
-    .in('status', ['won', 'lost', 'void']);
+    .order('placed_at', { ascending: false });
   if (error) throw error;
-  return (data || []).sort((a, b) => {
-    const ta = a.bet_markets?.kickoff_time || '';
-    const tb = b.bet_markets?.kickoff_time || '';
-    return ta < tb ? -1 : ta > tb ? 1 : 0;
-  });
+  return data || [];
 }
 
 function renderAllBetRow(bet) {

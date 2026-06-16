@@ -535,7 +535,7 @@
     <div id="myBetsList" class="my-bets-list"></div>
   </div>
 
-  <!-- All settled bets (community view) -->
+  <!-- All bets community view -->
   <div id="panelAllBets" style="display:none">
     <div id="allBetsFilter" class="all-bets-filter"></div>
     <div id="allBetsList" class="my-bets-list"></div>
@@ -681,15 +681,11 @@ async function loadMarketsView() {
   document.getElementById('matchList').style.display = 'none';
   document.getElementById('noMatchMsg').style.display = 'none';
 
-  // Server creates/refreshes all markets + odds for this tournament (24h cache),
-  // deterministically from the static WC2026_FIXTURES list. Best-effort: even if
-  // it fails, the page still renders the full static scaffold below.
-  try {
-    const r = await fetch(`/api/markets?code=${encodeURIComponent(code)}`, { method: 'POST' });
-    if (!r.ok) console.warn('[markets] /api/markets returned', r.status);
-  } catch (e) {
-    console.warn('[markets] /api/markets failed:', e.message);
-  }
+  // Fire-and-forget: server refreshes market odds. Don't await — can be slow on
+  // mobile (upserts 208 rows + optional external odds fetch). Render immediately.
+  fetch(`/api/markets?code=${encodeURIComponent(code)}`, { method: 'POST' })
+    .then(r => { if (!r.ok) console.warn('[markets] /api/markets returned', r.status); })
+    .catch(e => console.warn('[markets] /api/markets failed:', e.message));
 
   // Read live market rows (odds/status) — non-fatal: the page renders the full
   // static scaffold regardless, with markets overlaid when present.
@@ -1003,7 +999,7 @@ async function loadAllBetsView() {
   document.getElementById('allBetsList').innerHTML = '<p class="my-bets-empty">Loading…</p>';
   try {
     const [bets, { data: parts }] = await Promise.all([
-      loadAllSettledBets(_tournament.id),
+      loadAllBets(_tournament.id),
       db.from('participants').select('id, nickname, avatar_type')
         .eq('tournament_id', _tournament.id)
         .order('created_at'),
@@ -1043,7 +1039,7 @@ function renderAllBetsList(pid) {
   const el = document.getElementById('allBetsList');
   const filtered = pid ? _allBets.filter(b => b.participant_id === pid) : _allBets;
   if (!filtered.length) {
-    el.innerHTML = '<p class="my-bets-empty">No settled bets yet</p>';
+    el.innerHTML = '<p class="my-bets-empty">No bets placed yet</p>';
     return;
   }
   el.innerHTML = filtered.map(renderAllBetRow).join('');
