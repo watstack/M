@@ -37,9 +37,10 @@ try {
   console.warn('⚠  api/_lib/fixtures.js generation skipped (using committed copy):', e.message);
 }
 
-const url   = process.env.SUPABASE_URL        || '';
-const key   = process.env.SUPABASE_ANON_KEY   || '';
-const token = process.env.FOOTBALL_API_TOKEN  || '';
+const url      = process.env.SUPABASE_URL        || '';
+const key      = process.env.SUPABASE_ANON_KEY   || '';
+const token    = process.env.FOOTBALL_API_TOKEN  || '';
+const adminPin = process.env.ADMIN_PIN           || '';
 
 if (!url || !key) {
   console.warn('⚠  SUPABASE_URL or SUPABASE_ANON_KEY not set — js/config.js will have empty values.');
@@ -50,6 +51,7 @@ const CONFIG = {
   SUPABASE_URL: '${url}',
   SUPABASE_ANON_KEY: '${key}',
   FOOTBALL_API_TOKEN: '${token}',
+  ADMIN_PIN: '${adminPin}',
 };
 `;
 

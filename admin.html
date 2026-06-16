@@ -12,6 +12,36 @@
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@700;800&family=DM+Sans:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <style>
+    .admin-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0;
+    }
+
+    .admin-tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 10px 16px;
+      font-family: var(--font-ui, inherit);
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      margin-bottom: -1px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .admin-tab.active {
+      color: var(--gold);
+      border-bottom-color: var(--gold);
+    }
+
+    .admin-tab-panel { display: none; }
+    .admin-tab-panel.active { display: block; }
+
     .create-wrap { max-width: 540px; margin: 0 auto; }
 
     .result-panel { display: none; }
@@ -80,19 +110,6 @@
 
     .teams-hint strong { color: var(--text); }
 
-    .analytics-wrap {
-      max-width: 540px;
-      margin: 40px auto 0;
-    }
-
-    .analytics-wrap h2 {
-      font-size: 1rem;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 16px;
-    }
-
     .analytics-stat-row {
       display: flex;
       gap: 12px;
@@ -156,8 +173,27 @@
 
     .analytics-table tr:last-child td { border-bottom: none; }
 
-    .analytics-page-name {
-      text-transform: capitalize;
+    .analytics-page-name { text-transform: capitalize; }
+
+    .analytics-gate {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .analytics-gate p {
+      color: var(--muted);
+      font-size: 0.88rem;
+      margin-bottom: 16px;
+    }
+
+    .analytics-gate input {
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      text-align: center;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      width: 160px;
+      margin-bottom: 12px;
     }
   </style>
 </head>
@@ -173,6 +209,14 @@
   </header>
 
   <div class="create-wrap">
+
+    <div class="admin-tabs">
+      <button class="admin-tab active" id="tabCreate" onclick="switchTab('create')">Create</button>
+      <button class="admin-tab" id="tabAnalytics" onclick="switchTab('analytics')">Analytics</button>
+    </div>
+
+    <!-- Create tab -->
+    <div class="admin-tab-panel active" id="panelCreate">
 
     <!-- Create form -->
     <div id="createForm">
@@ -250,34 +294,51 @@
 
     </div>
 
-  </div>
+    </div><!-- /panelCreate -->
 
-  <div class="analytics-wrap" id="analyticsSection">
-    <h2>Site analytics</h2>
-    <div class="analytics-stat-row">
-      <div class="analytics-stat">
-        <span class="stat-value" id="statViews">—</span>
-        <span class="stat-label">Page views</span>
+    <!-- Analytics tab -->
+    <div class="admin-tab-panel" id="panelAnalytics">
+
+      <!-- PIN gate -->
+      <div id="analyticsGate" class="analytics-gate">
+        <p>Enter your admin PIN to view analytics.</p>
+        <div>
+          <input type="password" id="pinInput" placeholder="••••••" maxlength="20" autocomplete="current-password">
+        </div>
+        <button class="btn btn-gold" onclick="checkPin()">Unlock</button>
+        <p id="pinError" style="color:var(--red,#e05);font-size:0.8rem;margin-top:8px;display:none">Incorrect PIN</p>
       </div>
-      <div class="analytics-stat">
-        <span class="stat-value" id="statVisitors">—</span>
-        <span class="stat-label">Unique visitors</span>
+
+      <!-- Analytics content (hidden until PIN unlocked) -->
+      <div id="analyticsContent" style="display:none">
+        <div class="analytics-stat-row">
+          <div class="analytics-stat">
+            <span class="stat-value" id="statViews">—</span>
+            <span class="stat-label">Page views</span>
+          </div>
+          <div class="analytics-stat">
+            <span class="stat-value" id="statVisitors">—</span>
+            <span class="stat-label">Unique visitors</span>
+          </div>
+        </div>
+        <div class="card card-sm">
+          <table class="analytics-table">
+            <thead>
+              <tr>
+                <th>Page</th>
+                <th>Views</th>
+                <th>Unique</th>
+              </tr>
+            </thead>
+            <tbody id="analyticsBody">
+              <tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
-    <div class="card card-sm">
-      <table class="analytics-table" id="analyticsTable">
-        <thead>
-          <tr>
-            <th>Page</th>
-            <th>Views</th>
-            <th>Unique</th>
-          </tr>
-        </thead>
-        <tbody id="analyticsBody">
-          <tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">Loading…</td></tr>
-        </tbody>
-      </table>
-    </div>
+
+    </div><!-- /panelAnalytics -->
+
   </div>
 
 </div>
@@ -394,7 +455,40 @@
   teamsInput.addEventListener('keydown', e => { if (e.key === 'Enter') createBtn.click(); });
 </script>
 <script>
-  (async function loadAnalytics() {
+  const ADMIN_PIN_KEY = 'wc26_admin_pin_unlocked';
+
+  function switchTab(tab) {
+    document.getElementById('tabCreate').classList.toggle('active', tab === 'create');
+    document.getElementById('tabAnalytics').classList.toggle('active', tab === 'analytics');
+    document.getElementById('panelCreate').classList.toggle('active', tab === 'create');
+    document.getElementById('panelAnalytics').classList.toggle('active', tab === 'analytics');
+
+    if (tab === 'analytics' && sessionStorage.getItem(ADMIN_PIN_KEY)) {
+      showAnalytics();
+    }
+  }
+
+  function checkPin() {
+    const pin = document.getElementById('pinInput').value.trim();
+    const stored = (typeof CONFIG !== 'undefined' && CONFIG.ADMIN_PIN) ? CONFIG.ADMIN_PIN : null;
+    const correct = stored ? pin === stored : pin === 'kickoff';
+    if (correct) {
+      sessionStorage.setItem(ADMIN_PIN_KEY, '1');
+      document.getElementById('pinError').style.display = 'none';
+      showAnalytics();
+    } else {
+      document.getElementById('pinError').style.display = 'block';
+    }
+  }
+
+  document.getElementById('pinInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkPin();
+  });
+
+  async function showAnalytics() {
+    document.getElementById('analyticsGate').style.display = 'none';
+    document.getElementById('analyticsContent').style.display = 'block';
+
     try {
       const res = await fetch('/api/analytics');
       if (!res.ok) throw new Error('fetch failed');
@@ -413,7 +507,7 @@
       document.getElementById('analyticsBody').innerHTML =
         '<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">Could not load analytics</td></tr>';
     }
-  })();
+  }
 </script>
 <script src="js/analytics.js"></script>
 </body>

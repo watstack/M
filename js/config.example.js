@@ -8,4 +8,5 @@
 const CONFIG = {
   SUPABASE_URL: 'https://YOUR_PROJECT.supabase.co',
   SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY',
+  ADMIN_PIN: '',  // set ADMIN_PIN env var in Vercel; defaults to 'kickoff' if blank
 };
