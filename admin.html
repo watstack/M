@@ -79,6 +79,86 @@
     }
 
     .teams-hint strong { color: var(--text); }
+
+    .analytics-wrap {
+      max-width: 540px;
+      margin: 40px auto 0;
+    }
+
+    .analytics-wrap h2 {
+      font-size: 1rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 16px;
+    }
+
+    .analytics-stat-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .analytics-stat {
+      flex: 1;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+
+    .analytics-stat .stat-value {
+      font-size: 1.8rem;
+      font-weight: 900;
+      font-family: var(--font-mono);
+      color: var(--gold);
+      display: block;
+    }
+
+    .analytics-stat .stat-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 4px;
+    }
+
+    .analytics-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+
+    .analytics-table th {
+      text-align: left;
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .analytics-table th:not(:first-child) { text-align: right; }
+
+    .analytics-table td {
+      padding: 8px 8px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .analytics-table td:not(:first-child) {
+      text-align: right;
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+
+    .analytics-table tr:last-child td { border-bottom: none; }
+
+    .analytics-page-name {
+      text-transform: capitalize;
+    }
   </style>
 </head>
 <body class="tunnel-screen">
@@ -170,6 +250,34 @@
 
     </div>
 
+  </div>
+
+  <div class="analytics-wrap" id="analyticsSection">
+    <h2>Site analytics</h2>
+    <div class="analytics-stat-row">
+      <div class="analytics-stat">
+        <span class="stat-value" id="statViews">—</span>
+        <span class="stat-label">Page views</span>
+      </div>
+      <div class="analytics-stat">
+        <span class="stat-value" id="statVisitors">—</span>
+        <span class="stat-label">Unique visitors</span>
+      </div>
+    </div>
+    <div class="card card-sm">
+      <table class="analytics-table" id="analyticsTable">
+        <thead>
+          <tr>
+            <th>Page</th>
+            <th>Views</th>
+            <th>Unique</th>
+          </tr>
+        </thead>
+        <tbody id="analyticsBody">
+          <tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
 </div>
@@ -285,5 +393,28 @@
   nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') teamsInput.focus(); });
   teamsInput.addEventListener('keydown', e => { if (e.key === 'Enter') createBtn.click(); });
 </script>
+<script>
+  (async function loadAnalytics() {
+    try {
+      const res = await fetch('/api/analytics');
+      if (!res.ok) throw new Error('fetch failed');
+      const data = await res.json();
+      document.getElementById('statViews').textContent = data.total_views.toLocaleString();
+      document.getElementById('statVisitors').textContent = data.unique_visitors.toLocaleString();
+      const tbody = document.getElementById('analyticsBody');
+      if (!data.pages || data.pages.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">No data yet</td></tr>';
+      } else {
+        tbody.innerHTML = data.pages.map(p =>
+          `<tr><td class="analytics-page-name">${p.page}</td><td>${p.views.toLocaleString()}</td><td>${p.unique_visitors.toLocaleString()}</td></tr>`
+        ).join('');
+      }
+    } catch {
+      document.getElementById('analyticsBody').innerHTML =
+        '<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">Could not load analytics</td></tr>';
+    }
+  })();
+</script>
+<script src="js/analytics.js"></script>
 </body>
 </html>
