@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Sweepstake — Kickoff</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@700;800&family=DM+Sans:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    /* ── Page states ── */
+    .ov-state         { display: none; }
+    .ov-state.active  { display: block; animation: fadeIn 0.35s ease; }
+
+    /* ── Join form ── */
+    .tourney-header   { text-align: center; padding: 32px 0 24px; }
+    .tourney-name {
+      font-family: var(--font-pixel);
+      font-size: clamp(0.9rem, 3.4vw, 1.6rem);
+      font-weight: 400;
+      line-height: 1.5;
+      letter-spacing: .01em;
+      margin-bottom: 12px;
+      text-shadow: 3px 3px 0 var(--pixel-black), 0 0 18px rgba(255,106,31,.25);
+    }
+    .slots-info       { font-size: 0.85rem; color: var(--muted); }
+    .join-wrap        { max-width: 540px; margin: 0 auto; }
+
+    /* ── Waiting ── */
+    .waiting-wrap     { max-width: 540px; margin: 0 auto; }
+    .waiting-header   { text-align: center; padding: 24px 0; }
+
+    /* ── Overview dashboard ── */
+    .ov-wrap {
+      max-width: 620px;
+      margin: 0 auto;
+      padding-bottom: 48px;
+    }
+
+    .ov-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 24px 0 16px;
+      flex-wrap: wrap;
+    }
+    .ov-title {
+      font-family: var(--font-pixel);
+      font-size: clamp(0.7rem, 2.5vw, 1.1rem);
+      font-weight: 400;
+      line-height: 1.4;
+      flex: 1;
+    }
+    .ov-code-badge {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 3px 10px;
+      border-radius: var(--radius);
+    }
+
+    .ov-stat-bar {
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-bottom: 10px;
+      font-size: 0.88rem;
+      font-family: var(--font-mono);
+    }
+    .ov-meta { color: var(--text); }
+
+    .ov-teams {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    /* ── Section ── */
+    .ov-section       { margin-bottom: 20px; }
+    .ov-section-label {
+      font-family: var(--font-pixel);
+      font-size: 0.4rem;
+      color: var(--muted);
+      letter-spacing: .12em;
+      margin-bottom: 10px;
+    }
+
+    /* ── Match rows ── */
+    .ov-match {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .ov-match:last-child { border-bottom: none; }
+
+    .ov-match-top {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+    }
+    .ov-match-flag   { flex-shrink: 0; }
+    .ov-match-name   { flex: 1; font-weight: 600; }
+    .ov-match-time   { font-size: 0.78rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+
+    .ov-match-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .ov-badge-team {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--gold);
+      background: rgba(255,154,208,.1);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .ov-badge-bet {
+      font-size: 0.72rem;
+      color: var(--muted);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* ── Result rows ── */
+    .ov-result-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .ov-result-row:last-child { border-bottom: none; }
+    .ov-result-icon { width: 20px; text-align: center; font-weight: 700; }
+    .ov-result-sel  { flex: 1; color: var(--muted); }
+    .ov-result-coins { font-family: var(--font-mono); font-size: 0.8rem; white-space: nowrap; }
+    .ov-won  { color: #3cb04a; }
+    .ov-lost { color: var(--red); }
+
+    /* ── Placeholder text ── */
+    .ov-empty, .ov-loading {
+      padding: 16px 0;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    /* ── CTA row ── */
+    .ov-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 28px;
+    }
+    .ov-actions .btn-ghost { flex: 1; text-align: center; min-width: 140px; }
+    .ov-actions .btn       { flex: 1; text-align: center; min-width: 140px; }
+  </style>
+</head>
+<body>
+
+<div class="page" id="mainPage">
+
+  <header class="site-header">
+    <div class="logo">⚽</div>
+    <span class="site-name">Kickoff</span>
+    <span style="flex:1"></span>
+    <a href="index.html" class="muted" style="font-size:0.85rem;margin-left:12px">← Home</a>
+  </header>
+
+  <!-- Loading (default) -->
+  <div class="ov-state active" id="stateLoading">
+    <div style="text-align:center;padding:80px 20px">
+      <p class="muted" style="font-size:1.1rem">Loading sweepstake…</p>
+    </div>
+  </div>
+
+  <!-- Error / not found -->
+  <div class="ov-state" id="stateError">
+    <div class="not-found">
+      <div class="not-found-icon">🤷</div>
+      <h2 style="margin-bottom:8px">Sweepstake not found</h2>
+      <p class="muted" id="errorMsg" style="margin-bottom:24px"></p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="btn" onclick="location.reload()">↺ Retry</button>
+        <a href="index.html" class="btn">← Home</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Join form -->
+  <div class="ov-state" id="stateJoin">
+    <div class="tourney-header">
+      <div class="tourney-name" id="joinTourneyName"></div>
+      <p class="slots-info" id="joinSlotsInfo"></p>
+    </div>
+
+    <div class="join-wrap">
+      <div class="card">
+        <h2 style="margin-bottom:20px">Join the sweepstake</h2>
+
+        <div class="field">
+          <label for="nicknameInput">Your nickname</label>
+          <input type="text" id="nicknameInput" placeholder="e.g. BigMatch Barry"
+                 maxlength="20" autocomplete="off" autocapitalize="words">
+          <div class="field-error" id="nicknameError"></div>
+        </div>
+
+        <div class="field">
+          <label>Choose your avatar</label>
+          <div class="avatar-grid" id="avatarGrid"></div>
+        </div>
+
+        <div class="field">
+          <label for="slotsSelect">How many teams do you want?</label>
+          <select id="slotsSelect"></select>
+          <p class="muted" id="slotsHint" style="font-size:0.78rem;margin-top:6px"></p>
+        </div>
+
+        <button class="btn-full btn-gold" id="joinBtn">
+          Join &amp; pick my teams →
+          <span class="spinner" id="joinSpinner"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Waiting room (joined, draw not yet started) -->
+  <div class="ov-state" id="stateWaiting">
+    <div class="waiting-wrap">
+      <div class="waiting-header">
+        <div class="tourney-name" id="waitTourneyName"></div>
+        <p class="muted" style="margin-top:8px">You're in! Waiting for the draw to start…</p>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <p class="muted" style="font-size:0.9rem;margin-bottom:14px">Share this link with your group:</p>
+        <div class="share-box">
+          <span class="share-url" id="waitShareUrl"></span>
+          <button class="copy-btn" id="waitCopyBtn">Copy</button>
+        </div>
+      </div>
+
+      <a id="waitBracketLink" href="#" class="btn-ghost" style="display:inline-block">View bracket →</a>
+    </div>
+  </div>
+
+  <!-- Overview dashboard (joined + live) -->
+  <div class="ov-state" id="stateOverview">
+    <div class="ov-wrap">
+      <div class="ov-header">
+        <h1 class="ov-title" id="ovTourneyName"></h1>
+        <span class="ov-code-badge" id="ovCode"></span>
+      </div>
+
+      <div class="ov-stat-bar">
+        <span class="ov-meta" id="ovMeta"></span>
+      </div>
+
+      <div class="ov-teams" id="ovTeams"></div>
+
+      <div class="ov-section">
+        <div class="ov-section-label">UPCOMING</div>
+        <div id="ovMatches"></div>
+      </div>
+
+      <div class="ov-section" id="ovResults">
+        <div class="ov-section-label">RECENT BETS</div>
+        <div id="ovResultsList"></div>
+      </div>
+
+      <div class="ov-actions">
+        <a id="ovBracketLink" href="#" class="btn-ghost">View bracket →</a>
+        <a id="ovBetLink"     href="#" class="btn btn-gold">Betting ⚡</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spectator (live, not joined) -->
+  <div class="ov-state" id="stateSpectator">
+    <div class="not-found">
+      <div class="not-found-icon">⚽</div>
+      <h2 id="specTourneyName" style="margin-bottom:10px"></h2>
+      <p class="muted" style="margin-bottom:24px">This sweepstake is underway — you can still watch the bracket.</p>
+      <a id="specBracketLink" href="#" class="btn">View bracket →</a>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script src="js/config.js?v=17807242" onerror="document.getElementById('stateLoading').style.display='none';document.getElementById('stateError').classList.add('active');document.getElementById('errorMsg').textContent='Failed to load config — please refresh.'"></script>
+<script src="js/vendor/supabase.js?v=17807242"></script>
+<script src="js/flag-colors.js?v=17807242"></script>
+<script src="js/avatars.js?v=17807242"></script>
+<script src="js/wc2026-fixtures.js?v=17807242"></script>
+<script src="js/overview.js?v=17807242"></script>
+</body>
+</html>

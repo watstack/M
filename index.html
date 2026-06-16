@@ -239,11 +239,11 @@
     const container = document.getElementById('myTourneysList');
     const base = window.location.pathname.replace(/\/[^/]*$/, '');
     container.innerHTML = list.map(t => {
-      const url = `${window.location.origin}${base}/sweepstake.html?code=${t.code}#admin=${t.adminToken}`;
+      const url = `${window.location.origin}${base}/overview.html?code=${t.code}`;
       return `<div class="my-tourney-card">
         <span class="my-tourney-name">${t.name.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>
         <span class="my-tourney-code">${t.code}</span>
-        <a href="${url}" class="btn btn-ghost">Manage →</a>
+        <a href="${url}" class="btn btn-ghost">View →</a>
       </div>`;
     }).join('');
     panel.style.display = 'block';
@@ -262,7 +262,7 @@
     const container = document.getElementById('myJoinedList');
     const base = window.location.pathname.replace(/\/[^/]*$/, '');
     container.innerHTML = joined.map(t => {
-      const url = `${window.location.origin}${base}/sweepstake.html?code=${t.code}`;
+      const url = `${window.location.origin}${base}/overview.html?code=${t.code}`;
       return `<div class="my-tourney-card">
         <span class="my-tourney-name">${t.name.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>
         <span class="my-tourney-code">${t.code}</span>

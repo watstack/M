@@ -897,7 +897,7 @@
     <span id="liveIndicator" style="display:none">
       <span class="live-badge"><span class="live-dot"></span>Live</span>
     </span>
-    <a href="index.html" class="muted" style="font-size:0.85rem;margin-left:12px">← Home</a>
+    <a id="ovBackLink" href="index.html" class="muted" style="font-size:0.85rem;margin-left:12px">← Overview</a>
   </header>
 
   <!-- Admin bar (only shown if admin token present) -->
@@ -1595,7 +1595,7 @@ function renderWaitingState() {
   Music.play('zelda');
   document.getElementById('waitTourneyName').textContent = tournament.name;
 
-  const inviteUrl = `${window.location.origin}${window.location.pathname.replace(/\/[^/]*$/, '')}/sweepstake.html?code=${code}`;
+  const inviteUrl = `${window.location.origin}${window.location.pathname.replace(/\/[^/]*$/, '')}/overview.html?code=${code}`;
   document.getElementById('waitShareUrl').textContent = inviteUrl;
   setupCopy('waitCopyBtn', inviteUrl);
 
@@ -2525,6 +2525,9 @@ async function init() {
   try {
     tournament = await withTimeout(getTournamentByCode(code), 60_000);
     clearTimeout(wakeMsg);
+    const _base = window.location.pathname.replace(/\/[^/]*$/, '');
+    const ovLink = document.getElementById('ovBackLink');
+    if (ovLink) ovLink.href = `${window.location.origin}${_base}/overview.html?code=${code}`;
   } catch (err) {
     clearTimeout(wakeMsg);
     showNotFound(err?.message || String(err));
@@ -2573,7 +2576,10 @@ async function init() {
       } else if (isAdmin) {
         renderJoinState();
       } else {
-        renderLandingState();
+        // Non-joined users: redirect to overview.html which handles join flow
+        const _base = window.location.pathname.replace(/\/[^/]*$/, '');
+        window.location.replace(`${window.location.origin}${_base}/overview.html?code=${code}`);
+        return;
       }
     }
   } catch (err) {
