@@ -424,6 +424,17 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 .b-team-name { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .b-team-pts  { font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); font-weight: 700; flex-shrink: 0; }
 
+.b-group-table { width: 100%; border-collapse: collapse; font-size: 0.67rem; font-family: var(--font-mono); }
+.b-group-table th { padding: 3px 5px; text-align: right; color: var(--muted); font-weight: 500; font-size: 0.60rem; letter-spacing: 0.04em; }
+.b-group-table th:first-child { text-align: left; padding-left: 8px; }
+.b-group-table td { padding: 4px 5px; text-align: right; border-top: 1px solid var(--border); vertical-align: middle; }
+.b-group-table td:first-child { text-align: left; padding-left: 6px; }
+.b-group-table tr.qualified td:first-child { border-left: 2px solid var(--green); padding-left: 4px; }
+.b-group-table .b-gt-team { display: flex; align-items: center; gap: 4px; font-family: var(--font-body); font-weight: 600; font-size: 0.70rem; }
+.b-group-table .b-gt-pos { color: var(--muted); font-size: 0.58rem; min-width: 10px; flex-shrink: 0; }
+.b-group-table .b-gt-pts { font-weight: 700; }
+.b-group-table .b-gt-owner { font-size: 0.55rem; color: var(--muted); font-family: var(--font-body); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 72px; }
+
 .b-owner { display: flex; flex-direction: column; align-items: center; gap: 1px; flex-shrink: 0; }
 .b-owner-name {
   font-size: 0.58rem; color: var(--muted); font-weight: 600;
