@@ -465,13 +465,13 @@
 
     /* ── Toast ── */
     #bToast {
-      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.92);
       background: var(--panel); border: 2px solid var(--border); border-radius: var(--radius);
-      padding: 10px 20px; font-family: var(--font-pixel); font-size: 0.38rem;
+      padding: 24px; font-family: var(--font-pixel); font-size: 24px;
       box-shadow: 4px 4px 0 rgba(0,0,0,.6); z-index: 999; opacity: 0;
-      transition: opacity .2s; pointer-events: none;
+      transition: opacity .2s, transform .2s; pointer-events: none;
     }
-    #bToast.show { opacity: 1; }
+    #bToast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
     /* ── Loading ── */
     .bet-loading { text-align: center; padding: 60px 0; color: var(--muted); font-family: var(--font-pixel); font-size: 0.4rem; }
