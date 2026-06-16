@@ -130,7 +130,7 @@ async function placeParlay(participantId, legs, stake, totalOdds) {
     if (msg.includes('insufficient_balance')) throw new Error('Not enough coins');
     if (msg.includes('market_not_found'))     throw new Error('Market not found');
     if (msg.includes('parlay_too_few_legs'))    throw new Error('A multi needs at least 2 selections');
-    if (msg.includes('parlay_correlated_legs')) throw new Error('nice try you cheeky bastard.\n\non ya bike 🚲');
+    if (msg.includes('parlay_correlated_legs')) throw new Error('Nice try you cheeky bastard.\n\nOn ya bike!\n🚲');
     throw error;
   }
   return data;
