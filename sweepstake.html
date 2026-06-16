@@ -2160,8 +2160,8 @@ let _lastMatchData = null;
 let _autoHighlightsShown = false;
 
 function detectBracketStage(matches) {
-  const order = ['r32', 'r16', 'qf', 'sf', 'final'];
-  const stageMap = { ROUND_OF_32: 'r32', ROUND_OF_16: 'r16', QUARTER_FINALS: 'qf', SEMI_FINALS: 'sf', THIRD_PLACE: 'final', FINAL: 'final' };
+  const order = ['groups', 'r32', 'r16', 'qf', 'sf', 'final'];
+  const stageMap = { GROUP_STAGE: 'groups', LAST_32: 'r32', LAST_16: 'r16', ROUND_OF_32: 'r32', ROUND_OF_16: 'r16', QUARTER_FINALS: 'qf', SEMI_FINALS: 'sf', THIRD_PLACE: 'final', FINAL: 'final' };
   const active = new Set(matches.map(m => stageMap[m.stage]).filter(Boolean));
   // Latest stage that has any non-future match
   const played = new Set(matches.filter(m => m.status && m.status !== 'TIMED' && m.status !== 'SCHEDULED').map(m => stageMap[m.stage]).filter(Boolean));
