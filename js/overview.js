@@ -174,17 +174,79 @@
     activate('stateWaiting');
   }
 
+  // ── Match / fixture helpers ───────────────────────────────────────────────────
+  const STAGE_LABELS = {
+    group: 'Group stage', r32: 'Round of 32', r16: 'Round of 16',
+    qf: 'Quarter-final', sf: 'Semi-final', third: 'Third place', final: 'Final',
+  };
+
+  function stageLabel(f) {
+    if (f.stage === 'group') return f.group ? `Group ${f.group}` : 'Group stage';
+    return STAGE_LABELS[f.stage] || 'Knockout';
+  }
+
+  function sideName(side) {
+    if (!side) return 'TBC';
+    if (side.code) {
+      const fc = (typeof getFlagColors === 'function') ? getFlagColors(side.code) : null;
+      return (fc && fc.name) || side.code;
+    }
+    return side.label || 'TBC';
+  }
+  function sideFlag(side) {
+    return (side && side.code && typeof teamFlagEmoji === 'function') ? teamFlagEmoji(side.code) : '🏳';
+  }
+
+  // Map a bet selection to a human label using the fixture's teams.
+  function selectionLabel(sel, f) {
+    if (sel === 'home') return sideName(f.home);
+    if (sel === 'away') return sideName(f.away);
+    if (sel === 'draw') return 'Draw';
+    return sel; // correct-score etc.
+  }
+
+  // Short, friendly countdown for list rows: "2d", "5h 12m", "44m", "3m", "Live".
+  function cdShort(ms) {
+    if (ms <= 0) return 'Live';
+    const m = Math.floor(ms / 60000);
+    if (m >= 1440) return `${Math.floor(m / 1440)}d`;
+    if (m >= 60)   return `${Math.floor(m / 60)}h ${m % 60}m`;
+    return `${m}m`;
+  }
+
+  // Precise ticking countdown for the hero: "HH:MM:SS" or "Xd HH:MM".
+  function cdLong(ms) {
+    if (ms <= 0) return null;
+    const s = Math.floor(ms / 1000);
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    const pad = n => String(n).padStart(2, '0');
+    if (d > 0) return `${d}d ${pad(h)}:${pad(m)}`;
+    return `${pad(h)}:${pad(m)}:${pad(sec)}`;
+  }
+
+  function fixtureById(no) {
+    return (window.WC2026_FIXTURES || []).find(f => f.match_no === no) || null;
+  }
+
   // ── State: live overview dashboard ────────────────────────────────────────────
+  let _ticker = null;
+  let _heroCtx = null;
+
   async function renderOverviewState(tournament, myParticipantId) {
     const code = tournament.code;
+    const bracketHref = `sweepstake.html?code=${code}`;
+    const betHref     = `betting.html?code=${code}`;
     document.getElementById('ovTourneyName').textContent = tournament.name;
     document.getElementById('ovCode').textContent = code;
-    document.getElementById('ovBracketLink').href = `sweepstake.html?code=${code}`;
-    document.getElementById('ovBetLink').href     = `betting.html?code=${code}`;
-    document.getElementById('ovMeta').textContent = 'Loading…';
-    document.getElementById('ovTeams').innerHTML  = '';
-    document.getElementById('ovMatches').innerHTML = '<div class="ov-loading">Loading…</div>';
-    document.getElementById('ovResults').style.display = 'none';
+    document.getElementById('ovBracketLink').href = bracketHref;
+    document.getElementById('ovBracketBtn').href  = bracketHref;
+    document.getElementById('ovBetLink').href     = betHref;
+    document.getElementById('ovBetBtn').href       = betHref;
+    document.getElementById('ovSweepMatches').innerHTML = '<div class="ov-loading">Loading…</div>';
+    document.getElementById('ovBetMatches').innerHTML   = '<div class="ov-loading">Loading…</div>';
 
     activate('stateOverview');
 
@@ -195,8 +257,8 @@
         db.from('participants').select('id, coin_balance').eq('tournament_id', tid).order('coin_balance', { ascending: false }),
         db.from('participants').select('coin_balance, nickname').eq('id', myParticipantId).single(),
         db.from('allocations').select('team_code, team_name').eq('tournament_id', tid).eq('participant_id', myParticipantId),
-        db.from('bets').select('selection, stake, potential_payout, bet_markets(match_no)').eq('participant_id', myParticipantId).eq('tournament_id', tid).eq('status', 'pending'),
-        db.from('bets').select('selection, stake, potential_payout, status, bet_markets(match_no, match_name)').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('created_at', { ascending: false }).limit(4),
+        db.from('bets').select('selection, stake, potential_payout, odds, bet_markets(match_no)').eq('participant_id', myParticipantId).eq('tournament_id', tid).eq('status', 'pending'),
+        db.from('bets').select('status').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('created_at', { ascending: false }),
       ]);
 
       const allParticipants = allPRes.data  || [];
@@ -207,6 +269,7 @@
 
       const balance     = myP?.coin_balance ?? null;
       const myTeamCodes = allocations.map(a => a.team_code);
+      const teamSet     = new Set(myTeamCodes);
 
       let rank = null;
       if (balance !== null && allParticipants.length) {
@@ -219,94 +282,224 @@
         if (mn) pendingByMatchNo[mn] = bet;
       }
 
-      // Meta row (rank + balance)
+      // ── Sweepstake card ──
       const medals = ['🥇', '🥈', '🥉'];
-      const parts  = [];
-      if (rank !== null) parts.push(`${medals[rank - 1] || `#${rank}`} of ${allParticipants.length}`);
-      if (balance !== null) parts.push(`🪙 ${balance}`);
-      document.getElementById('ovMeta').textContent = parts.join('  ·  ') || '';
+      document.getElementById('ovRank').textContent =
+        (rank !== null) ? `${medals[rank - 1] || `#${rank}`} of ${allParticipants.length}` : '—';
 
-      // Teams row
       const teamsEl = document.getElementById('ovTeams');
       if (myTeamCodes.length && typeof teamFlagEmoji === 'function' && typeof getFlagColors === 'function') {
         teamsEl.innerHTML = allocations.map(a => {
           const c = getFlagColors(a.team_code);
           return `<span class="team-pill" style="background:${c.primary};color:${c.secondary || '#fff'}">${teamFlagEmoji(a.team_code)} ${esc(a.team_name)}</span>`;
         }).join('');
+      } else {
+        teamsEl.innerHTML = '';
       }
+      renderSweepMatches(teamSet);
 
-      // Upcoming matches
-      renderUpcomingMatches(myTeamCodes, pendingByMatchNo);
+      // ── Betting card ──
+      document.getElementById('ovBalance').textContent = (balance !== null) ? `🪙 ${balance}` : '—';
+      renderBetBar(pendingBets.length, settledBets);
+      renderBetMatches(pendingBets, pendingByMatchNo);
 
-      // Settled bets
-      if (settledBets.length) {
-        const listEl = document.getElementById('ovResultsList');
-        listEl.innerHTML = settledBets.map(bet => {
-          const won = bet.status === 'won';
-          const net = won ? bet.potential_payout - bet.stake : bet.stake;
-          return `<div class="ov-result-row">
-            <span class="ov-result-icon ${won ? 'ov-won' : 'ov-lost'}">${won ? '✓' : '✗'}</span>
-            <span class="ov-result-sel">${esc(bet.selection)}</span>
-            <span class="ov-result-coins ${won ? 'ov-won' : 'ov-lost'}">${won ? '+' : '-'}🪙${net}</span>
-          </div>`;
-        }).join('');
-        document.getElementById('ovResults').style.display = 'block';
-      }
+      // ── Hero (next kickoff) — ticks live ──
+      _heroCtx = { teamSet, pendingByMatchNo };
+      startTicker();
     } catch (err) {
-      document.getElementById('ovMeta').textContent = '';
-      document.getElementById('ovMatches').innerHTML = '<div class="ov-empty">Could not load data — try refreshing.</div>';
+      document.getElementById('ovSweepMatches').innerHTML = '<div class="hub-empty">Could not load — try refreshing.</div>';
+      document.getElementById('ovBetMatches').innerHTML   = '<div class="hub-empty">Could not load — try refreshing.</div>';
       console.error('[overview] hydrate error', err);
     }
   }
 
-  function renderUpcomingMatches(myTeamCodes, pendingByMatchNo) {
-    const el = document.getElementById('ovMatches');
-    if (!window.WC2026_FIXTURES) {
-      el.innerHTML = '<div class="ov-empty">Match data unavailable.</div>';
-      return;
-    }
-
-    const now     = Date.now();
-    const teamSet = new Set(myTeamCodes);
-
-    const relevant = WC2026_FIXTURES
+  // Sweepstake card: upcoming matches involving the player's teams.
+  function renderSweepMatches(teamSet) {
+    const el = document.getElementById('ovSweepMatches');
+    const now = Date.now();
+    const rows = (window.WC2026_FIXTURES || [])
       .filter(f => {
-        if (new Date(f.kickoff_utc) <= now) return false;
-        const hc = f.home.code, ac = f.away.code;
-        return (hc && teamSet.has(hc)) || (ac && teamSet.has(ac)) || !!pendingByMatchNo[f.match_no];
+        if (new Date(f.kickoff_utc).getTime() <= now) return false;
+        return (f.home.code && teamSet.has(f.home.code)) || (f.away.code && teamSet.has(f.away.code));
       })
       .sort((a, b) => new Date(a.kickoff_utc) - new Date(b.kickoff_utc))
-      .slice(0, 4);
+      .slice(0, 3);
 
-    if (!relevant.length) {
-      el.innerHTML = '<div class="ov-empty">No upcoming matches for your teams.</div>';
+    if (!rows.length) {
+      el.innerHTML = `<div class="hub-empty">No upcoming matches for your teams right now.</div>`;
       return;
     }
 
-    el.innerHTML = relevant.map(f => {
-      const kickoff = formatKickoff(f.kickoff_utc);
-      const hc = f.home.code, ac = f.away.code;
-      const hName  = hc || f.home.label  || 'TBC';
-      const aName  = ac || f.away.label  || 'TBC';
-      const hFlag  = (hc && typeof teamFlagEmoji === 'function') ? teamFlagEmoji(hc) : '⬜';
-      const aFlag  = (ac && typeof teamFlagEmoji === 'function') ? teamFlagEmoji(ac) : '⬜';
-      const isMyTeam = (hc && teamSet.has(hc)) || (ac && teamSet.has(ac));
-      const bet    = pendingByMatchNo[f.match_no];
-
-      let badges = '';
-      if (isMyTeam) badges += `<span class="ov-badge-team">▷ Your team</span>`;
-      if (bet)      badges += `<span class="ov-badge-bet">${esc(bet.selection)} · 🪙${bet.stake} → 🪙${bet.potential_payout}</span>`;
-
-      return `<div class="ov-match">
-        <div class="ov-match-top">
-          <span class="ov-match-flag">${hFlag}</span>
-          <span class="ov-match-name">${esc(hName)} vs ${esc(aName)}</span>
-          <span class="ov-match-flag">${aFlag}</span>
-          ${kickoff ? `<span class="ov-match-time">${kickoff}</span>` : ''}
-        </div>
-        ${badges ? `<div class="ov-match-badges">${badges}</div>` : ''}
-      </div>`;
+    el.innerHTML = rows.map(f => {
+      const hMine = f.home.code && teamSet.has(f.home.code);
+      const aMine = f.away.code && teamSet.has(f.away.code);
+      const hName = `<span class="${hMine ? 'me' : ''}">${esc(sideName(f.home))}</span>`;
+      const aName = `<span class="${aMine ? 'me' : ''}">${esc(sideName(f.away))}</span>`;
+      return matchRow({
+        flags: sideFlag(f.home) + sideFlag(f.away),
+        teams: `${hName} v ${aName}`,
+        sub: `${stageLabel(f)} · ${esc(venueShort(f.venue))}`,
+        kickoff: f.kickoff_utc,
+      });
     }).join('');
+  }
+
+  // Betting card: open bets (or upcoming matches to bet on if none yet).
+  function renderBetMatches(pendingBets, pendingByMatchNo) {
+    const el = document.getElementById('ovBetMatches');
+    const labelEl = document.getElementById('ovBetListLabel');
+    const now = Date.now();
+
+    if (pendingBets.length) {
+      labelEl.textContent = 'Your open bets';
+      const rows = pendingBets
+        .map(bet => ({ bet, f: fixtureById(bet.bet_markets?.match_no) }))
+        .filter(x => x.f)
+        .sort((a, b) => new Date(a.f.kickoff_utc) - new Date(b.f.kickoff_utc))
+        .slice(0, 4);
+
+      if (rows.length) {
+        el.innerHTML = rows.map(({ bet, f }) => {
+          const pick = selectionLabel(bet.selection, f);
+          const odds = bet.odds ? `${bet.odds}x · ` : '';
+          return matchRow({
+            flags: sideFlag(f.home) + sideFlag(f.away),
+            teams: `${esc(sideName(f.home))} v ${esc(sideName(f.away))}`,
+            sub: `<span class="win">${esc(pick)}</span> · ${odds}🪙${bet.stake} → 🪙${bet.potential_payout}`,
+            kickoff: f.kickoff_utc,
+          });
+        }).join('');
+        return;
+      }
+    }
+
+    // No open bets — nudge with the next couple of matches to bet on.
+    labelEl.textContent = 'Coming up';
+    const upcoming = (window.WC2026_FIXTURES || [])
+      .filter(f => new Date(f.kickoff_utc).getTime() > now)
+      .sort((a, b) => new Date(a.kickoff_utc) - new Date(b.kickoff_utc))
+      .slice(0, 2);
+    const list = upcoming.map(f => matchRow({
+      flags: sideFlag(f.home) + sideFlag(f.away),
+      teams: `${esc(sideName(f.home))} v ${esc(sideName(f.away))}`,
+      sub: `${stageLabel(f)} · ${esc(venueShort(f.venue))}`,
+      kickoff: f.kickoff_utc,
+    })).join('');
+    el.innerHTML = `<div class="hub-empty">No open bets yet — back a team before kickoff.</div>${list}`;
+  }
+
+  // Compact betting summary bar: open count, W–L record, recent form.
+  function renderBetBar(openCount, settledBets) {
+    const el = document.getElementById('ovBetBar');
+    const wins   = settledBets.filter(b => b.status === 'won').length;
+    const losses = settledBets.filter(b => b.status === 'lost').length;
+    const parts = [`<span><b>${openCount}</b> open</span>`];
+    if (settledBets.length) {
+      parts.push(`<span><b>${wins}</b>W <b>${losses}</b>L</span>`);
+      const form = settledBets.slice(0, 5).map(b =>
+        b.status === 'won'
+          ? `<span class="hub-form-dot w">W</span>`
+          : `<span class="hub-form-dot l">L</span>`
+      ).join('');
+      parts.push(`<span class="hub-form">${form}</span>`);
+    }
+    el.innerHTML = parts.join('');
+  }
+
+  function venueShort(venue) {
+    if (!venue) return 'TBC';
+    const parts = venue.split(',');
+    return (parts[parts.length - 1] || venue).trim();
+  }
+
+  // Shared upcoming-match row markup. Time updates live via [data-kickoff].
+  function matchRow({ flags, teams, sub, kickoff }) {
+    return `<div class="hub-row">
+      <span class="hub-row-flags">${flags}</span>
+      <div class="hub-row-main">
+        <div class="hub-row-teams">${teams}</div>
+        ${sub ? `<div class="hub-row-sub">${sub}</div>` : ''}
+      </div>
+      <div class="hub-row-time">
+        <span class="cd" data-kickoff="${kickoff}"></span>
+      </div>
+    </div>`;
+  }
+
+  // ── Hero next-match picker + live ticker ──────────────────────────────────────
+  // Prefer a match in progress (kicked off within the live window); otherwise the
+  // next match to kick off, tournament-wide — regardless of bets or teams.
+  const LIVE_WINDOW_MS = 130 * 60000;
+  function pickHeroFixture(now) {
+    let live = null, liveKo = 0, next = null, nextKo = Infinity;
+    for (const f of (window.WC2026_FIXTURES || [])) {
+      const ko = new Date(f.kickoff_utc).getTime();
+      if (isNaN(ko)) continue;
+      const diff = ko - now;
+      if (diff <= 0) {
+        if (diff > -LIVE_WINDOW_MS && ko > liveKo) { live = f; liveKo = ko; }
+      } else if (ko < nextKo) { next = f; nextKo = ko; }
+    }
+    return live ? { fixture: live, ko: liveKo, live: true }
+                : (next ? { fixture: next, ko: nextKo, live: false } : null);
+  }
+
+  function renderHero(now) {
+    const card = document.getElementById('ovNextMatch');
+    const pick = pickHeroFixture(now);
+    if (!pick) { card.hidden = true; return; }
+    card.hidden = false;
+
+    const f = pick.fixture;
+    const ctx = _heroCtx || { teamSet: new Set(), pendingByMatchNo: {} };
+
+    document.getElementById('nmHomeFlag').textContent = sideFlag(f.home);
+    document.getElementById('nmAwayFlag').textContent = sideFlag(f.away);
+    document.getElementById('nmHomeName').textContent = sideName(f.home);
+    document.getElementById('nmAwayName').textContent = sideName(f.away);
+    document.getElementById('nmStage').textContent    = stageLabel(f);
+
+    const eyebrow = document.getElementById('nmEyebrow');
+    const cdEl    = document.getElementById('nmCountdown');
+    const whenEl  = document.getElementById('nmWhen');
+
+    if (pick.live) {
+      const mins = Math.floor((now - pick.ko) / 60000);
+      eyebrow.textContent = 'Live now';
+      eyebrow.classList.add('live');
+      cdEl.classList.add('live');
+      cdEl.textContent = mins >= 0 && mins < 130 ? `${mins}'` : 'LIVE';
+      whenEl.textContent = `Kicked off · ${venueShort(f.venue)}`;
+    } else {
+      eyebrow.textContent = '⚡ Next kickoff';
+      eyebrow.classList.remove('live');
+      cdEl.classList.remove('live');
+      cdEl.textContent = cdLong(pick.ko - now) || '00:00:00';
+      whenEl.textContent = `${formatKickoff(f.kickoff_utc) || 'Soon'} · ${venueShort(f.venue)}`;
+    }
+
+    let tags = '';
+    const isMyTeam = (f.home.code && ctx.teamSet.has(f.home.code)) ||
+                     (f.away.code && ctx.teamSet.has(f.away.code));
+    if (isMyTeam) tags += `<span class="nm-tag team">▷ Your team</span>`;
+    if (ctx.pendingByMatchNo[f.match_no]) tags += `<span class="nm-tag bet">⚡ You've bet</span>`;
+    document.getElementById('nmTags').innerHTML = tags;
+  }
+
+  function tick() {
+    const now = Date.now();
+    renderHero(now);
+    document.querySelectorAll('#stateOverview .hub-row-time .cd[data-kickoff]').forEach(el => {
+      const ms = new Date(el.dataset.kickoff).getTime() - now;
+      el.textContent = cdShort(ms);
+      el.classList.toggle('soon', ms > 0 && ms <= 3600000);
+    });
+  }
+
+  function startTicker() {
+    if (_ticker) clearInterval(_ticker);
+    tick();
+    _ticker = setInterval(tick, 1000);
   }
 
   // ── State: spectator (live but not joined) ────────────────────────────────────
