@@ -484,6 +484,16 @@
     .lb-flash-down { animation: lbDown .8s ease; }
     @keyframes lbUp   { 0%,100% { background: transparent; } 40% { background: rgba(60,176,74,.2); } }
     @keyframes lbDown { 0%,100% { background: transparent; } 40% { background: rgba(255,59,92,.15); } }
+
+    /* ── Leaderboard tab ── */
+    .lb-rows { padding: 10px 0; }
+    .lb-row { display: flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 0.85rem; }
+    .lb-row.lb-me { background: rgba(255,154,208,.06); }
+    .lb-rank { width: 22px; text-align: center; font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); }
+    .lb-avatar { flex-shrink: 0; }
+    .lb-name { flex: 1; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-coins { font-family: var(--font-mono); font-size: 0.78rem; color: var(--gold); white-space: nowrap; }
+    .lb-empty { padding: 20px 16px; color: var(--muted); font-size: 0.85rem; text-align: center; }
   </style>
 </head>
 <body>
@@ -493,7 +503,7 @@
 <div class="bet-page">
 
   <div class="bet-header">
-    <a id="backLink" href="#" class="bet-back">← Overview</a>
+    <a id="backLink" href="#" class="bet-back">← Bracket</a>
     <span class="bet-title">Betting</span>
     <div class="bet-balance">🪙 <span class="bet-balance-num" id="balanceAmt">—</span></div>
     <div class="bet-participant">
@@ -506,6 +516,7 @@
     <button class="bet-tab active" id="tabMarkets" onclick="showTab('markets')">Upcoming</button>
     <button class="bet-tab" id="tabMyBets" onclick="showTab('mybets')">My Bets</button>
     <button class="bet-tab" id="tabAllBets" onclick="showTab('allbets')">All Bets</button>
+    <button class="bet-tab" id="tabLeaderboard" onclick="showTab('leaderboard')">Leaderboard</button>
     <button class="bet-tab" id="tabAdmin" onclick="showTab('admin')" style="display:none">⚙ Admin</button>
   </div>
 
@@ -528,6 +539,11 @@
   <div id="panelAllBets" style="display:none">
     <div id="allBetsFilter" class="all-bets-filter"></div>
     <div id="allBetsList" class="my-bets-list"></div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div id="panelLeaderboard" style="display:none">
+    <div id="lbBetContent" class="lb-rows"></div>
   </div>
 
   <!-- Admin: settle / resolve (only shown when an admin token is present) -->
@@ -570,6 +586,8 @@
 <script src="js/flag-colors.js"></script>
 <script src="js/avatars.js"></script>
 <script src="js/wc2026-fixtures.js"></script>
+<script src="js/football.js"></script>
+<script src="js/leaderboard.js"></script>
 <script src="js/betting.js"></script>
 
 <script>
@@ -608,7 +626,7 @@ const _me = location.hash.match(/me=([0-9a-fA-F-]+)/);
 async function init() {
   if (!code || !db) return;
 
-  document.getElementById('backLink').href = `overview.html?code=${code}`;
+  document.getElementById('backLink').href = `sweepstake.html?code=${code}`;
 
   // Load tournament
   const { data: tourn, error: tErr } = await db.from('tournaments').select('*').eq('code', code).single();
@@ -653,6 +671,9 @@ async function init() {
   if (fromHash) localStorage.setItem(`wc26_admin_${code}`, fromHash);
   _adminToken = fromHash || localStorage.getItem(`wc26_admin_${code}`) || null;
   if (_adminToken) document.getElementById('tabAdmin').style.display = '';
+
+  initBettingLeaderboard();
+  startPolling(data => triggerSettlementForFinished(data.matches));
 
   await loadMarketsView();
 }
@@ -725,19 +746,54 @@ async function loadMyBetsView() {
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
+// ── Settlement trigger (betting concern — auto-fires when match data is polled) ──
+
+const _settledMatchCache = new Set();
+
+function triggerSettlementForFinished(matches) {
+  if (!_tournament) return;
+  for (const m of matches) {
+    if (m.status !== 'FINISHED') continue;
+    const key = String(m.id);
+    if (_settledMatchCache.has(key)) continue;
+    _settledMatchCache.add(key);
+    fetch('/api/settle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ matchId: key, tournamentId: _tournament.id }),
+    }).catch(() => {});
+  }
+}
+
+// ── Leaderboard ────────────────────────────────────────────────────────────────
+
+function initBettingLeaderboard() {
+  const container = document.getElementById('lbBetContent');
+  async function refresh() {
+    if (container && _tournament) {
+      await refreshLeaderboard(_tournament.id, _participant?.id, container);
+    }
+  }
+  refresh();
+  subscribeLeaderboard(_tournament.id, refresh);
+}
+
 function showTab(tab) {
   _currentTab = tab;
-  document.getElementById('panelMarkets').style.display  = tab === 'markets'  ? 'block' : 'none';
-  document.getElementById('panelMyBets').style.display   = tab === 'mybets'   ? 'block' : 'none';
-  document.getElementById('panelAllBets').style.display  = tab === 'allbets'  ? 'block' : 'none';
-  document.getElementById('panelAdmin').style.display    = tab === 'admin'    ? 'block' : 'none';
+  document.getElementById('panelMarkets').style.display     = tab === 'markets'     ? 'block' : 'none';
+  document.getElementById('panelMyBets').style.display      = tab === 'mybets'      ? 'block' : 'none';
+  document.getElementById('panelAllBets').style.display     = tab === 'allbets'     ? 'block' : 'none';
+  document.getElementById('panelLeaderboard').style.display = tab === 'leaderboard' ? 'block' : 'none';
+  document.getElementById('panelAdmin').style.display       = tab === 'admin'       ? 'block' : 'none';
   document.getElementById('tabMarkets').classList.toggle('active', tab === 'markets');
   document.getElementById('tabMyBets').classList.toggle('active', tab === 'mybets');
   document.getElementById('tabAllBets').classList.toggle('active', tab === 'allbets');
+  document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'leaderboard');
   document.getElementById('tabAdmin').classList.toggle('active', tab === 'admin');
-  if (tab === 'mybets')  loadMyBetsView();
-  if (tab === 'allbets') loadAllBetsView();
-  if (tab === 'admin')   renderAdminPanel();
+  if (tab === 'mybets')      loadMyBetsView();
+  if (tab === 'allbets')     loadAllBetsView();
+  if (tab === 'leaderboard') refreshLeaderboard(_tournament.id, _participant?.id, document.getElementById('lbBetContent'));
+  if (tab === 'admin')       renderAdminPanel();
 }
 
 function renderAdminPanel() {
