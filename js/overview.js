@@ -236,17 +236,18 @@
     try {
       const tid = tournament.id;
 
-      const [myPRes, allocRes, pendingRes, settledRes] = await Promise.all([
+      const [myPRes, allocRes, pendingRes, settledRes, settledParlaysRes] = await Promise.all([
         db.from('participants').select('coin_balance, nickname').eq('id', myParticipantId).single(),
         db.from('allocations').select('team_code, team_name').eq('tournament_id', tid).eq('participant_id', myParticipantId),
         db.from('bets').select('selection, stake, potential_payout, odds, bet_markets(match_no)').eq('participant_id', myParticipantId).eq('tournament_id', tid).eq('status', 'pending'),
-        db.from('bets').select('status, stake, potential_payout').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('created_at', { ascending: false }),
+        db.from('bets').select('status, stake, potential_payout').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('placed_at', { ascending: false }),
+        db.from('parlay_bets').select('status, stake, potential_payout').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('placed_at', { ascending: false }),
       ]);
 
       const myP         = myPRes.data;
       const allocations = allocRes.data  || [];
       const pendingBets = pendingRes.data || [];
-      const settledBets = settledRes.data || [];
+      const settledBets = [...(settledRes.data || []), ...(settledParlaysRes.data || [])];
 
       const balance     = myP?.coin_balance ?? null;
       const myTeamCodes = allocations.map(a => a.team_code);
