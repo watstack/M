@@ -122,6 +122,13 @@
     .bet-tab.active { background: var(--green); border-color: var(--green); color: #0a0805; box-shadow: 2px 2px 0 rgba(0,0,0,.5); }
     .bet-tab:hover:not(.active) { color: var(--text); }
 
+    /* When in bracket state: hide the global Kickoff header and admin bar */
+    body.in-bracket header.site-header { display: none; }
+    body.in-bracket #adminBar { display: none !important; }
+
+    /* Bracket page container (same constraints as .bet-page in betting.html) */
+    .bracket-page { max-width: 780px; margin: 0 auto; padding: 0 16px 120px; }
+
     /* ── Players grid view ── */
     #playerView { display: none; padding-bottom: 40px; }
     #playerView.show {
@@ -1007,6 +1014,7 @@
 
   <!-- STATE 4: Live bracket -->
   <div class="state" id="stateBracket">
+  <div class="bracket-page">
 
     <!-- Header (mirrors betting.html) -->
     <div class="bet-header">
@@ -1148,7 +1156,16 @@
       </div>
 
     </div>
-  </div>
+
+    <!-- Bracket admin controls (shown at bottom for admins only) -->
+    <div id="bracketAdminBar" class="admin-bar" style="display:none;margin-top:32px">
+      <span class="admin-bar-label">⚙ Admin controls</span>
+      <button class="btn-ghost" id="bracketRemoveBtn" style="font-size:0.82rem;padding:7px 12px">Remove participant</button>
+      <button class="btn-danger btn-pixel" id="bracketReopenBtn" style="font-size:0.55rem;padding:7px 12px">Reset draw</button>
+    </div>
+
+  </div><!-- /bracket-page -->
+  </div><!-- /stateBracket -->
 
 </div>
 
@@ -1926,12 +1943,15 @@ window.handleRemove = async function(participantId) {
 function renderBracketState() {
   document.querySelectorAll('.state').forEach(s => s.classList.remove('active'));
   document.getElementById('stateBracket').classList.add('active');
-  document.body.className = '';
+  document.body.className = 'in-bracket';
   Music.play('mortal');
   if (isAdmin) {
-    const reopenEl = document.getElementById('reopenBtn');
-    reopenEl.style.display = 'inline-flex';
-    reopenEl.onclick = handleReopen;
+    const bracketAdminBar = document.getElementById('bracketAdminBar');
+    if (bracketAdminBar) bracketAdminBar.style.display = 'flex';
+    const bracketReopenBtn = document.getElementById('bracketReopenBtn');
+    if (bracketReopenBtn) bracketReopenBtn.onclick = handleReopen;
+    const bracketRemoveBtn = document.getElementById('bracketRemoveBtn');
+    if (bracketRemoveBtn) bracketRemoveBtn.onclick = () => setBracketFilter('players');
   }
 
   // Wire up betting link in header
