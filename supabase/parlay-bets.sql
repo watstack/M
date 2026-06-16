@@ -90,6 +90,22 @@ BEGIN
     IF v_tid IS NULL THEN v_tid := v_market.tournament_id; END IF;
   END LOOP;
 
+  -- Reject parlays that mix match_result + correct_score for the same match
+  IF EXISTS (
+    SELECT 1
+    FROM (
+      SELECT bm.match_no, bm.market_type
+      FROM jsonb_array_elements(p_legs) AS leg
+      JOIN bet_markets bm ON bm.id = (leg->>'market_id')::UUID
+    ) sub
+    GROUP BY match_no
+    HAVING COUNT(DISTINCT market_type) > 1
+       AND bool_or(market_type = 'match_result')
+       AND bool_or(market_type = 'correct_score')
+  ) THEN
+    RAISE EXCEPTION 'parlay_correlated_legs';
+  END IF;
+
   -- Balance check + single deduction for the whole parlay
   SELECT coin_balance INTO v_balance FROM participants
   WHERE id = p_participant_id FOR UPDATE;

@@ -820,12 +820,27 @@ function renderBetSlip() {
 }
 
 function selectBet(btn) {
-  const marketId  = btn.dataset.marketId;
-  const selection = btn.dataset.selection;
-  const odds      = parseFloat(btn.dataset.odds);
+  const marketId   = btn.dataset.marketId;
+  const selection  = btn.dataset.selection;
+  const odds       = parseFloat(btn.dataset.odds);
+  const matchNo    = btn.dataset.matchNo || '';
+  const marketType = btn.dataset.marketType || '';
   const marketCard = btn.closest('.market-card');
   const matchName  = marketCard?.querySelector('.match-name')?.textContent?.trim() || '';
   const label      = labelForSelection(selection, matchName);
+
+  // Block correlated same-match legs (match_result ↔ correct_score)
+  if (matchNo && marketType) {
+    const conflict = _parlayLegs.find(l =>
+      l.matchNo === matchNo && l.marketType !== marketType &&
+      ((l.marketType === 'match_result' && marketType === 'correct_score') ||
+       (l.marketType === 'correct_score' && marketType === 'match_result'))
+    );
+    if (conflict) {
+      showToast('nice try you cheeky bastard.\n\non ya bike 🚲');
+      return;
+    }
+  }
 
   const idx = _parlayLegs.findIndex(l => l.marketId === marketId);
   if (idx >= 0) {
@@ -842,11 +857,11 @@ function selectBet(btn) {
     } else {
       // Different selection for same market: replace
       btn.classList.add('selected');
-      _parlayLegs[idx] = { marketId, selection, odds, matchName, label };
+      _parlayLegs[idx] = { marketId, selection, odds, matchName, label, matchNo, marketType };
     }
   } else {
     btn.classList.add('selected');
-    _parlayLegs.push({ marketId, selection, odds, matchName, label });
+    _parlayLegs.push({ marketId, selection, odds, matchName, label, matchNo, marketType });
   }
 
   if (_parlayLegs.length === 0) {

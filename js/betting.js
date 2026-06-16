@@ -19,7 +19,7 @@ function csOdds(score) { return CORRECT_SCORE_ODDS[score] ?? DEFAULT_CS_ODDS; }
 
 // ─── Score grid helper ────────────────────────────────────────────────────────
 
-function buildScoreGrid(matchId) {
+function buildScoreGrid(matchId, matchNo) {
   const homeScores = [
     '1-0','2-0','2-1','3-0','3-1','3-2','4-0','4-1','4-2','5-0'
   ];
@@ -29,7 +29,7 @@ function buildScoreGrid(matchId) {
   ];
 
   function scoreBtn(score) {
-    return `<button class="score-btn" data-market-id="${matchId}" data-selection="${score}" data-odds="${csOdds(score)}" onclick="selectBet(this)">
+    return `<button class="score-btn" data-market-id="${matchId}" data-selection="${score}" data-odds="${csOdds(score)}" data-match-no="${matchNo || ''}" data-market-type="correct_score" onclick="selectBet(this)">
       ${score} <span class="score-odds">${csOdds(score)}x</span>
     </button>`;
   }
@@ -129,7 +129,8 @@ async function placeParlay(participantId, legs, stake, totalOdds) {
     if (msg.includes('market_locked'))        throw new Error('One or more markets are not yet available');
     if (msg.includes('insufficient_balance')) throw new Error('Not enough coins');
     if (msg.includes('market_not_found'))     throw new Error('Market not found');
-    if (msg.includes('parlay_too_few_legs'))  throw new Error('A multi needs at least 2 selections');
+    if (msg.includes('parlay_too_few_legs'))    throw new Error('A multi needs at least 2 selections');
+    if (msg.includes('parlay_correlated_legs')) throw new Error('nice try you cheeky bastard.\n\non ya bike 🚲');
     throw error;
   }
   return data;
@@ -256,11 +257,11 @@ function renderMatchCard(fixture, pair) {
 
   const resultBtn = (sel, label) => {
     if (canBet && o[sel] != null) {
-      return oddsBtn(marketId, sel, label, o[sel], false, isSettled && mr.result === sel);
+      return oddsBtn(marketId, sel, label, o[sel], false, isSettled && mr.result === sel, fixture.match_no);
     }
     // Settled with odds but closed: show winner highlight when possible.
     if (isSettled && mr && o[sel] != null) {
-      return oddsBtn(marketId, sel, label, o[sel], true, mr.result === sel);
+      return oddsBtn(marketId, sel, label, o[sel], true, mr.result === sel, fixture.match_no);
     }
     return oddsTbc(label);
   };
@@ -270,7 +271,7 @@ function renderMatchCard(fixture, pair) {
         <span>Correct Score</span><span class="cs-arrow">▾</span>
       </div>
       <div class="cs-content hidden" data-cs-market="${cs.id}">
-        ${buildScoreGrid(cs.id)}
+        ${buildScoreGrid(cs.id, fixture.match_no)}
       </div>`
     : '';
 
@@ -310,10 +311,10 @@ function oddsTbc(label) {
   </button>`;
 }
 
-function oddsBtn(marketId, selection, label, price, disabled, isResult) {
+function oddsBtn(marketId, selection, label, price, disabled, isResult, matchNo) {
   if (price == null) return '';
   const cls = ['odds-btn', disabled ? 'disabled' : '', isResult ? 'result-winner' : ''].filter(Boolean).join(' ');
-  return `<button class="${cls}" data-market-id="${marketId}" data-selection="${selection}" data-odds="${price}"
+  return `<button class="${cls}" data-market-id="${marketId}" data-selection="${selection}" data-odds="${price}" data-match-no="${matchNo || ''}" data-market-type="match_result"
     onclick="selectBet(this)" ${disabled ? 'disabled' : ''}>
     <span class="odds-label">${label}</span>
     <span class="odds-price">${price}</span>
