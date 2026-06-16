@@ -182,6 +182,13 @@ const BRACKET_FEED = {
   101: ['W97', 'W98'], 102: ['W99', 'W100'], 103: ['L101', 'L102'], 104: ['W101', 'W102'],
 };
 
+// Expose on window so browser scripts can access via window.WC2026_FIXTURES.
+// (const/let at top level don't become window properties unlike var.)
+if (typeof window !== 'undefined') {
+  window.WC2026_FIXTURES = WC2026_FIXTURES;
+  window.FIXTURE_BY_NO   = FIXTURE_BY_NO;
+}
+
 // CommonJS export so server code (api/) can reuse the same data.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { WC2026_FIXTURES, FIXTURE_BY_NO, BRACKET_FEED, wcSlotLabel };
