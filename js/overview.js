@@ -323,6 +323,7 @@
       const isPast = ko <= now && (now - ko) >= LIVE_WINDOW_MS;
       const isLive = ko <= now && (now - ko) < LIVE_WINDOW_MS;
       const isMy   = (f.home.code && teamSet.has(f.home.code)) || (f.away.code && teamSet.has(f.away.code));
+      const hasBet = !!pendingByMatchNo[f.match_no];
       const classes = ['fix-card',
         isPast ? 'past-card' : '',
         isLive ? 'live-card' : '',
@@ -346,6 +347,7 @@
         </div>
         ${scoreHtml}
         ${timeHtml}
+        ${hasBet ? `<div class="fix-card-bet">🪙</div>` : ''}
       </div>`;
     }).join('');
 
