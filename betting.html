@@ -586,7 +586,6 @@
 <script src="js/flag-colors.js"></script>
 <script src="js/avatars.js"></script>
 <script src="js/wc2026-fixtures.js"></script>
-<script src="js/football.js"></script>
 <script src="js/leaderboard.js"></script>
 <script src="js/betting.js"></script>
 
@@ -673,7 +672,6 @@ async function init() {
   if (_adminToken) document.getElementById('tabAdmin').style.display = '';
 
   initBettingLeaderboard();
-  startPolling(data => triggerSettlementForFinished(data.matches));
 
   await loadMarketsView();
 }
@@ -745,25 +743,6 @@ async function loadMyBetsView() {
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
-
-// ── Settlement trigger (betting concern — auto-fires when match data is polled) ──
-
-const _settledMatchCache = new Set();
-
-function triggerSettlementForFinished(matches) {
-  if (!_tournament) return;
-  for (const m of matches) {
-    if (m.status !== 'FINISHED') continue;
-    const key = String(m.id);
-    if (_settledMatchCache.has(key)) continue;
-    _settledMatchCache.add(key);
-    fetch('/api/settle', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ matchId: key, tournamentId: _tournament.id }),
-    }).catch(() => {});
-  }
-}
 
 // ── Leaderboard ────────────────────────────────────────────────────────────────
 

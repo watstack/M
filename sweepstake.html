@@ -1318,6 +1318,7 @@ let drawRevealing   = false;
 let drawDone        = 0;
 let _drawRunning    = false;
 const _pendingSlots = {};
+const _settledMatchCache = new Set();
 const code = new URLSearchParams(window.location.search).get('code') || '';
 const adminToken = (() => {
   const m = window.location.hash.match(/admin=([a-zA-Z0-9\-]+)/);
@@ -1981,6 +1982,23 @@ function renderBracketState() {
 
 
 
+// ── Settlement trigger ────────────────────────────────────────────────────────
+
+function triggerSettlementForFinished(matches) {
+  if (!tournament) return;
+  for (const m of matches) {
+    if (m.status !== 'FINISHED') continue;
+    const key = String(m.id);
+    if (_settledMatchCache.has(key)) continue;
+    _settledMatchCache.add(key);
+    fetch('/api/settle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ matchId: key, tournamentId: tournament.id }),
+    }).catch(() => {});
+  }
+}
+
 function saveGroupCache(standings) {
   if (!standings || !standings.length) return;
   const map = {};
@@ -2160,6 +2178,7 @@ async function loadBracketData() {
       document.getElementById('bracketLiveTag').style.display  = live ? 'inline' : 'none';
       document.getElementById('apiUpdateTime').textContent =
         'Last updated: ' + new Date().toLocaleTimeString();
+      triggerSettlementForFinished(freshData.matches);
     });
   } catch (err) {
     const standings = buildSyntheticStandings();
