@@ -269,7 +269,7 @@
 
   function renderUpcomingMatches(myTeamCodes, pendingByMatchNo) {
     const el = document.getElementById('ovMatches');
-    if (!window.WC2026_FIXTURES) {
+    if (typeof WC2026_FIXTURES === 'undefined' || !WC2026_FIXTURES.length) {
       el.innerHTML = '<div class="ov-empty">Match data unavailable.</div>';
       return;
     }
