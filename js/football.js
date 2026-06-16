@@ -213,20 +213,6 @@ async function _schedulePoll() {
 
 // ─── Bracket helpers ──────────────────────────────────────────────────────────
 
-const STAGE_ORDER = [
-  'GROUP_STAGE', 'ROUND_OF_32', 'ROUND_OF_16',
-  'QUARTER_FINALS', 'SEMI_FINALS', 'THIRD_PLACE', 'FINAL',
-];
-
-const STAGE_LABELS = {
-  GROUP_STAGE:    'Group Stage',
-  ROUND_OF_32:    'Round of 32',
-  ROUND_OF_16:    'Round of 16',
-  QUARTER_FINALS: 'Quarter-Finals',
-  SEMI_FINALS:    'Semi-Finals',
-  THIRD_PLACE:    'Third-Place Play-off',
-  FINAL:          'Final',
-};
 
 function groupMatchesByStage(matches) {
   const grouped = {};
