@@ -200,7 +200,7 @@
       cursor: pointer;
       border-top: 1px solid var(--border);
       font-size: 0.82rem;
-      color: var(--muted);
+      color: var(--text);
     }
     .cs-toggle:hover { color: var(--text); }
     .cs-arrow { font-size: 0.7rem; transition: transform .15s; }
@@ -213,7 +213,7 @@
     .score-label {
       font-family: var(--font-pixel);
       font-size: 0.32rem;
-      color: var(--muted);
+      color: var(--text);
       margin-bottom: 8px;
       letter-spacing: .06em;
     }
@@ -302,14 +302,16 @@
 
     /* ── All bets (community view) ── */
     .all-bets-filter {
-      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+      display: flex; flex-wrap: nowrap; gap: 8px; margin-bottom: 16px;
+      overflow-x: auto; padding-bottom: 4px;
     }
+    .all-bets-filter::-webkit-scrollbar { display: none; }
     .filter-pill {
       display: flex; align-items: center; gap: 6px;
       background: var(--panel); border: 2px solid var(--border);
       border-radius: var(--radius); padding: 5px 10px; cursor: pointer;
-      font-size: 0.82rem; font-weight: 700;
-      box-shadow: 2px 2px 0 rgba(0,0,0,.4);
+      font-size: 0.82rem; font-weight: 700; color: var(--text);
+      box-shadow: 2px 2px 0 rgba(0,0,0,.4); flex-shrink: 0;
     }
     .filter-pill.active { border-color: var(--green); background: rgba(255,106,31,.12); }
     .filter-pill:hover:not(.active) { border-color: var(--muted); }
@@ -317,7 +319,7 @@
       display: flex; align-items: center; gap: 8px;
       margin-bottom: 6px;
     }
-    .all-bet-nick { font-size: 0.82rem; font-weight: 700; color: var(--muted); }
+    .all-bet-nick { font-size: 0.82rem; font-weight: 700; color: var(--text); }
 
     /* ── Admin settle/resolve ── */
     .admin-hint { color: var(--muted); font-size: 0.82rem; margin-bottom: 14px; line-height: 1.5; }
