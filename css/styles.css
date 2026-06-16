@@ -533,15 +533,15 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 
 /* ── Toast ───────────────────────────────────────────────────────────────── */
 #toast {
-  position: fixed; bottom: 24px; left: 50%;
-  transform: translateX(-50%) translateY(80px);
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0.92);
   background: var(--panel); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 12px 20px;
-  font-size: 0.9rem; font-weight: 600; z-index: 9999;
+  border-radius: var(--radius); padding: 24px;
+  font-size: 24px; font-weight: 600; z-index: 9999;
   transition: transform 0.3s ease, opacity 0.3s ease;
   opacity: 0; pointer-events: none; max-width: 340px; text-align: center;
 }
-#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+#toast.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 
 /* ── Slot counter ────────────────────────────────────────────────────────── */
 .slot-counter { display: flex; align-items: center; gap: 12px; font-family: var(--font-mono); }
