@@ -624,21 +624,30 @@ function renderGroupMini(group, allocMap) {
     const alloc = allocMap[tla];
     const qualified = hasStats && idx < 2;
     const flag = t.crest
-      ? `<img src="${t.crest}" alt="" loading="lazy" style="width:14px;height:10px;object-fit:cover;border-radius:1px;flex-shrink:0">`
-      : `<span style="flex-shrink:0">${teamFlagEmoji(tla)}</span>`;
-    const owner = alloc?.participants
-      ? `<div class="b-owner">
-          ${renderAvatar(alloc.participants.avatar_type, tla, 28)}
-          <span class="b-owner-name">${esc(alloc.participants.nickname)}</span>
-        </div>` : '';
-    const pts = hasStats ? `<span class="b-team-pts">${entry.points}p</span>` : '';
-    return `<div class="b-team-row${qualified ? ' qualified' : ''}">
-      ${flag}
-      <span class="b-team-name">${esc(t.shortName || t.name || tla)}</span>
-      ${owner}${pts}
-    </div>`;
+      ? `<img src="${t.crest}" alt="" loading="lazy" style="width:13px;height:9px;object-fit:cover;border-radius:1px;flex-shrink:0">`
+      : `<span style="flex-shrink:0;font-size:0.85em">${teamFlagEmoji(tla)}</span>`;
+    const ownerName = alloc?.participants
+      ? `<div class="b-gt-owner">${esc(alloc.participants.nickname)}</div>` : '';
+    const mp  = hasStats ? entry.playedGames : '–';
+    const w   = hasStats ? entry.won         : '–';
+    const d   = hasStats ? entry.draw        : '–';
+    const l   = hasStats ? entry.lost        : '–';
+    const pts = hasStats ? entry.points      : '–';
+    return `<tr class="${qualified ? 'qualified' : ''}">
+      <td><div class="b-gt-team"><span class="b-gt-pos">${idx + 1}</span>${flag}<div><div>${esc(t.shortName || t.name || tla)}</div>${ownerName}</div></div></td>
+      <td>${mp}</td><td>${w}</td><td>${d}</td><td>${l}</td>
+      <td class="b-gt-pts">${pts}</td>
+    </tr>`;
   }).join('');
-  return `<div class="b-group-card"><div class="b-group-head">${esc(groupName)}</div>${rows}</div>`;
+  return `<div class="b-group-card">
+    <div class="b-group-head">${esc(groupName)}</div>
+    <table class="b-group-table">
+      <thead><tr>
+        <th>Team</th><th>MP</th><th>W</th><th>D</th><th>L</th><th>Pts</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
 }
 
 function renderBracketMatch(match, allocMap) {
