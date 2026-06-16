@@ -191,19 +191,27 @@
     try {
       const tid = tournament.id;
 
-      const [allPRes, myPRes, allocRes, pendingRes, settledRes] = await Promise.all([
+      // Core data — required for match spine and rank
+      const [allPRes, myPRes, allocRes] = await Promise.all([
         db.from('participants').select('id, coin_balance').eq('tournament_id', tid).order('coin_balance', { ascending: false }),
         db.from('participants').select('coin_balance, nickname').eq('id', myParticipantId).single(),
         db.from('allocations').select('team_code, team_name').eq('tournament_id', tid).eq('participant_id', myParticipantId),
-        db.from('bets').select('selection, stake, potential_payout, bet_markets(match_no)').eq('participant_id', myParticipantId).eq('tournament_id', tid).eq('status', 'pending'),
-        db.from('bets').select('selection, stake, potential_payout, status, bet_markets(match_no, match_name)').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('created_at', { ascending: false }).limit(4),
       ]);
 
       const allParticipants = allPRes.data  || [];
       const myP             = myPRes.data;
       const allocations     = allocRes.data  || [];
-      const pendingBets     = pendingRes.data || [];
-      const settledBets     = settledRes.data || [];
+
+      // Bets — optional; degrade gracefully if betting schema isn't available
+      let pendingBets = [], settledBets = [];
+      try {
+        const [pendingRes, settledRes] = await Promise.all([
+          db.from('bets').select('selection, stake, potential_payout, bet_markets(match_no)').eq('participant_id', myParticipantId).eq('tournament_id', tid).eq('status', 'pending'),
+          db.from('bets').select('selection, stake, potential_payout, status, bet_markets(match_no, match_name)').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('created_at', { ascending: false }).limit(4),
+        ]);
+        pendingBets = pendingRes.data || [];
+        settledBets = settledRes.data || [];
+      } catch (_) { /* bets unavailable — matches still render without overlay */ }
 
       const balance     = myP?.coin_balance ?? null;
       const myTeamCodes = allocations.map(a => a.team_code);
