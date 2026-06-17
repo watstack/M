@@ -850,13 +850,12 @@ async function adminSaveParticipant(participantId) {
   const cans  = parseInt(document.getElementById(`adm-cans-${participantId}`).value,  10);
   if (Number.isNaN(coins) || Number.isNaN(cans)) { showToast('Enter valid numbers'); return; }
   try {
-    const r = await fetch('/api/admin-coins', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, adminToken: _adminToken, participantId, coinBalance: coins, cansOwed: cans }),
+    const { data, error } = await db.rpc('admin_update_participant', {
+      p_code: code, p_admin_token: _adminToken,
+      p_participant_id: participantId, p_coin_balance: coins, p_cans_owed: cans,
     });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.error || 'Save failed');
+    if (error) throw error;
+    if (!data) throw new Error('Unauthorized or participant not found');
     showToast('Saved');
     refreshLeaderboard(_tournament.id, _participant?.id, document.getElementById('lbBetContent'));
   } catch(e) { showToast(e.message); }
