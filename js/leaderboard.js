@@ -8,7 +8,7 @@ let _lbChannel = null;
 async function loadLeaderboard(tournamentId) {
   const { data, error } = await db
     .from('participants')
-    .select('id, nickname, avatar_type, coin_balance, team_slots')
+    .select('id, nickname, avatar_type, coin_balance, cans_owed, team_slots')
     .eq('tournament_id', tournamentId)
     .order('coin_balance', { ascending: false });
   if (error) throw error;
@@ -37,18 +37,26 @@ function renderLeaderboard(rows, myId, container) {
     return;
   }
 
-  container.innerHTML = rows.map((p, i) => {
-    const medal = RANK_MEDALS[i] || `${i + 1}`;
-    const isMe = p.id === myId;
+  const totalCans = rows.reduce((sum, p) => sum + (p.cans_owed || 0), 0);
+  const potBanner = totalCans > 0
+    ? `<div class="lb-pot">🍺 Total pot: ${totalCans} can${totalCans === 1 ? '' : 's'}</div>`
+    : '';
+
+  const rowsHtml = rows.map((p, i) => {
+    const medal  = RANK_MEDALS[i] || `${i + 1}`;
+    const isMe   = p.id === myId;
     const avatar = renderAvatar(p.avatar_type, null, 28);
     const balFmt = p.coin_balance.toLocaleString();
+    const cansHtml = (p.cans_owed > 0) ? ` <span class="lb-cans">🍺 ${p.cans_owed}</span>` : '';
     return `<div class="lb-row${isMe ? ' lb-me' : ''}" data-pid="${p.id}">
       <span class="lb-rank">${medal}</span>
       <span class="lb-avatar">${avatar}</span>
       <span class="lb-name">${escapeHtml(p.nickname)}</span>
-      <span class="lb-coins" data-val="${p.coin_balance}">🪙 ${balFmt}</span>
+      <span class="lb-coins" data-val="${p.coin_balance}">🪙 ${balFmt}</span>${cansHtml}
     </div>`;
   }).join('');
+
+  container.innerHTML = potBanner + rowsHtml;
 }
 
 async function refreshLeaderboard(tournamentId, myId, container) {

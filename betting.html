@@ -360,6 +360,18 @@
       .admin-ctrls { justify-content: flex-start; }
     }
 
+    /* ── Leaderboard: cans ── */
+    .lb-cans { font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); white-space: nowrap; margin-left: 4px; }
+    .lb-pot  { font-family: var(--font-pixel); font-size: 0.38rem; color: var(--gold); letter-spacing: .06em; padding: 10px 16px 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+
+    /* ── Admin: participants section ── */
+    .adm-participants-title { font-family: var(--font-pixel); font-size: 0.38rem; color: var(--muted); letter-spacing: .08em; margin: 24px 0 10px; }
+    .adm-participants-list  { display: flex; flex-direction: column; gap: 6px; }
+    .adm-p-row { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 8px; background: var(--panel); border: 2px solid var(--border); border-radius: var(--radius); padding: 8px 12px; }
+    .adm-p-name { font-size: 0.85rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .adm-p-label { font-family: var(--font-pixel); font-size: 0.26rem; color: var(--muted); display: block; margin-bottom: 2px; }
+    @media (max-width: 560px) { .adm-p-row { grid-template-columns: 1fr 1fr; } .adm-p-row .adm-btn { grid-column: 1 / -1; } }
+
     /* ── Bet slip (bottom drawer) ── */
     .bet-slip {
       position: fixed;
@@ -547,6 +559,11 @@
   <div id="panelAdmin" style="display:none">
     <p class="admin-hint">Enter the 90-minute score to settle a match. For knockout fixtures, set the two team codes to resolve the matchup, and pick which side advances when settling.</p>
     <div id="adminList" class="admin-list"></div>
+
+    <p class="adm-participants-title">Participants</p>
+    <div id="adminParticipantsList" class="adm-participants-list">
+      <p class="admin-hint">Loading…</p>
+    </div>
   </div>
 
 </div>
@@ -793,8 +810,56 @@ function showTab(tab) {
   if (tab === 'admin')       renderAdminPanel();
 }
 
-function renderAdminPanel() {
+async function renderAdminPanel() {
   document.getElementById('adminList').innerHTML = renderAdminView(_marketsByNo);
+  await loadAdminParticipants();
+}
+
+async function loadAdminParticipants() {
+  const el = document.getElementById('adminParticipantsList');
+  if (!el || !_tournament) return;
+  el.innerHTML = '<p class="admin-hint">Loading…</p>';
+  try {
+    const { data, error } = await db
+      .from('participants')
+      .select('id, nickname, coin_balance, cans_owed')
+      .eq('tournament_id', _tournament.id)
+      .order('nickname');
+    if (error) throw error;
+    if (!data || !data.length) { el.innerHTML = '<p class="admin-hint">No participants found.</p>'; return; }
+    el.innerHTML = data.map(p => `
+      <div class="adm-p-row">
+        <span class="adm-p-name">${escapeHtml(p.nickname)}</span>
+        <div>
+          <span class="adm-p-label">🪙 coins</span>
+          <input class="adm-in adm-score" style="width:80px" type="number" min="0" id="adm-coins-${p.id}" value="${p.coin_balance}">
+        </div>
+        <div>
+          <span class="adm-p-label">🍺 cans</span>
+          <input class="adm-in adm-score" style="width:56px" type="number" min="0" id="adm-cans-${p.id}" value="${p.cans_owed || 0}">
+        </div>
+        <button class="adm-btn" onclick="adminSaveParticipant('${p.id}')">Save</button>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<p class="admin-hint">Error: ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+async function adminSaveParticipant(participantId) {
+  const coins = parseInt(document.getElementById(`adm-coins-${participantId}`).value, 10);
+  const cans  = parseInt(document.getElementById(`adm-cans-${participantId}`).value,  10);
+  if (Number.isNaN(coins) || Number.isNaN(cans)) { showToast('Enter valid numbers'); return; }
+  try {
+    const r = await fetch('/api/admin-coins', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, adminToken: _adminToken, participantId, coinBalance: coins, cansOwed: cans }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Save failed');
+    showToast('Saved');
+    refreshLeaderboard(_tournament.id, _participant?.id, document.getElementById('lbBetContent'));
+  } catch(e) { showToast(e.message); }
 }
 
 async function adminSettle(matchNo) {
