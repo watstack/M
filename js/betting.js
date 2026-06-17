@@ -185,11 +185,40 @@ function sideDisplay(side) {
 // ─── Full fixtures scaffold ──────────────────────────────────────────────────
 // Drives the page off the static WC2026_FIXTURES list so every match always
 // renders. marketsByNo (from indexMarketsByMatchNo) overlays live odds/status.
-function renderFixturesView(marketsByNo) {
+// sortMode: 'group' (default) = upcoming only, grouped by stage/group;
+//           'upcoming' = all matches chronologically under date headers.
+function renderFixturesView(marketsByNo, sortMode) {
+  sortMode = sortMode || 'group';
   marketsByNo = marketsByNo || {};
-  const fixtures = (typeof WC2026_FIXTURES !== 'undefined' ? WC2026_FIXTURES : [])
+  const now = new Date();
+  const allFixtures = (typeof WC2026_FIXTURES !== 'undefined' ? WC2026_FIXTURES : [])
     .slice().sort((a, b) => a.match_no - b.match_no);
-  if (!fixtures.length) return '';
+  if (!allFixtures.length) return '';
+
+  if (sortMode === 'upcoming') {
+    // All matches, chronological, grouped under date headers.
+    const sorted = allFixtures.slice().sort((a, b) => {
+      const ta = a.kickoff_utc || '';
+      const tb = b.kickoff_utc || '';
+      return ta < tb ? -1 : ta > tb ? 1 : 0;
+    });
+    let html = '';
+    let lastDate = null;
+    for (const f of sorted) {
+      const dateStr = f.kickoff_utc
+        ? new Date(f.kickoff_utc).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+        : 'TBC';
+      if (dateStr !== lastDate) {
+        html += `<div class="bet-section-title">${dateStr}</div>`;
+        lastDate = dateStr;
+      }
+      html += renderMatchCard(f, marketsByNo[f.match_no]);
+    }
+    return html;
+  }
+
+  // Group mode: hide matches whose kickoff has already passed.
+  const fixtures = allFixtures.filter(f => !f.kickoff_utc || new Date(f.kickoff_utc) >= now);
 
   let html = '';
 
