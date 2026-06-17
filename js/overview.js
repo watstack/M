@@ -236,12 +236,13 @@
     try {
       const tid = tournament.id;
 
-      const [myPRes, allocRes, pendingRes, settledRes, settledParlaysRes] = await Promise.all([
+      const [myPRes, allocRes, pendingRes, settledRes, settledParlaysRes, matchesRes] = await Promise.all([
         db.from('participants').select('coin_balance, nickname').eq('id', myParticipantId).single(),
         db.from('allocations').select('team_code, team_name').eq('tournament_id', tid).eq('participant_id', myParticipantId),
         db.from('bets').select('selection, stake, potential_payout, odds, bet_markets(match_no)').eq('participant_id', myParticipantId).eq('tournament_id', tid).eq('status', 'pending'),
         db.from('bets').select('status, stake, potential_payout').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('placed_at', { ascending: false }),
         db.from('parlay_bets').select('status, stake, potential_payout').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('placed_at', { ascending: false }),
+        db.from('wc_matches').select('home_tla, away_tla, home_score, away_score, status'),
       ]);
 
       const myP         = myPRes.data;
@@ -274,8 +275,12 @@
       renderBetStats(pendingBets, settledBets);
 
       // ── Fixture carousel ──
-      _heroCtx = { teamSet, pendingByMatchNo };
-      renderFixtureCarousel(teamSet, pendingByMatchNo);
+      const matchesByKey = {};
+      for (const m of (matchesRes.data || [])) {
+        matchesByKey[`${m.home_tla}_${m.away_tla}`] = m;
+      }
+      _heroCtx = { teamSet, pendingByMatchNo, matchesByKey };
+      renderFixtureCarousel(teamSet, pendingByMatchNo, matchesByKey);
       startTicker();
     } catch (err) {
       console.error('[overview] hydrate error', err);
@@ -308,7 +313,7 @@
   const LIVE_WINDOW_MS = 130 * 60000;
 
   // Horizontal fixture carousel — all 104 fixtures, auto-scrolled to current position.
-  function renderFixtureCarousel(teamSet, pendingByMatchNo) {
+  function renderFixtureCarousel(teamSet, pendingByMatchNo, matchesByKey) {
     const el = document.getElementById('ovFixCarousel');
     if (!el) return;
     const now = Date.now();
@@ -330,14 +335,34 @@
         isMy   ? 'my-card'   : '',
       ].filter(Boolean).join(' ');
 
-      const timeHtml = isPast
-        ? `<div class="fix-card-time ft">FT</div>`
-        : `<div class="fix-card-time" data-kickoff="${f.kickoff_utc}"></div>`;
+      // Date label — always shown
+      const d = new Date(f.kickoff_utc);
+      const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
+      const tomMid = new Date(todayMid); tomMid.setDate(todayMid.getDate() + 1);
+      const dayAfterMid = new Date(tomMid); dayAfterMid.setDate(tomMid.getDate() + 1);
+      const timeStr = d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '');
+      let dateLabel;
+      if (d >= todayMid && d < tomMid) dateLabel = `Today ${timeStr}`;
+      else if (d >= tomMid && d < dayAfterMid) dateLabel = `Tomorrow ${timeStr}`;
+      else dateLabel = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      const dateHtml = `<div class="fix-card-time">${dateLabel}</div>`;
 
+      // Score / status area
+      const matchKey = f.home.code && f.away.code ? `${f.home.code}_${f.away.code}` : null;
+      const matchData = matchKey ? (matchesByKey || {})[matchKey] : null;
       let scoreHtml = '';
       if (isLive) {
         const mins = Math.floor((now - ko) / 60000);
-        scoreHtml = `<div class="fix-card-score live">${mins}'</div>`;
+        const hs = matchData?.home_score ?? null;
+        const as = matchData?.away_score ?? null;
+        const scorePart = (hs !== null && as !== null) ? `${hs}-${as} ` : '';
+        scoreHtml = `<div class="fix-card-score live">${scorePart}${mins}'</div>`;
+      } else if (isPast && matchData) {
+        const hs = matchData.home_score ?? null;
+        const as = matchData.away_score ?? null;
+        if (hs !== null && as !== null) {
+          scoreHtml = `<div class="fix-card-score">${hs}-${as}</div>`;
+        }
       }
 
       return `<div class="${classes}">
@@ -346,16 +371,10 @@
           <span>${sideFlag(f.away)}</span>
         </div>
         ${scoreHtml}
-        ${timeHtml}
+        ${dateHtml}
         ${hasBet ? `<div class="fix-card-bet">🪙</div>` : ''}
       </div>`;
     }).join('');
-
-    // Seed countdowns for upcoming/live cards
-    el.querySelectorAll('[data-kickoff]').forEach(el2 => {
-      const ms = new Date(el2.dataset.kickoff).getTime() - now;
-      el2.textContent = ms > 0 ? cdShort(ms) : 'Live';
-    });
 
     // Auto-scroll to first live or upcoming card
     const firstCurrent = el.querySelector('.fix-card:not(.past-card)');
@@ -393,10 +412,6 @@
       const ms = new Date(el.dataset.kickoff).getTime() - now;
       el.textContent = cdShort(ms);
       el.classList.toggle('soon', ms > 0 && ms <= 3600000);
-    });
-    document.querySelectorAll('#ovFixCarousel .fix-card-time[data-kickoff]').forEach(el => {
-      const ms = new Date(el.dataset.kickoff).getTime() - now;
-      el.textContent = ms > 0 ? cdShort(ms) : 'Live';
     });
   }
 
