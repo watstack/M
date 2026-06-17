@@ -182,6 +182,14 @@ function sideDisplay(side) {
   return { name: side.label || 'TBC', flag: '🏳', code: null, resolved: false };
 }
 
+// Returns false if a fixture's market is closed/settled or kickoff has passed.
+function isUpcoming(fixture, marketsByNo) {
+  const mr = (marketsByNo[fixture.match_no] || {}).match_result;
+  if (mr && (mr.status === 'settled' || mr.status === 'closed')) return false;
+  if (fixture.kickoff_utc && new Date(fixture.kickoff_utc) < new Date()) return false;
+  return true;
+}
+
 // ─── Full fixtures scaffold ──────────────────────────────────────────────────
 // Drives the page off the static WC2026_FIXTURES list so every match always
 // renders. marketsByNo (from indexMarketsByMatchNo) overlays live odds/status.
@@ -196,12 +204,14 @@ function renderFixturesView(marketsByNo, sortMode) {
   if (!allFixtures.length) return '';
 
   if (sortMode === 'upcoming') {
-    // All matches, chronological, grouped under date headers.
-    const sorted = allFixtures.slice().sort((a, b) => {
-      const ta = a.kickoff_utc || '';
-      const tb = b.kickoff_utc || '';
-      return ta < tb ? -1 : ta > tb ? 1 : 0;
-    });
+    // Future/open matches only, chronological, grouped under date headers.
+    const sorted = allFixtures
+      .filter(f => isUpcoming(f, marketsByNo))
+      .sort((a, b) => {
+        const ta = a.kickoff_utc || '';
+        const tb = b.kickoff_utc || '';
+        return ta < tb ? -1 : ta > tb ? 1 : 0;
+      });
     let html = '';
     let lastDate = null;
     for (const f of sorted) {
@@ -217,8 +227,8 @@ function renderFixturesView(marketsByNo, sortMode) {
     return html;
   }
 
-  // Group mode: hide matches whose kickoff has already passed.
-  const fixtures = allFixtures.filter(f => !f.kickoff_utc || new Date(f.kickoff_utc) >= now);
+  // Group mode: hide past and settled matches.
+  const fixtures = allFixtures.filter(f => isUpcoming(f, marketsByNo));
 
   let html = '';
 
@@ -406,9 +416,9 @@ async function loadAllSettledBets(tournamentId) {
     .in('status', ['won', 'lost', 'void']);
   if (error) throw error;
   return (data || []).sort((a, b) => {
-    const ta = a.bet_markets?.kickoff_time || '';
-    const tb = b.bet_markets?.kickoff_time || '';
-    return ta < tb ? -1 : ta > tb ? 1 : 0;
+    const ta = a.placed_at || '';
+    const tb = b.placed_at || '';
+    return ta > tb ? -1 : ta < tb ? 1 : 0;
   });
 }
 
