@@ -430,6 +430,19 @@
     .adm-p-label { font-family: var(--font-pixel); font-size: 0.26rem; color: var(--muted); display: block; margin-bottom: 2px; }
     @media (max-width: 560px) { .adm-p-row { grid-template-columns: 1fr 1fr; } .adm-p-row .adm-btn { grid-column: 1 / -1; } }
 
+    /* ── Request-a-Bet card ── */
+    .req-bet-card { border-color: rgba(255,106,31,.35); }
+    .req-bet-collapsed { padding: 0 16px 14px; }
+    .req-bet-expanded { padding: 10px 16px 14px; border-top: 1px solid var(--border); }
+    .req-bet-input-row { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
+    .req-bet-input {
+      flex: 1; min-width: 180px; background: var(--mid); border: 2px solid var(--border);
+      border-radius: var(--radius); color: var(--text); font-family: var(--font-body);
+      font-size: 0.9rem; padding: 8px 10px;
+    }
+    .req-bet-input:focus { border-color: var(--green); outline: none; }
+    .req-bet-hint { font-size: 0.75rem; color: var(--muted); font-family: var(--font-mono); }
+
     /* ── Bet slip (bottom drawer) ── */
     .bet-slip {
       position: fixed;
@@ -630,6 +643,8 @@
   <!-- Admin: settle / resolve (only shown when an admin token is present) -->
   <div id="panelAdmin" style="display:none">
     <p class="admin-hint">Enter the 90-minute score to settle a match. For knockout fixtures, set the two team codes to resolve the matchup, and pick which side advances when settling.</p>
+    <p class="adm-participants-title" id="adminRequestsTitle" style="display:none">Bet Requests</p>
+    <div id="adminRequestsList" class="admin-list" style="margin-bottom:16px"></div>
     <div id="adminList" class="admin-list"></div>
 
     <p class="adm-participants-title">Participants</p>
@@ -687,6 +702,7 @@ let _matchSort = 'upcoming';
 let _balanceSub = null;
 let _adminToken = null;
 let _marketsByNo = {};
+let _customMarkets = [];
 let _allBets = [];
 let _allBetsFilterPid = null;
 let _allBetsParticipants = [];
@@ -895,18 +911,16 @@ function renderMarketsView(markets) {
   // Overlay any live market rows (odds/status) onto the static fixture scaffold.
   const marketsByNo = indexMarketsByMatchNo(markets);
   _marketsByNo = marketsByNo;
+  _customMarkets = loadCustomMarkets(markets);
   if (_adminToken && _currentTab === 'admin') renderAdminPanel();
-  const html = renderFixturesView(marketsByNo, _matchSort);
+
+  const html = renderRequestBetCard()
+    + renderCustomMarketsSection(_customMarkets)
+    + renderFixturesView(marketsByNo, _matchSort);
 
   document.getElementById('marketsLoading').style.display = 'none';
 
   const matchListEl = document.getElementById('matchList');
-  if (!html) {
-    document.getElementById('noMatchMsg').style.display = 'block';
-    matchListEl.style.display = 'none';
-    return;
-  }
-
   matchListEl.innerHTML = html;
   matchListEl.style.display = 'block';
 
@@ -935,9 +949,10 @@ function setMatchSort(mode) {
   _matchSort = mode;
   document.getElementById('sortByGroup').classList.toggle('active', mode === 'group');
   document.getElementById('sortByDate').classList.toggle('active', mode === 'upcoming');
-  const html = renderFixturesView(_marketsByNo, mode);
   const matchListEl = document.getElementById('matchList');
-  matchListEl.innerHTML = html;
+  matchListEl.innerHTML = renderRequestBetCard()
+    + renderCustomMarketsSection(_customMarkets)
+    + renderFixturesView(_marketsByNo, mode);
   autoClosePastKickoff();
 }
 
@@ -998,7 +1013,10 @@ function showTab(tab) {
 }
 
 async function renderAdminPanel() {
-  document.getElementById('adminList').innerHTML = renderAdminView(_marketsByNo);
+  document.getElementById('adminList').innerHTML =
+    renderAdminView(_marketsByNo) +
+    renderAdminCustomMarketsView(_customMarkets);
+  await loadAndRenderBetRequests();
   await loadAdminParticipants();
 }
 
@@ -1192,6 +1210,8 @@ function removeLeg(idx) {
 }
 
 function labelForSelection(sel, matchName) {
+  if (sel === 'yes') return `Yes — ${matchName}`;
+  if (sel === 'no')  return `No — ${matchName}`;
   if (sel === 'home') return `${matchName.split(' vs ')[0]?.trim()} to Win`;
   if (sel === 'away') return `${matchName.split(' vs ')[1]?.trim()} to Win`;
   if (sel === 'draw') return `Draw — ${matchName}`;

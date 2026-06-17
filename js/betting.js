@@ -350,10 +350,11 @@ function oddsTbc(label) {
   </button>`;
 }
 
-function oddsBtn(marketId, selection, label, price, disabled, isResult, matchNo) {
+function oddsBtn(marketId, selection, label, price, disabled, isResult, matchNo, marketType) {
   if (price == null) return '';
+  const mt = marketType || 'match_result';
   const cls = ['odds-btn', disabled ? 'disabled' : '', isResult ? 'result-winner' : ''].filter(Boolean).join(' ');
-  return `<button class="${cls}" data-market-id="${marketId}" data-selection="${selection}" data-odds="${price}" data-match-no="${matchNo || ''}" data-market-type="match_result"
+  return `<button class="${cls}" data-market-id="${marketId}" data-selection="${selection}" data-odds="${price}" data-match-no="${matchNo || ''}" data-market-type="${mt}"
     onclick="selectBet(this)" ${disabled ? 'disabled' : ''}>
     <span class="odds-label">${label}</span>
     <span class="odds-price">${price}</span>
@@ -501,6 +502,263 @@ function renderParlayBetRow(parlay) {
       <span class="my-bet-payout">${payout}</span>
     </div>
   </div>`;
+}
+
+// ─── Custom markets / Bet requests ───────────────────────────────────────────
+
+function loadCustomMarkets(markets) {
+  return (markets || []).filter(m => m.market_type === 'custom');
+}
+
+function renderRequestBetCard() {
+  return `<div class="market-card req-bet-card" id="reqBetCard" data-kickoff="">
+    <div class="market-card-header">
+      <div class="match-teams" style="flex-direction:column;align-items:flex-start;gap:2px">
+        <span style="font-size:0.8rem;font-family:var(--font-pixel);color:var(--green)">Request a Bet</span>
+        <span style="font-size:0.7rem;color:var(--muted);font-family:var(--font-body)">Got an idea? Ask the admin to price it up</span>
+      </div>
+    </div>
+    <div id="reqBetCollapsed" class="req-bet-collapsed">
+      <button class="odds-btn" style="width:100%;justify-content:center" onclick="toggleRequestBet()">
+        <span class="odds-label">Tap to request</span>
+        <span class="odds-price" style="font-size:0.8rem">+ Add</span>
+      </button>
+    </div>
+    <div id="reqBetExpanded" class="req-bet-expanded" style="display:none">
+      <div class="req-bet-input-row">
+        <input type="text" id="reqBetInput" class="adm-in req-bet-input"
+          placeholder="e.g. England to score first" maxlength="200"
+          oninput="document.getElementById('reqBetCount').textContent=this.value.length">
+        <button class="adm-btn" onclick="submitBetRequest()">Submit</button>
+        <button class="btn-ghost" onclick="toggleRequestBet()">Cancel</button>
+      </div>
+      <div class="req-bet-hint"><span id="reqBetCount">0</span>/200 · Admin reviews before it goes live</div>
+    </div>
+  </div>`;
+}
+
+function toggleRequestBet() {
+  const collapsed = document.getElementById('reqBetCollapsed');
+  const expanded  = document.getElementById('reqBetExpanded');
+  if (!collapsed || !expanded) return;
+  const isOpen = expanded.style.display !== 'none';
+  collapsed.style.display = isOpen ? '' : 'none';
+  expanded.style.display  = isOpen ? 'none' : '';
+  if (!isOpen) {
+    const inp = document.getElementById('reqBetInput');
+    if (inp) { inp.value = ''; document.getElementById('reqBetCount').textContent = '0'; inp.focus(); }
+  }
+}
+
+async function submitBetRequest() {
+  const inp  = document.getElementById('reqBetInput');
+  const text = (inp && inp.value.trim()) || '';
+  if (!text) { showToast('Enter an outcome first'); return; }
+  if (!_participant || !_tournament) { showToast('Not logged in'); return; }
+
+  const btn = document.querySelector('#reqBetExpanded .adm-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+  try {
+    const { error } = await db.rpc('submit_bet_request', {
+      p_participant_id: _participant.id,
+      p_tournament_id:  _tournament.id,
+      p_outcome_text:   text,
+    });
+    if (error) {
+      if (error.message.includes('outcome_text_empty'))    throw new Error('Please enter an outcome');
+      if (error.message.includes('outcome_text_too_long')) throw new Error('Max 200 characters');
+      throw error;
+    }
+    showToast('Request sent! Admin will review it.');
+    toggleRequestBet();
+  } catch (e) {
+    showToast(e.message || 'Failed to submit request');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Submit'; }
+  }
+}
+
+function renderCustomMarketsSection(customMarkets) {
+  const visible = (customMarkets || []).filter(m => m.status === 'open' || m.status === 'closed');
+  if (!visible.length) return '';
+  return `<div class="bet-section-title">Custom Bets</div>` +
+    visible.map(renderCustomMarketCard).join('');
+}
+
+function renderCustomMarketCard(market) {
+  const o = market.odds_json || {};
+  const status    = market.status;
+  const isSettled = status === 'settled';
+  const isClosed  = status !== 'open';
+  const canBet    = !isClosed;
+
+  const statusChip = isSettled
+    ? `<span class="market-chip settled">Settled</span>`
+    : isClosed
+    ? `<span class="market-chip closed">Closed</span>`
+    : `<span class="market-chip open">Open</span>`;
+
+  const yesBtn = canBet && o.yes != null
+    ? oddsBtn(market.id, 'yes', 'Yes', o.yes, false, isSettled && market.result === 'yes', null, 'custom')
+    : oddsTbc('Yes');
+  const noBtn = canBet && o.no != null
+    ? oddsBtn(market.id, 'no',  'No',  o.no,  false, isSettled && market.result === 'no',  null, 'custom')
+    : oddsTbc('No');
+
+  return `<div class="market-card" id="mc-${market.id}" data-kickoff="">
+    <div class="market-card-header">
+      <div class="match-teams" style="flex-direction:column;align-items:flex-start;gap:2px">
+        <span class="match-name" style="display:block;font-size:0.75rem">${escapeHtml(market.match_name)}</span>
+      </div>
+      <div class="match-meta">${statusChip}</div>
+    </div>
+    <div class="match-odds-row">${yesBtn}${noBtn}</div>
+  </div>`;
+}
+
+async function loadBetRequests(tournamentId) {
+  const { data, error } = await db
+    .from('bet_requests')
+    .select('*, participants(nickname)')
+    .eq('tournament_id', tournamentId)
+    .eq('status', 'pending')
+    .order('submitted_at', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+function renderAdminBetRequestRow(req) {
+  const nick = escapeHtml((req.participants && req.participants.nickname) || '?');
+  const text = escapeHtml(req.outcome_text || '');
+  const id   = req.id;
+  return `<div class="admin-row req-row" id="req-row-${id}">
+    <div class="admin-meta">
+      <span class="adm-no" style="font-size:0.55rem;word-break:break-all">${nick}</span>
+      <span class="adm-stage">request</span>
+    </div>
+    <div class="admin-name" style="font-size:0.75rem">"${text}"</div>
+    <div class="admin-ctrls">
+      <input class="adm-in adm-score" style="width:52px" type="number" min="1.01" step="0.01"
+        placeholder="Yes" id="req-yes-${id}" value="2">
+      <input class="adm-in adm-score" style="width:52px" type="number" min="1.01" step="0.01"
+        placeholder="No"  id="req-no-${id}"  value="2">
+      <button class="adm-btn" onclick="adminApproveBetRequest('${id}')">Approve</button>
+      <button class="btn-ghost" style="font-size:0.55rem;padding:5px 8px" onclick="adminRejectBetRequest('${id}')">Reject</button>
+    </div>
+  </div>`;
+}
+
+async function loadAndRenderBetRequests() {
+  const listEl  = document.getElementById('adminRequestsList');
+  const titleEl = document.getElementById('adminRequestsTitle');
+  if (!listEl || !_tournament) return;
+  try {
+    const reqs = await loadBetRequests(_tournament.id);
+    if (!reqs.length) {
+      if (titleEl) titleEl.style.display = 'none';
+      listEl.innerHTML = '';
+      return;
+    }
+    if (titleEl) titleEl.style.display = '';
+    listEl.innerHTML = reqs.map(renderAdminBetRequestRow).join('');
+  } catch (e) {
+    if (titleEl) titleEl.style.display = '';
+    listEl.innerHTML = `<p class="admin-hint">Error loading requests: ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+async function adminApproveBetRequest(requestId) {
+  const yesEl = document.getElementById(`req-yes-${requestId}`);
+  const noEl  = document.getElementById(`req-no-${requestId}`);
+  const yesOdds = parseFloat(yesEl && yesEl.value);
+  const noOdds  = parseFloat(noEl  && noEl.value);
+  if (isNaN(yesOdds) || isNaN(noOdds) || yesOdds < 1.01 || noOdds < 1.01) {
+    showToast('Enter valid odds (min 1.01) for Yes and No');
+    return;
+  }
+  try {
+    const { error } = await db.rpc('approve_bet_request', {
+      p_code:        code,
+      p_admin_token: _adminToken,
+      p_request_id:  requestId,
+      p_yes_odds:    yesOdds,
+      p_no_odds:     noOdds,
+    });
+    if (error) {
+      if (error.message.includes('request_not_found')) throw new Error('Request not found or already handled');
+      if (error.message.includes('odds_too_low'))      throw new Error('Odds must be at least 1.01');
+      throw error;
+    }
+    showToast('Approved! Custom market is now live.');
+    await loadMarketsView();
+    renderAdminPanel();
+  } catch (e) {
+    showToast(e.message || 'Failed to approve');
+  }
+}
+
+async function adminRejectBetRequest(requestId) {
+  try {
+    const { error } = await db.rpc('reject_bet_request', {
+      p_code:        code,
+      p_admin_token: _adminToken,
+      p_request_id:  requestId,
+    });
+    if (error) throw error;
+    showToast('Request rejected.');
+    const row = document.getElementById(`req-row-${requestId}`);
+    if (row) row.remove();
+    const listEl  = document.getElementById('adminRequestsList');
+    const titleEl = document.getElementById('adminRequestsTitle');
+    if (listEl && titleEl && !listEl.querySelector('.req-row')) {
+      titleEl.style.display = 'none';
+    }
+  } catch (e) {
+    showToast(e.message || 'Failed to reject');
+  }
+}
+
+function renderAdminCustomMarketsView(customMarkets) {
+  const markets = (customMarkets || []).filter(m => m.status !== 'settled');
+  if (!markets.length) return '';
+  const rows = markets.map(m => {
+    const text = escapeHtml(m.match_name || '');
+    const mid  = m.id;
+    return `<div class="admin-row">
+      <div class="admin-meta">
+        <span class="adm-no" style="font-size:0.5rem">Custom</span>
+        <span class="adm-stage">custom</span>
+      </div>
+      <div class="admin-name" style="font-size:0.75rem">"${text}"</div>
+      <div class="admin-ctrls">
+        <select class="adm-in adm-win" id="adm-custom-result-${mid}">
+          <option value="yes">Yes wins</option>
+          <option value="no">No wins</option>
+        </select>
+        <button class="adm-btn" onclick="adminSettleCustomMarket('${mid}')">Settle</button>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="bet-section-title" style="margin-top:20px">Custom Market Settlement</div>${rows}`;
+}
+
+async function adminSettleCustomMarket(marketId) {
+  const sel = document.getElementById(`adm-custom-result-${marketId}`);
+  if (!sel) return;
+  const result = sel.value;
+  try {
+    const { error } = await db.rpc('settle_market', {
+      p_market_id: marketId,
+      p_result:    result,
+    });
+    if (error) throw error;
+    showToast(`Custom market settled: ${result === 'yes' ? 'Yes' : 'No'} wins!`);
+    await loadMarketsView();
+    renderAdminPanel();
+  } catch (e) {
+    showToast(e.message || 'Settle failed');
+  }
 }
 
 // ─── Auto-close past kickoff ──────────────────────────────────────────────────
