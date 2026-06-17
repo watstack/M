@@ -140,6 +140,22 @@
       padding-left: 2px;
     }
 
+    /* ── Match sort toggle ── */
+    .match-sort-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+    .sort-opt {
+      background: var(--panel);
+      border: 2px solid var(--border);
+      color: var(--muted);
+      font-family: var(--font-pixel);
+      font-size: 0.36rem;
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      box-shadow: 2px 2px 0 rgba(0,0,0,.5);
+    }
+    .sort-opt.active { background: var(--green); border-color: var(--green); color: #0a0805; }
+    .sort-opt:hover:not(.active) { color: var(--text); }
+
     /* ── Team header ── */
     .match-teams {
       display: flex;
@@ -522,7 +538,7 @@
   </div>
 
   <div class="bet-tabs">
-    <button class="bet-tab active" id="tabMarkets" onclick="showTab('markets')">Upcoming</button>
+    <button class="bet-tab active" id="tabMarkets" onclick="showTab('markets')">🪙 Matches</button>
     <button class="bet-tab" id="tabMyBets" onclick="showTab('mybets')">My Bets</button>
     <button class="bet-tab" id="tabAllBets" onclick="showTab('allbets')">All Bets</button>
     <button class="bet-tab" id="tabLeaderboard" onclick="showTab('leaderboard')">Leaderboard</button>
@@ -531,6 +547,10 @@
 
   <!-- Upcoming markets -->
   <div id="panelMarkets">
+    <div class="match-sort-bar">
+      <button class="sort-opt active" id="sortByGroup" onclick="setMatchSort('group')">By Group</button>
+      <button class="sort-opt" id="sortByDate" onclick="setMatchSort('upcoming')">By Date</button>
+    </div>
     <div class="bet-loading" id="marketsLoading">Loading markets…</div>
     <div id="matchList" style="display:none"></div>
     <div id="noMatchMsg" class="no-markets" style="display:none">
@@ -611,6 +631,7 @@ let _tournament = null;
 let _participant = null;
 let _parlayLegs = []; // [{marketId, selection, odds, matchName, label}]
 let _currentTab = 'markets';
+let _matchSort = 'group';
 let _balanceSub = null;
 let _adminToken = null;
 let _marketsByNo = {};
@@ -723,7 +744,7 @@ function renderMarketsView(markets) {
   const marketsByNo = indexMarketsByMatchNo(markets);
   _marketsByNo = marketsByNo;
   if (_adminToken && _currentTab === 'admin') renderAdminPanel();
-  const html = renderFixturesView(marketsByNo);
+  const html = renderFixturesView(marketsByNo, _matchSort);
 
   document.getElementById('marketsLoading').style.display = 'none';
 
@@ -756,6 +777,16 @@ async function loadMyBetsView() {
   el.innerHTML = allItems.map(item =>
     item.type === 'parlay' ? renderParlayBetRow(item.data) : renderMyBetRow(item.data)
   ).join('');
+}
+
+function setMatchSort(mode) {
+  _matchSort = mode;
+  document.getElementById('sortByGroup').classList.toggle('active', mode === 'group');
+  document.getElementById('sortByDate').classList.toggle('active', mode === 'upcoming');
+  const html = renderFixturesView(_marketsByNo, mode);
+  const matchListEl = document.getElementById('matchList');
+  matchListEl.innerHTML = html;
+  autoClosePastKickoff();
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
