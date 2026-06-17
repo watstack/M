@@ -182,10 +182,10 @@ function sideDisplay(side) {
   return { name: side.label || 'TBC', flag: '🏳', code: null, resolved: false };
 }
 
-// Returns false if a fixture is past its kickoff or already settled.
+// Returns false if a fixture's market is closed/settled or kickoff has passed.
 function isUpcoming(fixture, marketsByNo) {
   const mr = (marketsByNo[fixture.match_no] || {}).match_result;
-  if (mr && mr.status === 'settled') return false;
+  if (mr && (mr.status === 'settled' || mr.status === 'closed')) return false;
   if (fixture.kickoff_utc && new Date(fixture.kickoff_utc) < new Date()) return false;
   return true;
 }
