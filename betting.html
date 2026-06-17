@@ -60,12 +60,54 @@
       font-weight: 700;
     }
 
+    /* ── Fixture carousel ── */
+    .bet-sticky {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--bg);
+    }
+    .fix-carousel-wrap {
+      margin: 0 -16px;
+      padding: 10px 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .fix-carousel {
+      display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px;
+      scrollbar-width: none;
+    }
+    .fix-carousel::-webkit-scrollbar { display: none; }
+    .fix-card {
+      flex-shrink: 0; width: 108px; background: var(--mid);
+      border: 2px solid var(--border); border-radius: var(--radius);
+      padding: 10px 10px 8px; display: flex; flex-direction: column; gap: 5px;
+    }
+    .fix-card.live-card { border-color: var(--live-pulse); }
+    .fix-card.my-card   { border-color: var(--gold); }
+    .fix-card.past-card { opacity: 0.55; }
+    .fix-card-teams {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 1.1rem; line-height: 1;
+    }
+    .fix-card-score {
+      font-family: var(--font-pixel); font-size: 0.58rem; color: var(--text);
+      text-align: center; letter-spacing: .05em; line-height: 1.3;
+    }
+    .fix-card-score.live { color: var(--live-pulse); }
+    .fix-card-time {
+      font-family: var(--font-mono); font-size: 0.62rem; color: var(--muted);
+      text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .fix-card-bet { text-align: center; font-size: 0.65rem; line-height: 1; margin-top: 1px; }
+
     /* ── Tab bar ── */
     .bet-tabs {
       display: flex;
       gap: 8px;
-      margin-bottom: 20px;
+      padding: 12px 0 0;
+      margin-bottom: 0;
     }
+    .bet-filter-row { padding: 8px 0 4px; }
     .bet-tab {
       background: var(--panel);
       border: 2px solid var(--border);
@@ -537,20 +579,31 @@
     </div>
   </div>
 
-  <div class="bet-tabs">
-    <button class="bet-tab active" id="tabMarkets" onclick="showTab('markets')">🪙 Matches</button>
-    <button class="bet-tab" id="tabMyBets" onclick="showTab('mybets')">My Bets</button>
-    <button class="bet-tab" id="tabAllBets" onclick="showTab('allbets')">All Bets</button>
-    <button class="bet-tab" id="tabLeaderboard" onclick="showTab('leaderboard')">Leaderboard</button>
-    <button class="bet-tab" id="tabAdmin" onclick="showTab('admin')" style="display:none">⚙ Admin</button>
+  <div class="bet-sticky">
+    <!-- Fixture carousel -->
+    <div class="fix-carousel-wrap">
+      <div class="fix-carousel" id="betFixCarousel"></div>
+    </div>
+    <!-- Tabs -->
+    <div class="bet-tabs">
+      <button class="bet-tab active" id="tabMarkets" onclick="showTab('markets')">🪙 Matches</button>
+      <button class="bet-tab" id="tabMyBets" onclick="showTab('mybets')">My Bets</button>
+      <button class="bet-tab" id="tabAllBets" onclick="showTab('allbets')">All Bets</button>
+      <button class="bet-tab" id="tabLeaderboard" onclick="showTab('leaderboard')">Leaderboard</button>
+      <button class="bet-tab" id="tabAdmin" onclick="showTab('admin')" style="display:none">⚙ Admin</button>
+    </div>
+    <!-- Contextual filter/sort row -->
+    <div id="betFilterRow" class="bet-filter-row">
+      <div class="match-sort-bar" id="betSortBar">
+        <button class="sort-opt active" id="sortByGroup" onclick="setMatchSort('group')">By Group</button>
+        <button class="sort-opt" id="sortByDate" onclick="setMatchSort('upcoming')">By Date</button>
+      </div>
+      <div id="allBetsFilter" class="all-bets-filter" style="display:none"></div>
+    </div>
   </div>
 
   <!-- Upcoming markets -->
   <div id="panelMarkets">
-    <div class="match-sort-bar">
-      <button class="sort-opt active" id="sortByGroup" onclick="setMatchSort('group')">By Group</button>
-      <button class="sort-opt" id="sortByDate" onclick="setMatchSort('upcoming')">By Date</button>
-    </div>
     <div class="bet-loading" id="marketsLoading">Loading markets…</div>
     <div id="matchList" style="display:none"></div>
     <div id="noMatchMsg" class="no-markets" style="display:none">
@@ -566,7 +619,6 @@
 
   <!-- All settled bets (community view) -->
   <div id="panelAllBets" style="display:none">
-    <div id="allBetsFilter" class="all-bets-filter"></div>
     <div id="allBetsList" class="my-bets-list"></div>
   </div>
 
@@ -638,6 +690,9 @@ let _marketsByNo = {};
 let _allBets = [];
 let _allBetsFilterPid = null;
 let _allBetsParticipants = [];
+let _teamSet = new Set();
+let _pendingByMatchNo = {};
+let _matchesByKey = {};
 
 try {
   if (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL && window.supabase) {
@@ -707,10 +762,107 @@ async function init() {
   _adminToken = fromHash || localStorage.getItem(`wc26_admin_${code}`) || null;
   if (_adminToken) document.getElementById('tabAdmin').style.display = '';
 
+  // Load user's team allocations and pending bets for carousel
+  const [allocRes, pendingCarouselRes] = await Promise.all([
+    db.from('allocations').select('team_code')
+      .eq('tournament_id', _tournament.id).eq('participant_id', _participant.id),
+    db.from('bets').select('bet_markets(match_no)')
+      .eq('tournament_id', _tournament.id).eq('participant_id', _participant.id)
+      .eq('status', 'pending'),
+  ]);
+  _teamSet = new Set((allocRes.data || []).map(a => a.team_code));
+  _pendingByMatchNo = {};
+  for (const b of (pendingCarouselRes.data || [])) {
+    const mn = b.bet_markets?.match_no;
+    if (mn) _pendingByMatchNo[mn] = b;
+  }
+  renderBetCarousel();
+
   initBettingLeaderboard();
-  startPolling(data => triggerSettlementForFinished(data.matches));
+  startPolling(data => {
+    triggerSettlementForFinished(data.matches);
+    _matchesByKey = {};
+    for (const m of (data.matches || [])) {
+      const ht = m.homeTeam?.tla, at = m.awayTeam?.tla;
+      if (ht && at) _matchesByKey[`${ht}_${at}`] = {
+        home_score: m.score?.fullTime?.home ?? null,
+        away_score: m.score?.fullTime?.away ?? null,
+        status: m.status,
+      };
+    }
+    renderBetCarousel();
+  });
 
   await loadMarketsView();
+}
+
+// ── Fixture carousel ──────────────────────────────────────────────────────────
+
+const _CAROUSEL_LIVE_MS = 130 * 60000;
+
+function renderBetCarousel() {
+  const el = document.getElementById('betFixCarousel');
+  if (!el) return;
+  const now = Date.now();
+  const all = (window.WC2026_FIXTURES || [])
+    .slice()
+    .sort((a, b) => new Date(a.kickoff_utc) - new Date(b.kickoff_utc));
+  if (!all.length) { el.innerHTML = ''; return; }
+
+  const flagOf = side =>
+    (side?.code && typeof teamFlagEmoji === 'function') ? teamFlagEmoji(side.code) : '🏳';
+
+  el.innerHTML = all.map(f => {
+    const ko     = new Date(f.kickoff_utc).getTime();
+    const isPast = ko <= now && (now - ko) >= _CAROUSEL_LIVE_MS;
+    const isLive = ko <= now && (now - ko) < _CAROUSEL_LIVE_MS;
+    const isMy   = (f.home.code && _teamSet.has(f.home.code)) || (f.away.code && _teamSet.has(f.away.code));
+    const hasBet = !!_pendingByMatchNo[f.match_no];
+    const classes = ['fix-card',
+      isPast ? 'past-card' : '',
+      isLive ? 'live-card' : '',
+      isMy   ? 'my-card'   : '',
+    ].filter(Boolean).join(' ');
+
+    const d = new Date(f.kickoff_utc);
+    const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
+    const tomMid = new Date(todayMid); tomMid.setDate(todayMid.getDate() + 1);
+    const dayAfterMid = new Date(tomMid); dayAfterMid.setDate(tomMid.getDate() + 1);
+    const timeStr = d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '');
+    let dateLabel;
+    if (d >= todayMid && d < tomMid) dateLabel = `Today ${timeStr}`;
+    else if (d >= tomMid && d < dayAfterMid) dateLabel = `Tomorrow ${timeStr}`;
+    else dateLabel = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+    const matchKey = f.home.code && f.away.code ? `${f.home.code}_${f.away.code}` : null;
+    const matchData = matchKey ? _matchesByKey[matchKey] : null;
+    let scoreHtml = '';
+    if (isLive) {
+      const mins = Math.floor((now - ko) / 60000);
+      const hs = matchData?.home_score ?? null;
+      const as = matchData?.away_score ?? null;
+      const scorePart = (hs !== null && as !== null) ? `${hs}-${as} ` : '';
+      scoreHtml = `<div class="fix-card-score live">${scorePart}${mins}'</div>`;
+    } else if (isPast && matchData) {
+      const hs = matchData.home_score ?? null;
+      const as = matchData.away_score ?? null;
+      if (hs !== null && as !== null) scoreHtml = `<div class="fix-card-score">${hs}-${as}</div>`;
+    }
+
+    return `<div class="${classes}">
+      <div class="fix-card-teams"><span>${flagOf(f.home)}</span><span>${flagOf(f.away)}</span></div>
+      ${scoreHtml}
+      <div class="fix-card-time">${dateLabel}</div>
+      ${hasBet ? `<div class="fix-card-bet">🪙</div>` : ''}
+    </div>`;
+  }).join('');
+
+  const firstCurrent = el.querySelector('.fix-card:not(.past-card)');
+  if (firstCurrent) {
+    requestAnimationFrame(() => {
+      firstCurrent.scrollIntoView({ inline: 'start', behavior: 'instant', block: 'nearest' });
+    });
+  }
 }
 
 async function loadMarketsView() {
@@ -835,6 +987,10 @@ function showTab(tab) {
   document.getElementById('tabAllBets').classList.toggle('active', tab === 'allbets');
   document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'leaderboard');
   document.getElementById('tabAdmin').classList.toggle('active', tab === 'admin');
+  // Toggle contextual filter/sort bar in sticky zone
+  document.getElementById('betSortBar').style.display    = tab === 'markets' ? '' : 'none';
+  document.getElementById('allBetsFilter').style.display = tab === 'allbets' ? '' : 'none';
+  document.getElementById('betFilterRow').style.display  = (tab === 'markets' || tab === 'allbets') ? '' : 'none';
   if (tab === 'mybets')      loadMyBetsView();
   if (tab === 'allbets')     loadAllBetsView();
   if (tab === 'leaderboard') refreshLeaderboard(_tournament.id, _participant?.id, document.getElementById('lbBetContent'));
