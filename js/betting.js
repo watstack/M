@@ -416,9 +416,9 @@ async function loadAllSettledBets(tournamentId) {
     .in('status', ['won', 'lost', 'void']);
   if (error) throw error;
   return (data || []).sort((a, b) => {
-    const ta = a.bet_markets?.kickoff_time || '';
-    const tb = b.bet_markets?.kickoff_time || '';
-    return ta < tb ? -1 : ta > tb ? 1 : 0;
+    const ta = a.placed_at || '';
+    const tb = b.placed_at || '';
+    return ta > tb ? -1 : ta < tb ? 1 : 0;
   });
 }
 
