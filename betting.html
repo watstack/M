@@ -376,7 +376,10 @@
       margin-bottom: 6px;
     }
     .all-bet-nick { font-size: 0.82rem; font-weight: 700; color: var(--text); }
-    .all-bet-date { margin-left: auto; font-size: 0.75rem; color: var(--muted); font-family: var(--font-mono); }
+    .all-bet-dates { display: flex; gap: 20px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+    .all-bet-date-item { display: flex; flex-direction: column; gap: 2px; }
+    .all-bet-date-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .all-bet-date-value { font-size: 0.78rem; font-family: var(--font-mono); color: var(--text); }
 
     /* ── Admin settle/resolve ── */
     .admin-hint { color: var(--muted); font-size: 0.82rem; margin-bottom: 14px; line-height: 1.5; }
