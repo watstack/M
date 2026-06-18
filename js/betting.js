@@ -586,6 +586,14 @@ function renderCustomMarketsSection(customMarkets) {
     visible.map(renderCustomMarketCard).join('');
 }
 
+function renderAllCustomMarketsSection(customMarkets) {
+  const all = (customMarkets || []).slice()
+    .sort((a, b) => (b.created_at || '') > (a.created_at || '') ? 1 : -1);
+  if (!all.length) return '<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem">No custom bets yet</div>';
+  return `<div class="bet-section-title">Custom Bets</div>` +
+    all.map(renderCustomMarketCard).join('');
+}
+
 function renderCustomMarketCard(market) {
   const o = market.odds_json || {};
   const status    = market.status;
