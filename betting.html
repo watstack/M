@@ -610,6 +610,7 @@
       <div class="match-sort-bar" id="betSortBar">
         <button class="sort-opt active" id="sortByDate" onclick="setMatchSort('upcoming')">By Date</button>
         <button class="sort-opt" id="sortByGroup" onclick="setMatchSort('group')">By Group</button>
+        <button class="sort-opt" id="sortCustom" onclick="setMatchSort('custom')">Custom Bets</button>
       </div>
       <div id="allBetsFilter" class="all-bets-filter" style="display:none"></div>
     </div>
@@ -914,9 +915,9 @@ function renderMarketsView(markets) {
   _customMarkets = loadCustomMarkets(markets);
   if (_adminToken && _currentTab === 'admin') renderAdminPanel();
 
-  const html = renderRequestBetCard()
-    + renderCustomMarketsSection(_customMarkets)
-    + renderFixturesView(marketsByNo, _matchSort);
+  const html = _matchSort === 'custom'
+    ? renderRequestBetCard() + renderAllCustomMarketsSection(_customMarkets)
+    : renderRequestBetCard() + renderFixturesView(marketsByNo, _matchSort);
 
   document.getElementById('marketsLoading').style.display = 'none';
 
@@ -949,10 +950,13 @@ function setMatchSort(mode) {
   _matchSort = mode;
   document.getElementById('sortByGroup').classList.toggle('active', mode === 'group');
   document.getElementById('sortByDate').classList.toggle('active', mode === 'upcoming');
+  document.getElementById('sortCustom').classList.toggle('active', mode === 'custom');
   const matchListEl = document.getElementById('matchList');
-  matchListEl.innerHTML = renderRequestBetCard()
-    + renderCustomMarketsSection(_customMarkets)
-    + renderFixturesView(_marketsByNo, mode);
+  if (mode === 'custom') {
+    matchListEl.innerHTML = renderRequestBetCard() + renderAllCustomMarketsSection(_customMarkets);
+  } else {
+    matchListEl.innerHTML = renderRequestBetCard() + renderFixturesView(_marketsByNo, mode);
+  }
   autoClosePastKickoff();
 }
 
