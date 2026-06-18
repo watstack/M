@@ -432,10 +432,14 @@ function renderAllBetRow(bet) {
     : bet.status === 'lost'
     ? `-${bet.stake} 🪙`
     : `${bet.potential_payout} 🪙`;
+  const placedDate = bet.placed_at
+    ? new Date(bet.placed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    : '';
   return `<div class="my-bet-row all-bet-row">
     <div class="all-bet-user">
       ${renderAvatar(p.avatar_type, null, 28)}
       <span class="all-bet-nick">${escapeHtml(p.nickname || '?')}</span>
+      ${placedDate ? `<span class="all-bet-date">${placedDate}</span>` : ''}
     </div>
     <div class="my-bet-match">${escapeHtml(mkt.match_name || '')}</div>
     <div class="my-bet-detail">
