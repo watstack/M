@@ -396,7 +396,17 @@
 <script>
   (async function loadAnalytics() {
     try {
-      const res = await fetch('/api/analytics');
+      // Aggregated stats come from a Supabase SECURITY DEFINER function so the
+      // browser never sees individual visitor IDs. (GitHub Pages = no /api server.)
+      const res = await fetch(CONFIG.SUPABASE_URL + '/rest/v1/rpc/analytics_summary', {
+        method: 'POST',
+        headers: {
+          apikey: CONFIG.SUPABASE_ANON_KEY,
+          Authorization: 'Bearer ' + CONFIG.SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: '{}',
+      });
       if (!res.ok) throw new Error('fetch failed');
       const data = await res.json();
       document.getElementById('statViews').textContent = data.total_views.toLocaleString();
