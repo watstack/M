@@ -643,6 +643,8 @@ function renderAdminBetRequestRow(req) {
         placeholder="Yes" id="req-yes-${id}" value="2">
       <input class="adm-in adm-score" style="width:52px" type="number" min="1.01" step="0.01"
         placeholder="No"  id="req-no-${id}"  value="2">
+      <input class="adm-in" style="width:160px;font-size:0.65rem" type="datetime-local"
+        id="req-close-${id}" title="Close time (leave blank = open indefinitely)">
       <button class="adm-btn" onclick="adminApproveBetRequest('${id}')">Approve</button>
       <button class="btn-ghost" style="font-size:0.55rem;padding:5px 8px" onclick="adminRejectBetRequest('${id}')">Reject</button>
     </div>
@@ -671,8 +673,10 @@ async function loadAndRenderBetRequests() {
 async function adminApproveBetRequest(requestId) {
   const yesEl = document.getElementById(`req-yes-${requestId}`);
   const noEl  = document.getElementById(`req-no-${requestId}`);
-  const yesOdds = parseFloat(yesEl && yesEl.value);
-  const noOdds  = parseFloat(noEl  && noEl.value);
+  const yesOdds  = parseFloat(yesEl && yesEl.value);
+  const noOdds   = parseFloat(noEl  && noEl.value);
+  const closeEl  = document.getElementById(`req-close-${requestId}`);
+  const closeVal = closeEl && closeEl.value ? new Date(closeEl.value).toISOString() : null;
   if (isNaN(yesOdds) || isNaN(noOdds) || yesOdds < 1.01 || noOdds < 1.01) {
     showToast('Enter valid odds (min 1.01) for Yes and No');
     return;
@@ -684,6 +688,7 @@ async function adminApproveBetRequest(requestId) {
       p_request_id:  requestId,
       p_yes_odds:    yesOdds,
       p_no_odds:     noOdds,
+      p_close_time:  closeVal,
     });
     if (error) {
       if (error.message.includes('request_not_found')) throw new Error('Request not found or already handled');
