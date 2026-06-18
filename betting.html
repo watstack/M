@@ -546,6 +546,70 @@
     .place-btn:hover { transform: translate(1px,1px); box-shadow: 2px 2px 0 rgba(0,0,0,.6); }
     .place-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 
+    /* ── Boost toggle ── */
+    .boost-toggle {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      background: rgba(255,106,31,.05);
+      border: 1px solid rgba(255,106,31,.22);
+      border-radius: var(--radius);
+    }
+    .boost-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .boost-btn {
+      flex: 1;
+      background: var(--panel);
+      border: 2px solid var(--green);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      padding: 7px 12px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color .12s, background .12s, color .12s;
+    }
+    .boost-btn:hover:not(:disabled) { background: rgba(255,106,31,.1); }
+    .boost-btn--on {
+      background: rgba(255,154,208,.1);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+    .boost-btn:disabled {
+      opacity: .48;
+      cursor: not-allowed;
+      border-color: var(--border);
+    }
+    .boost-badge {
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .boost-badge--available { background: rgba(255,106,31,.14); color: var(--green); border: 1px solid var(--green); }
+    .boost-badge--empty     { background: rgba(181,138,160,.08); color: var(--muted); border: 1px solid var(--border); }
+    .boost-badge--urgent    { background: rgba(255,200,50,.1); color: #ffc832; border: 1px solid #ffc832; }
+    .boost-odds-display {
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      color: var(--gold);
+      margin-top: 7px;
+      padding-top: 7px;
+      border-top: 1px solid rgba(255,106,31,.15);
+    }
+    .boost-hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .boost-hint.hidden { display: none; }
+
     /* ── No markets state ── */
     .no-markets { text-align: center; padding: 48px 0; color: var(--muted); }
     .no-markets-icon { font-size: 2.5rem; margin-bottom: 12px; }
@@ -684,6 +748,14 @@
     <span class="payout-label">Potential payout</span>
     <span class="payout-amount" id="payoutAmt">—</span>
   </div>
+  <div id="boostToggle" class="boost-toggle" style="display:none">
+    <div class="boost-toggle-row">
+      <button id="boostBtn" class="boost-btn" onclick="toggleBoost()">⚡ Boost Odds (+25%)</button>
+      <span id="boostBadge" class="boost-badge"></span>
+    </div>
+    <div id="boostOddsDisplay" class="boost-odds-display" style="display:none"></div>
+    <div id="boostHint" class="boost-hint hidden"></div>
+  </div>
   <button class="place-btn" id="placeBetBtn" onclick="confirmBet()">Place Bet</button>
 </div>
 
@@ -714,6 +786,7 @@ let _allBetsParticipants = [];
 let _teamSet = new Set();
 let _pendingByMatchNo = {};
 let _matchesByKey = {};
+let _boostState = { remaining: 2, resetAt: null, active: false, timerId: null };
 
 try {
   if (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL && window.supabase) {
@@ -759,6 +832,7 @@ async function init() {
   const { data: part } = await db.from('participants').select('*').eq('id', pid).single();
   if (!part) return;
   _participant = part;
+  initBoosts();
 
   // Render header
   document.getElementById('avatarImg').innerHTML = renderAvatar(part.avatar_type, null, 28);
@@ -1116,6 +1190,118 @@ function toggleCorrectScore(toggleEl) {
   toggleEl.classList.toggle('open', open);
 }
 
+// ── Odds Boost ───────────────────────────────────────────────────────────────
+
+function _boostKey() { return `wc26_boosts_${_participant?.id}`; }
+
+function getNextMidnightUTC() {
+  const n = new Date();
+  return new Date(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + 1));
+}
+
+function initBoosts() {
+  const raw = localStorage.getItem(_boostKey());
+  if (raw) {
+    const saved = JSON.parse(raw);
+    if (Date.now() >= new Date(saved.resetAt).getTime()) {
+      _boostState.remaining = 2;
+      _boostState.resetAt = getNextMidnightUTC();
+    } else {
+      _boostState.remaining = saved.remaining;
+      _boostState.resetAt = new Date(saved.resetAt);
+    }
+  } else {
+    _boostState.remaining = 2;
+    _boostState.resetAt = getNextMidnightUTC();
+  }
+  _boostState.active = false;
+  saveBoosts();
+}
+
+function saveBoosts() {
+  localStorage.setItem(_boostKey(), JSON.stringify({
+    remaining: _boostState.remaining,
+    resetAt: _boostState.resetAt instanceof Date
+      ? _boostState.resetAt.toISOString()
+      : _boostState.resetAt,
+  }));
+}
+
+function applyBoostCalc(odds) {
+  return Math.round(odds * 1.25 * 100) / 100;
+}
+
+function getBoostResetInfo() {
+  if (!_boostState.resetAt) return { display: '', urgent: false };
+  const msLeft = new Date(_boostState.resetAt).getTime() - Date.now();
+  if (msLeft <= 0) return { display: 'Resetting…', urgent: false };
+  const totalMins = Math.ceil(msLeft / 60000);
+  const hours = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  const display = hours > 0 ? `Resets in ${hours}h ${mins}m` : `Resets in ${mins}m`;
+  return { display, urgent: hours < 1 };
+}
+
+function toggleBoost() {
+  if (_boostState.remaining <= 0 || _parlayLegs.length !== 1) return;
+  _boostState.active = !_boostState.active;
+  updateBoostUI();
+  updatePayout();
+}
+
+function updateBoostUI() {
+  const el = document.getElementById('boostToggle');
+  if (!el) return;
+  if (_parlayLegs.length !== 1) { el.style.display = 'none'; return; }
+  el.style.display = '';
+
+  const btn    = document.getElementById('boostBtn');
+  const badge  = document.getElementById('boostBadge');
+  const hint   = document.getElementById('boostHint');
+  const oddsEl = document.getElementById('boostOddsDisplay');
+
+  if (_boostState.remaining > 0) {
+    btn.disabled = false;
+    btn.className = 'boost-btn' + (_boostState.active ? ' boost-btn--on' : '');
+    btn.textContent = '⚡ Boost Odds (+25%)';
+    badge.textContent = `Boosts left: ${_boostState.remaining}/2`;
+    badge.className = 'boost-badge boost-badge--available';
+    hint.classList.add('hidden');
+    if (_boostState.active) {
+      const orig = _parlayLegs[0].odds;
+      oddsEl.textContent = `Boosted odds: ${applyBoostCalc(orig).toFixed(2)}x (was ${orig.toFixed(2)}x)`;
+      oddsEl.style.display = '';
+    } else {
+      oddsEl.style.display = 'none';
+    }
+  } else {
+    btn.disabled = true;
+    btn.className = 'boost-btn';
+    btn.textContent = '⚡ Boosts Used';
+    const { display, urgent } = getBoostResetInfo();
+    badge.textContent = display;
+    badge.className = 'boost-badge boost-badge--' + (urgent ? 'urgent' : 'empty');
+    hint.textContent = 'Come back when the timer resets for 2 new boosts';
+    hint.classList.remove('hidden');
+    oddsEl.style.display = 'none';
+    startBoostTimer();
+  }
+}
+
+function startBoostTimer() {
+  if (_boostState.timerId) return;
+  _boostState.timerId = setInterval(() => {
+    if (_boostState.resetAt && Date.now() >= new Date(_boostState.resetAt).getTime()) {
+      _boostState.remaining = 2;
+      _boostState.resetAt = getNextMidnightUTC();
+      saveBoosts();
+      clearInterval(_boostState.timerId);
+      _boostState.timerId = null;
+    }
+    updateBoostUI();
+  }, 60000);
+}
+
 // ── Bet slip ──────────────────────────────────────────────────────────────────
 
 function calcTotalOdds() {
@@ -1146,6 +1332,8 @@ function renderBetSlip() {
   } else {
     totalOddsEl.style.display = 'none';
   }
+  if (_parlayLegs.length !== 1) _boostState.active = false;
+  updateBoostUI();
   updatePayout();
 }
 
@@ -1240,7 +1428,10 @@ function closeBetSlip() {
 
 function updatePayout() {
   const stake = parseInt(document.getElementById('stakeInput').value, 10) || 0;
-  const totalOdds = _parlayLegs.length > 0 ? calcTotalOdds() : 0;
+  let totalOdds = _parlayLegs.length > 0 ? calcTotalOdds() : 0;
+  if (_boostState.active && _parlayLegs.length === 1 && totalOdds > 0) {
+    totalOdds = applyBoostCalc(totalOdds);
+  }
   const payout = totalOdds ? Math.round(stake * totalOdds) : 0;
   document.getElementById('payoutAmt').textContent = payout ? `${payout.toLocaleString()} 🪙` : '—';
 }
@@ -1268,8 +1459,16 @@ async function confirmBet() {
   try {
     if (_parlayLegs.length === 1) {
       const leg = _parlayLegs[0];
-      await placeBet(leg.marketId, _participant.id, leg.selection, stake, leg.odds);
-      showToast('Bet placed! Good luck 🎰');
+      let oddsToUse = leg.odds;
+      const boosted = _boostState.active;
+      if (boosted) {
+        oddsToUse = applyBoostCalc(leg.odds);
+        _boostState.remaining--;
+        _boostState.active = false;
+        saveBoosts();
+      }
+      await placeBet(leg.marketId, _participant.id, leg.selection, stake, oddsToUse);
+      showToast(boosted ? 'Boosted bet placed! 🚀' : 'Bet placed! Good luck 🎰');
     } else {
       const totalOdds = calcTotalOdds();
       const legs = _parlayLegs.map(l => ({
