@@ -455,7 +455,7 @@ function renderAllBetRow(bet) {
       </div>
       <div class="all-bet-date-item">
         <span class="all-bet-date-label">Settled</span>
-        <span class="all-bet-date-value">${fmtDate(bet.settled_at)}</span>
+        <span class="all-bet-date-value">${fmtDate(mkt.kickoff_time)}</span>
       </div>
     </div>
   </div>`;
