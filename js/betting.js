@@ -432,14 +432,11 @@ function renderAllBetRow(bet) {
     : bet.status === 'lost'
     ? `-${bet.stake} 🪙`
     : `${bet.potential_payout} 🪙`;
-  const placedDate = bet.placed_at
-    ? new Date(bet.placed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-    : '';
+  const fmtDate = ts => ts ? new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '—';
   return `<div class="my-bet-row all-bet-row">
     <div class="all-bet-user">
       ${renderAvatar(p.avatar_type, null, 28)}
       <span class="all-bet-nick">${escapeHtml(p.nickname || '?')}</span>
-      ${placedDate ? `<span class="all-bet-date">${placedDate}</span>` : ''}
     </div>
     <div class="my-bet-match">${escapeHtml(mkt.match_name || '')}</div>
     <div class="my-bet-detail">
@@ -450,6 +447,16 @@ function renderAllBetRow(bet) {
     <div class="my-bet-result">
       <span class="bet-status ${statusClass}">${bet.status}</span>
       <span class="my-bet-payout">${payout}</span>
+    </div>
+    <div class="all-bet-dates">
+      <div class="all-bet-date-item">
+        <span class="all-bet-date-label">Placed</span>
+        <span class="all-bet-date-value">${fmtDate(bet.placed_at)}</span>
+      </div>
+      <div class="all-bet-date-item">
+        <span class="all-bet-date-label">Settled</span>
+        <span class="all-bet-date-value">${fmtDate(bet.settled_at)}</span>
+      </div>
     </div>
   </div>`;
 }
