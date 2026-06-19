@@ -1000,6 +1000,13 @@ async function loadMarketsView() {
   renderMarketsView(markets);
 }
 
+function renderPotBanner() {
+  if (!_lbRows || !_lbRows.length) return '';
+  const totalCans = _lbRows.reduce((sum, p) => sum + (p.cans_owed || 0), 0);
+  if (!totalCans) return '';
+  return `<div class="lb-pot" id="potBannerSection" style="margin-bottom:12px;border-bottom:none;border:2px solid var(--border);border-radius:var(--radius);box-shadow:3px 3px 0 rgba(0,0,0,.5);">🍺 Total pot: ${totalCans} can${totalCans === 1 ? '' : 's'}</div>`;
+}
+
 function renderMarketsView(markets) {
   // Overlay any live market rows (odds/status) onto the static fixture scaffold.
   const marketsByNo = indexMarketsByMatchNo(markets);
@@ -1007,9 +1014,10 @@ function renderMarketsView(markets) {
   _customMarkets = loadCustomMarkets(markets);
   if (_adminToken && _currentTab === 'admin') renderAdminPanel();
 
+  const potHtml = renderPotBanner();
   const html = _matchSort === 'custom'
-    ? renderRequestBetCard() + renderAllCustomMarketsSection(_customMarkets)
-    : renderRequestBetCard() + renderFixturesView(marketsByNo, _matchSort);
+    ? potHtml + renderRequestBetCard() + renderAllCustomMarketsSection(_customMarkets)
+    : potHtml + renderRequestBetCard() + renderFixturesView(marketsByNo, _matchSort);
 
   document.getElementById('marketsLoading').style.display = 'none';
 
@@ -1044,10 +1052,11 @@ function setMatchSort(mode) {
   document.getElementById('sortByDate').classList.toggle('active', mode === 'upcoming');
   document.getElementById('sortCustom').classList.toggle('active', mode === 'custom');
   const matchListEl = document.getElementById('matchList');
+  const potHtml = renderPotBanner();
   if (mode === 'custom') {
-    matchListEl.innerHTML = renderRequestBetCard() + renderAllCustomMarketsSection(_customMarkets);
+    matchListEl.innerHTML = potHtml + renderRequestBetCard() + renderAllCustomMarketsSection(_customMarkets);
   } else {
-    matchListEl.innerHTML = renderRequestBetCard() + renderFixturesView(_marketsByNo, mode);
+    matchListEl.innerHTML = potHtml + renderRequestBetCard() + renderFixturesView(_marketsByNo, mode);
   }
   autoClosePastKickoff();
 }
@@ -1077,6 +1086,15 @@ function triggerSettlementForFinished(matches) {
 
 function initBettingLeaderboard() {
   const container = document.getElementById('lbBetContent');
+
+  _onLbRowsUpdated = function() {
+    const el = document.getElementById('potBannerSection');
+    if (!el) return;
+    const newHtml = renderPotBanner();
+    if (newHtml) el.outerHTML = newHtml;
+    else el.remove();
+  };
+
   async function refresh() {
     if (container && _tournament) {
       await refreshLeaderboard(_tournament.id, _participant?.id, container);
