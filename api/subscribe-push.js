@@ -3,7 +3,7 @@
 // Registers or removes an admin's push subscription for a tournament.
 // Admin identity is validated via code + adminToken before any DB write.
 
-const { makeRest, verifyAdmin } = require('./_lib/settle-lib');
+const { makeRest, verifyAdmin, verifyParticipantAdmin } = require('./_lib/settle-lib');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,9 +11,9 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.end(); return; }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const { code, adminToken, action, subscription } = req.body || {};
-  if (!code || !adminToken || !action)
-    return res.status(400).json({ error: 'code, adminToken, action required' });
+  const { code, adminToken, participantId, action, subscription } = req.body || {};
+  if (!code || (!adminToken && !participantId) || !action)
+    return res.status(400).json({ error: 'code, (adminToken or participantId), action required' });
   if (action !== 'subscribe' && action !== 'unsubscribe')
     return res.status(400).json({ error: 'action must be subscribe or unsubscribe' });
 
@@ -24,7 +24,9 @@ module.exports = async function handler(req, res) {
   const rest = makeRest(supaUrl, supaKey);
 
   try {
-    const tournamentId = await verifyAdmin(rest, code, adminToken);
+    const tournamentId = adminToken
+      ? await verifyAdmin(rest, code, adminToken)
+      : await verifyParticipantAdmin(rest, code, participantId);
     if (!tournamentId) return res.status(403).json({ error: 'Unauthorized' });
 
     if (action === 'unsubscribe') {
