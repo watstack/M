@@ -428,6 +428,42 @@
     .lb-cans { font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); white-space: nowrap; margin-left: 4px; }
     .lb-pot  { font-family: var(--font-pixel); font-size: 0.38rem; color: var(--gold); letter-spacing: .06em; padding: 10px 16px 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
 
+    /* ── Pot hero banner ── */
+    .pot-hero {
+      height: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 12px;
+      background: linear-gradient(160deg, #1c0800 0%, #2e1100 45%, #1c0800 100%);
+      border: 2px solid var(--green);
+      border-radius: var(--radius);
+      box-shadow: 0 0 0 1px rgba(255,106,31,.18), 3px 3px 0 #000, 0 0 28px rgba(255,106,31,.12);
+      text-align: center;
+      overflow: hidden;
+    }
+    .pot-hero-label {
+      font-family: var(--font-pixel);
+      font-size: 0.24rem;
+      color: rgba(255,106,31,.55);
+      letter-spacing: .14em;
+    }
+    .pot-hero-amount {
+      font-family: var(--font-pixel);
+      font-size: 0.68rem;
+      color: var(--green);
+      letter-spacing: .06em;
+      text-shadow: 0 0 12px rgba(255,106,31,.55), 2px 2px 0 #000;
+    }
+    .pot-hero-deco {
+      font-family: var(--font-pixel);
+      font-size: 0.22rem;
+      color: rgba(255,106,31,.25);
+      letter-spacing: .04em;
+    }
+
     /* ── Admin: participants section ── */
     .adm-participants-title { font-family: var(--font-pixel); font-size: 0.38rem; color: var(--muted); letter-spacing: .08em; margin: 24px 0 10px; }
     .adm-participants-list  { display: flex; flex-direction: column; gap: 6px; }
@@ -1015,7 +1051,11 @@ function renderPotBanner() {
   if (!_lbRows || !_lbRows.length) return '';
   const totalCans = _lbRows.reduce((sum, p) => sum + (p.cans_owed || 0), 0);
   if (!totalCans) return '';
-  return `<div class="lb-pot" id="potBannerSection" style="margin-bottom:12px;border-bottom:none;border:2px solid var(--border);border-radius:var(--radius);box-shadow:3px 3px 0 rgba(0,0,0,.5);">🍺 Total pot: ${totalCans} can${totalCans === 1 ? '' : 's'}</div>`;
+  return `<div id="potBannerSection" class="pot-hero">
+    <div class="pot-hero-label">▓▒░ SEASON POT ░▒▓</div>
+    <div class="pot-hero-amount">🍺 ${totalCans} CAN${totalCans === 1 ? '' : 'S'}</div>
+    <div class="pot-hero-deco">░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░</div>
+  </div>`;
 }
 
 function renderMarketsView(markets) {
@@ -1099,11 +1139,17 @@ function initBettingLeaderboard() {
   const container = document.getElementById('lbBetContent');
 
   _onLbRowsUpdated = function() {
-    const el = document.getElementById('potBannerSection');
-    if (!el) return;
     const newHtml = renderPotBanner();
-    if (newHtml) el.outerHTML = newHtml;
-    else el.remove();
+    const existing = document.getElementById('potBannerSection');
+    if (existing) {
+      if (newHtml) existing.outerHTML = newHtml;
+      else existing.remove();
+    } else {
+      const matchListEl = document.getElementById('matchList');
+      if (matchListEl && matchListEl.style.display !== 'none' && newHtml) {
+        matchListEl.insertAdjacentHTML('afterbegin', newHtml);
+      }
+    }
   };
 
   async function refresh() {
