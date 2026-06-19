@@ -19,6 +19,27 @@ BEGIN
   RETURN FOUND;
 END; $$;
 
+-- Participant-level admin: update coin balance and cans owed.
+CREATE OR REPLACE FUNCTION participant_update_participant(
+  p_code                  text,
+  p_actor_participant_id  uuid,
+  p_target_participant_id uuid,
+  p_coin_balance          int,
+  p_cans_owed             int
+)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v_tournament_id uuid;
+BEGIN
+  SELECT tournament_id INTO v_tournament_id FROM participants
+  WHERE id = p_actor_participant_id AND is_admin = true
+    AND tournament_id = (SELECT id FROM tournaments WHERE code = p_code);
+  IF v_tournament_id IS NULL THEN RETURN false; END IF;
+  UPDATE participants
+  SET coin_balance = p_coin_balance, cans_owed = p_cans_owed
+  WHERE id = p_target_participant_id AND tournament_id = v_tournament_id;
+  RETURN FOUND;
+END; $$;
+
 -- Participant-level admin grants/revokes admin rights (actor must have is_admin = true).
 CREATE OR REPLACE FUNCTION participant_set_admin(
   p_code                  text,

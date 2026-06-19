@@ -8,7 +8,7 @@
 // set it unlocks and odds attach on the next /api/markets refresh. Settling that
 // match then propagates winners onward via BRACKET_FEED automatically.
 
-const { makeRest, verifyAdmin, setMatchTeams, teamName } = require('./_lib/settle-lib');
+const { makeRest, verifyAdmin, verifyParticipantAdmin, setMatchTeams, teamName } = require('./_lib/settle-lib');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,9 +16,9 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.end(); return; }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const { code, adminToken, matchNo, homeCode, awayCode } = req.body || {};
-  if (!code || !adminToken || matchNo == null || (!homeCode && !awayCode)) {
-    return res.status(400).json({ error: 'code, adminToken, matchNo and at least one of homeCode/awayCode required' });
+  const { code, adminToken, participantId, matchNo, homeCode, awayCode } = req.body || {};
+  if (!code || (!adminToken && !participantId) || matchNo == null || (!homeCode && !awayCode)) {
+    return res.status(400).json({ error: 'code, adminToken or participantId, matchNo and at least one of homeCode/awayCode required' });
   }
 
   const supaUrl = process.env.SUPABASE_URL;
@@ -28,8 +28,10 @@ module.exports = async function handler(req, res) {
   const rest = makeRest(supaUrl, supaKey);
 
   try {
-    const tournamentId = await verifyAdmin(rest, code, adminToken);
-    if (!tournamentId) return res.status(403).json({ error: 'Invalid tournament code or admin token' });
+    const tournamentId = adminToken
+      ? await verifyAdmin(rest, code, adminToken)
+      : await verifyParticipantAdmin(rest, code, participantId);
+    if (!tournamentId) return res.status(403).json({ error: 'Unauthorized' });
 
     const state = await setMatchTeams(rest, tournamentId, Number(matchNo), {
       homeCode: homeCode ? String(homeCode).toUpperCase() : undefined,
