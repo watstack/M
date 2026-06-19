@@ -5,13 +5,15 @@
  * stale HTML or API data: overview.html sends no-cache headers and all game data
  * is live from Supabase, so navigations and /api/* always go to the network.
  */
-const CACHE = 'kickoff-shell-v1';
+// Relative URLs resolve against the SW's own location, so the same file works
+// at the site root (Vercel) and under a subpath (GitHub Pages /M/).
+const CACHE = 'kickoff-shell-v2';
 const SHELL = [
-  '/css/styles.css',
-  '/assets/icons/icon-192.png',
-  '/assets/icons/icon-512.png',
-  '/assets/icons/apple-touch-icon.png',
-  '/assets/icons/favicon.png',
+  './css/styles.css',
+  './assets/icons/icon-192.png',
+  './assets/icons/icon-512.png',
+  './assets/icons/apple-touch-icon.png',
+  './assets/icons/favicon.png',
 ];
 
 self.addEventListener('install', (event) => {
