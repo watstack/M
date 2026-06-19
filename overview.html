@@ -89,6 +89,59 @@
       color: var(--muted);
       font-family: var(--font-mono);
     }
+    .ov-install-title {
+      font-family: var(--font-pixel);
+      font-size: 0.62rem;
+      color: var(--text);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .ov-install-steps {
+      list-style: none;
+      counter-reset: step;
+      max-width: 320px;
+      margin: 0 auto;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ov-install-steps li {
+      counter-increment: step;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .ov-install-steps li strong { color: var(--text); }
+    .ov-install-steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      font-family: var(--font-pixel);
+      font-size: 0.5rem;
+      color: var(--gold);
+    }
+    .ios-share {
+      width: 15px;
+      height: 18px;
+      vertical-align: -4px;
+      fill: none;
+      stroke: var(--green-lt);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
 
     /* ── Fixture carousel ── */
     .fix-carousel-wrap {
@@ -377,8 +430,25 @@
 
       <!-- Install entry point -->
       <div class="ov-install" id="ovInstall" hidden>
-        <button class="btn" id="ovInstallBtn">📲 Install the app</button>
-        <p class="ov-install-hint" id="ovInstallHint" hidden></p>
+        <!-- Android / desktop Chromium: one-tap install -->
+        <div id="ovInstallBtnWrap" hidden>
+          <button class="btn btn-gold" id="ovInstallBtn">📲 Install app</button>
+          <p class="ov-install-hint" id="ovInstallHint" hidden></p>
+        </div>
+        <!-- iOS (Safari/Chrome): manual steps -->
+        <div id="ovInstallSteps" hidden>
+          <p class="ov-install-title">📲 Add Kickoff to your home screen</p>
+          <ol class="ov-install-steps">
+            <li>Tap the <strong>Share</strong> button
+              <svg class="ios-share" viewBox="0 0 24 28" aria-hidden="true">
+                <path d="M12 2 L12 17 M12 2 L7 7 M12 2 L17 7"/>
+                <path d="M6 11 L3 11 L3 26 L21 26 L21 11 L18 11"/>
+              </svg>
+              in the toolbar</li>
+            <li>Scroll down and tap <strong>“Add to Home Screen”</strong></li>
+            <li>Tap <strong>“Add”</strong></li>
+          </ol>
+        </div>
       </div>
     </div>
   </div>
@@ -397,13 +467,13 @@
 
 <div id="toast"></div>
 
-<script src="js/config.js?v=17818727" onerror="document.getElementById('stateLoading').style.display='none';document.getElementById('stateError').classList.add('active');document.getElementById('errorMsg').textContent='Failed to load config — please refresh.'"></script>
-<script src="js/vendor/supabase.js?v=17818727"></script>
-<script src="js/flag-colors.js?v=17818727"></script>
-<script src="js/avatars.js?v=17818727"></script>
-<script src="js/wc2026-fixtures.js?v=17818727"></script>
-<script src="js/my-tournaments.js?v=17818727"></script>
-<script src="js/overview.js?v=17818727"></script>
-<script src="js/pwa.js?v=17818727"></script>
+<script src="js/config.js?v=17818741" onerror="document.getElementById('stateLoading').style.display='none';document.getElementById('stateError').classList.add('active');document.getElementById('errorMsg').textContent='Failed to load config — please refresh.'"></script>
+<script src="js/vendor/supabase.js?v=17818741"></script>
+<script src="js/flag-colors.js?v=17818741"></script>
+<script src="js/avatars.js?v=17818741"></script>
+<script src="js/wc2026-fixtures.js?v=17818741"></script>
+<script src="js/my-tournaments.js?v=17818741"></script>
+<script src="js/overview.js?v=17818741"></script>
+<script src="js/pwa.js?v=17818741"></script>
 </body>
 </html>
