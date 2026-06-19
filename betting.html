@@ -1423,6 +1423,10 @@ function labelForSelection(sel, matchName) {
   if (sel === 'away') return `${matchName.split(' vs ')[1]?.trim()} to Win`;
   if (sel === 'draw') return `Draw — ${matchName}`;
   if (/^\d+-\d+$/.test(sel)) return `Correct Score: ${sel} — ${matchName.split(' vs ').map(s => s.trim()).join(' v ')}`;
+  const [h, a] = matchName.split(' vs ').map(s => s.trim());
+  if (sel === '1x') return `${h} or Draw`;
+  if (sel === 'x2') return `Draw or ${a}`;
+  if (sel === '12') return `${h} or ${a}`;
   return `${sel} — Tournament Winner`;
 }
 
