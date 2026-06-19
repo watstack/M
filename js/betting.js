@@ -539,6 +539,14 @@ function loadCustomMarkets(markets) {
   return (markets || []).filter(m => m.market_type === 'custom');
 }
 
+function reqOptionRow(label, odds, removable) {
+  return `<div class="req-opt-row">
+    <input type="text" class="adm-in req-opt-label" placeholder="Option" maxlength="60" value="${escapeHtml(label)}">
+    <input type="number" class="adm-in req-opt-odds" placeholder="Odds" min="1.01" step="0.01" value="${odds != null ? odds : ''}">
+    <button class="btn-ghost req-opt-remove" style="font-size:0.7rem;padding:4px 7px;${removable ? '' : 'visibility:hidden'}" onclick="removeBetRequestOption(this)">✕</button>
+  </div>`;
+}
+
 function renderRequestBetCard() {
   return `<div class="market-card req-bet-card" id="reqBetCard" data-kickoff="">
     <div class="market-card-header">
@@ -558,10 +566,17 @@ function renderRequestBetCard() {
         <input type="text" id="reqBetInput" class="adm-in req-bet-input"
           placeholder="e.g. England to score first" maxlength="200"
           oninput="document.getElementById('reqBetCount').textContent=this.value.length">
+      </div>
+      <div id="reqBetOptions">
+        ${reqOptionRow('Yes', null, false)}
+        ${reqOptionRow('No',  null, false)}
+      </div>
+      <button class="btn-ghost" style="font-size:0.75rem;margin:4px 0 2px" onclick="addBetRequestOption()">+ Add option</button>
+      <div class="req-bet-hint"><span id="reqBetCount">0</span>/200 · Admin reviews before it goes live</div>
+      <div class="req-bet-input-row" style="margin-top:6px">
         <button class="adm-btn" onclick="submitBetRequest()">Submit</button>
         <button class="btn-ghost" onclick="toggleRequestBet()">Cancel</button>
       </div>
-      <div class="req-bet-hint"><span id="reqBetCount">0</span>/200 · Admin reviews before it goes live</div>
     </div>
   </div>`;
 }
@@ -576,7 +591,27 @@ function toggleRequestBet() {
   if (!isOpen) {
     const inp = document.getElementById('reqBetInput');
     if (inp) { inp.value = ''; document.getElementById('reqBetCount').textContent = '0'; inp.focus(); }
+    const optEl = document.getElementById('reqBetOptions');
+    if (optEl) optEl.innerHTML = reqOptionRow('Yes', null, false) + reqOptionRow('No', null, false);
   }
+}
+
+function addBetRequestOption() {
+  const optEl = document.getElementById('reqBetOptions');
+  if (!optEl) return;
+  optEl.insertAdjacentHTML('beforeend', reqOptionRow('', null, true));
+  // Show remove buttons on all rows when > 2
+  optEl.querySelectorAll('.req-opt-remove').forEach(b => b.style.visibility = '');
+}
+
+function removeBetRequestOption(btn) {
+  const row = btn.closest('.req-opt-row');
+  if (row) row.remove();
+  const optEl = document.getElementById('reqBetOptions');
+  if (!optEl) return;
+  const rows = optEl.querySelectorAll('.req-opt-row');
+  // Hide remove buttons when back to 2 rows
+  if (rows.length <= 2) rows.forEach(r => r.querySelector('.req-opt-remove').style.visibility = 'hidden');
 }
 
 async function submitBetRequest() {
@@ -584,6 +619,19 @@ async function submitBetRequest() {
   const text = (inp && inp.value.trim()) || '';
   if (!text) { showToast('Enter an outcome first'); return; }
   if (!_participant || !_tournament) { showToast('Not logged in'); return; }
+
+  // Collect options
+  const optRows = document.querySelectorAll('#reqBetOptions .req-opt-row');
+  const options = [];
+  for (const row of optRows) {
+    const label = (row.querySelector('.req-opt-label').value || '').trim();
+    const oddsRaw = row.querySelector('.req-opt-odds').value;
+    if (!label) { showToast('All options need a label'); return; }
+    const odds = oddsRaw !== '' ? parseFloat(oddsRaw) : null;
+    if (odds !== null && (isNaN(odds) || odds < 1.01)) { showToast('Odds must be at least 1.01'); return; }
+    options.push({ label, odds });
+  }
+  if (options.length < 2) { showToast('Add at least 2 options'); return; }
 
   const btn = document.querySelector('#reqBetExpanded .adm-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
@@ -593,6 +641,7 @@ async function submitBetRequest() {
       p_participant_id: _participant.id,
       p_tournament_id:  _tournament.id,
       p_outcome_text:   text,
+      p_options_json:   options,
     });
     if (error) {
       if (error.message.includes('outcome_text_empty'))    throw new Error('Please enter an outcome');
@@ -636,12 +685,11 @@ function renderCustomMarketCard(market) {
     ? `<span class="market-chip closed">Closed</span>`
     : `<span class="market-chip open">Open</span>`;
 
-  const yesBtn = canBet && o.yes != null
-    ? oddsBtn(market.id, 'yes', 'Yes', o.yes, false, isSettled && market.result === 'yes', null, 'custom')
-    : oddsTbc('Yes');
-  const noBtn = canBet && o.no != null
-    ? oddsBtn(market.id, 'no',  'No',  o.no,  false, isSettled && market.result === 'no',  null, 'custom')
-    : oddsTbc('No');
+  const optionBtns = Object.entries(o).map(([key, price]) =>
+    (canBet && price != null)
+      ? oddsBtn(market.id, key, key, price, false, isSettled && market.result === key, null, 'custom')
+      : oddsTbc(key)
+  ).join('');
 
   return `<div class="market-card" id="mc-${market.id}" data-kickoff="">
     <div class="market-card-header">
@@ -650,7 +698,7 @@ function renderCustomMarketCard(market) {
       </div>
       <div class="match-meta">${statusChip}</div>
     </div>
-    <div class="match-odds-row">${yesBtn}${noBtn}</div>
+    <div class="match-odds-row">${optionBtns}</div>
   </div>`;
 }
 
@@ -669,19 +717,45 @@ function renderAdminBetRequestRow(req) {
   const nick = escapeHtml((req.participants && req.participants.nickname) || '?');
   const text = escapeHtml(req.outcome_text || '');
   const id   = req.id;
+  const proposed = req.proposed_options;
+
+  let optionInputs;
+  if (proposed && proposed.length >= 2) {
+    optionInputs = proposed.map((opt, i) => {
+      const label = escapeHtml(opt.label || '');
+      const odds  = opt.odds != null ? opt.odds : 2;
+      return `<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+        <span style="font-size:0.7rem;min-width:50px;color:var(--muted)">${label}</span>
+        <input class="adm-in adm-score req-opt-adm" style="width:52px" type="number" min="1.01" step="0.01"
+          data-label="${label}" data-req-id="${id}" value="${odds}" placeholder="Odds">
+      </div>`;
+    }).join('');
+  } else {
+    // Legacy fallback: no proposed_options, show Yes/No
+    optionInputs = `<div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+        <span style="font-size:0.7rem;min-width:50px;color:var(--muted)">Yes</span>
+        <input class="adm-in adm-score req-opt-adm" style="width:52px" type="number" min="1.01" step="0.01"
+          data-label="Yes" data-req-id="${id}" value="2" placeholder="Odds">
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px">
+        <span style="font-size:0.7rem;min-width:50px;color:var(--muted)">No</span>
+        <input class="adm-in adm-score req-opt-adm" style="width:52px" type="number" min="1.01" step="0.01"
+          data-label="No" data-req-id="${id}" value="2" placeholder="Odds">
+      </div>`;
+  }
+
   return `<div class="admin-row req-row" id="req-row-${id}">
     <div class="admin-meta">
       <span class="adm-no" style="font-size:0.55rem;word-break:break-all">${nick}</span>
       <span class="adm-stage">request</span>
     </div>
     <div class="admin-name" style="font-size:0.75rem">"${text}"</div>
-    <div class="admin-ctrls">
-      <input class="adm-in adm-score" style="width:52px" type="number" min="1.01" step="0.01"
-        placeholder="Yes" id="req-yes-${id}" value="2">
-      <input class="adm-in adm-score" style="width:52px" type="number" min="1.01" step="0.01"
-        placeholder="No"  id="req-no-${id}"  value="2">
-      <button class="adm-btn" onclick="adminApproveBetRequest('${id}')">Approve</button>
-      <button class="btn-ghost" style="font-size:0.55rem;padding:5px 8px" onclick="adminRejectBetRequest('${id}')">Reject</button>
+    <div class="admin-ctrls" style="flex-direction:column;align-items:flex-start">
+      <div id="req-opts-${id}" style="margin-bottom:4px">${optionInputs}</div>
+      <div style="display:flex;gap:4px">
+        <button class="adm-btn" onclick="adminApproveBetRequest('${id}')">Approve</button>
+        <button class="btn-ghost" style="font-size:0.55rem;padding:5px 8px" onclick="adminRejectBetRequest('${id}')">Reject</button>
+      </div>
     </div>
   </div>`;
 }
@@ -706,12 +780,19 @@ async function loadAndRenderBetRequests() {
 }
 
 async function adminApproveBetRequest(requestId) {
-  const yesEl = document.getElementById(`req-yes-${requestId}`);
-  const noEl  = document.getElementById(`req-no-${requestId}`);
-  const yesOdds = parseFloat(yesEl && yesEl.value);
-  const noOdds  = parseFloat(noEl  && noEl.value);
-  if (isNaN(yesOdds) || isNaN(noOdds) || yesOdds < 1.01 || noOdds < 1.01) {
-    showToast('Enter valid odds (min 1.01) for Yes and No');
+  const optInputs = document.querySelectorAll(`#req-opts-${requestId} .req-opt-adm`);
+  const oddsJson  = {};
+  for (const el of optInputs) {
+    const label = el.dataset.label;
+    const odds  = parseFloat(el.value);
+    if (!label || isNaN(odds) || odds < 1.01) {
+      showToast('Enter valid odds (min 1.01) for all options');
+      return;
+    }
+    oddsJson[label] = odds;
+  }
+  if (Object.keys(oddsJson).length < 2) {
+    showToast('Need at least 2 options with odds');
     return;
   }
   try {
@@ -719,8 +800,7 @@ async function adminApproveBetRequest(requestId) {
       p_code:        code,
       p_admin_token: _adminToken,
       p_request_id:  requestId,
-      p_yes_odds:    yesOdds,
-      p_no_odds:     noOdds,
+      p_odds_json:   oddsJson,
     });
     if (error) {
       if (error.message.includes('request_not_found')) throw new Error('Request not found or already handled');
@@ -770,8 +850,7 @@ function renderAdminCustomMarketsView(customMarkets) {
       <div class="admin-name" style="font-size:0.75rem">"${text}"</div>
       <div class="admin-ctrls">
         <select class="adm-in adm-win" id="adm-custom-result-${mid}">
-          <option value="yes">Yes wins</option>
-          <option value="no">No wins</option>
+          ${Object.keys(m.odds_json || {}).map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)} wins</option>`).join('')}
         </select>
         <button class="adm-btn" onclick="adminSettleCustomMarket('${mid}')">Settle</button>
       </div>
@@ -790,7 +869,7 @@ async function adminSettleCustomMarket(marketId) {
       p_result:    result,
     });
     if (error) throw error;
-    showToast(`Custom market settled: ${result === 'yes' ? 'Yes' : 'No'} wins!`);
+    showToast(`Custom market settled: ${escapeHtml(result)} wins!`);
     await loadMarketsView();
     renderAdminPanel();
   } catch (e) {
