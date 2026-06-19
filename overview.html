@@ -65,6 +65,31 @@
       border-radius: var(--radius);
     }
 
+    /* ── Tournament switcher (shown when in 2+ tournaments) ── */
+    .ov-switch {
+      margin-left: auto;
+      flex-shrink: 0;
+      max-width: 46vw;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      padding: 6px 10px;
+      width: auto;
+    }
+
+    /* ── Install entry point ── */
+    .ov-install {
+      text-align: center;
+      padding: 28px 0 8px;
+      border-top: 1px solid var(--border);
+      margin-top: 24px;
+    }
+    .ov-install-hint {
+      margin-top: 12px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+
     /* ── Fixture carousel ── */
     .fix-carousel-wrap {
       margin: 0 -20px;
@@ -210,6 +235,14 @@
 
     .ov-loading { padding: 16px; font-size: 0.85rem; color: var(--muted); }
   </style>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#140a18">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kickoff">
+  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+  <link rel="icon" href="/assets/icons/favicon.png">
 </head>
 <body>
 
@@ -311,6 +344,7 @@
       <div class="ov-header">
         <h1 class="ov-title" id="ovTourneyName"></h1>
         <span class="ov-code-badge" id="ovCode"></span>
+        <select class="ov-switch" id="ovTourneySwitch" aria-label="Switch tournament" hidden></select>
       </div>
 
       <!-- Sweepstake hub card -->
@@ -340,6 +374,12 @@
         </div>
         <div class="hub-bet-stats" id="ovBetStats"></div>
       </div>
+
+      <!-- Install entry point -->
+      <div class="ov-install" id="ovInstall" hidden>
+        <button class="btn" id="ovInstallBtn">📲 Install the app</button>
+        <p class="ov-install-hint" id="ovInstallHint" hidden></p>
+      </div>
     </div>
   </div>
 
@@ -357,11 +397,13 @@
 
 <div id="toast"></div>
 
-<script src="js/config.js?v=17807242" onerror="document.getElementById('stateLoading').style.display='none';document.getElementById('stateError').classList.add('active');document.getElementById('errorMsg').textContent='Failed to load config — please refresh.'"></script>
-<script src="js/vendor/supabase.js?v=17807242"></script>
-<script src="js/flag-colors.js?v=17807242"></script>
-<script src="js/avatars.js?v=17807242"></script>
-<script src="js/wc2026-fixtures.js?v=17807242"></script>
-<script src="js/overview.js?v=17807242"></script>
+<script src="js/config.js?v=17818551" onerror="document.getElementById('stateLoading').style.display='none';document.getElementById('stateError').classList.add('active');document.getElementById('errorMsg').textContent='Failed to load config — please refresh.'"></script>
+<script src="js/vendor/supabase.js?v=17818551"></script>
+<script src="js/flag-colors.js?v=17818551"></script>
+<script src="js/avatars.js?v=17818551"></script>
+<script src="js/wc2026-fixtures.js?v=17818551"></script>
+<script src="js/my-tournaments.js?v=17818551"></script>
+<script src="js/overview.js?v=17818551"></script>
+<script src="js/pwa.js?v=17818551"></script>
 </body>
 </html>

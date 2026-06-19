@@ -63,14 +63,36 @@ const supabaseSrc = join(__dirname, 'node_modules', '@supabase', 'supabase-js', 
 writeFileSync(join(vendorDir, 'supabase.js'), readFileSync(supabaseSrc));
 console.log('✓ js/vendor/supabase.js written');
 
+// Inject PWA tags (manifest, apple meta, icons, SW registration) into every HTML
+// page — idempotent, so re-runs never duplicate. Keeps installability DRY and
+// auto-covers any future page without editing each file by hand.
+const PWA_HEAD = `  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#140a18">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kickoff">
+  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+  <link rel="icon" href="/assets/icons/favicon.png">
+`;
+function injectPwaTags(html) {
+  if (!html.includes('rel="manifest"') && html.includes('</head>')) {
+    html = html.replace('</head>', `${PWA_HEAD}</head>`);
+  }
+  if (!html.includes('js/pwa.js') && html.includes('</body>')) {
+    html = html.replace('</body>', `<script src="js/pwa.js"></script>\n</body>`);
+  }
+  return html;
+}
+
 // Cache-bust all local JS script tags in HTML files by appending ?v=<commit>.
 // This forces browsers to fetch fresh scripts after every deploy.
 const v = (process.env.GITHUB_RUN_ID || process.env.GITHUB_SHA || process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString()).slice(0, 8);
 for (const file of readdirSync(__dirname).filter(f => f.endsWith('.html'))) {
   const path = join(__dirname, file);
-  const updated = readFileSync(path, 'utf8')
+  const updated = injectPwaTags(readFileSync(path, 'utf8'))
     .replace(/(<script src="(?:js\/[^"]+\.js))(?:\?v=[^"]*)?(")/g, `$1?v=${v}$2`)
     .replace(/(<meta name="build" content=")[^"]*(")/g, `$1${v}$2`);
   writeFileSync(path, updated, 'utf8');
 }
-console.log(`✓ HTML script tags cache-busted with v=${v}`);
+console.log(`✓ HTML PWA tags injected + script tags cache-busted with v=${v}`);

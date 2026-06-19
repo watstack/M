@@ -222,6 +222,32 @@
   let _ticker = null;
   let _heroCtx = null; // { teamSet, pendingByMatchNo } — used by carousel
 
+  // Populate the header switcher when this device is in 2+ tournaments.
+  function renderTournamentSwitcher(currentCode) {
+    const sel = document.getElementById('ovTourneySwitch');
+    if (!sel || typeof getMyTournaments !== 'function') return;
+
+    const list = getMyTournaments();
+    const cur = String(currentCode || '').toUpperCase();
+    // Ensure the current tournament is in the list even if not yet persisted.
+    if (cur && !list.some(t => t.code === cur)) {
+      list.unshift({ code: cur, name: _tournament?.name || cur, ts: Date.now() });
+    }
+    if (list.length < 2) { sel.hidden = true; return; }
+
+    sel.innerHTML = list.map(t =>
+      `<option value="${esc(t.code)}"${t.code === cur ? ' selected' : ''}>${esc(t.name)} (${esc(t.code)})</option>`
+    ).join('');
+    sel.hidden = false;
+
+    sel.onchange = () => {
+      const code = sel.value;
+      if (code && code !== cur) {
+        window.location.href = 'overview.html?code=' + encodeURIComponent(code);
+      }
+    };
+  }
+
   async function renderOverviewState(tournament, myParticipantId) {
     const code = tournament.code;
     const bracketHref = `sweepstake.html?code=${code}`;
@@ -230,6 +256,7 @@
     document.getElementById('ovCode').textContent = code;
     document.getElementById('ovBracketTopBtn').href = bracketHref;
     document.getElementById('ovBetTopBtn').href     = betHref;
+    renderTournamentSwitcher(code);
 
     activate('stateOverview');
 
