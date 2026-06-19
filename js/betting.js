@@ -50,6 +50,21 @@ function buildScoreGrid(matchId, matchNo) {
   </div>`;
 }
 
+// ─── Double-chance row helper ─────────────────────────────────────────────────
+
+function buildDoubleChanceRow(marketId, matchNo, oddsJson, canBet) {
+  const o = oddsJson || {};
+  const btn = (sel, label) =>
+    (canBet && o[sel] != null)
+      ? oddsBtn(marketId, sel, label, o[sel], false, false, matchNo, 'double_chance')
+      : oddsTbc(label);
+  return `<div class="dc-row">
+    ${btn('1x', '1X')}
+    ${btn('x2', 'X2')}
+    ${btn('12', '12')}
+  </div>`;
+}
+
 // ─── Market reads ─────────────────────────────────────────────────────────────
 
 async function loadOpenMarkets(tournamentId) {
@@ -305,12 +320,15 @@ function renderMatchCard(fixture, pair) {
     return oddsTbc(label);
   };
 
-  const csAccordion = (cs && cs.id && !locked && !isClosed)
+  const dc = pair.double_chance;
+  const showOtherAccordion = (!locked && !isClosed) && ((cs && cs.id) || (dc && dc.id));
+  const otherAccordion = showOtherAccordion
     ? `<div class="cs-toggle" onclick="toggleCorrectScore(this)">
-        <span>Correct Score</span><span class="cs-arrow">▾</span>
+        <span>Other</span><span class="cs-arrow">▾</span>
       </div>
-      <div class="cs-content hidden" data-cs-market="${cs.id}">
-        ${buildScoreGrid(cs.id, fixture.match_no)}
+      <div class="cs-content hidden">
+        ${dc && dc.id ? buildDoubleChanceRow(dc.id, fixture.match_no, dc.odds_json, canBet) : ''}
+        ${cs && cs.id ? `<div class="dc-divider"></div>${buildScoreGrid(cs.id, fixture.match_no)}` : ''}
       </div>`
     : '';
 
@@ -339,7 +357,7 @@ function renderMatchCard(fixture, pair) {
       ${resultBtn('draw', 'Draw')}
       ${resultBtn('away', 'Away')}
     </div>
-    ${csAccordion}
+    ${otherAccordion}
   </div>`;
 }
 

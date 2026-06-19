@@ -17,6 +17,12 @@ const ODDS_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
 const teamName = code => CODE_NAMES[code] || code;
 
+function calcDcOdds({ home, draw, away }) {
+  const hp = 1 / home, dp = 1 / draw, ap = 1 / away;
+  const r = v => Math.round(v * 100) / 100;
+  return { '1x': r(1 / (hp + dp)), 'x2': r(1 / (dp + ap)), '12': r(1 / (hp + ap)) };
+}
+
 function matchNameFor(fx) {
   const h = fx.home.code ? teamName(fx.home.code) : fx.home.label;
   const a = fx.away.code ? teamName(fx.away.code) : fx.away.label;
@@ -108,11 +114,21 @@ module.exports = async function handler(req, res) {
             oddsMatched++;
           }
         }
+        const dc = { ...base, market_type: 'double_chance' };
+        if (oddsStale && Array.isArray(h2hEvents)) {
+          const odds = h2hOddsForFixture(h2hEvents, fx);
+          if (odds) {
+            dc.odds_json = calcDcOdds(odds);
+            dc.odds_fetched_at = fetchedAt;
+          }
+        }
         groupRows.push(mr);
         groupRows.push({ ...base, market_type: 'correct_score' });
+        groupRows.push(dc);
       } else {
         koRows.push({ ...base, market_type: 'match_result' });
         koRows.push({ ...base, market_type: 'correct_score' });
+        koRows.push({ ...base, market_type: 'double_chance' });
       }
     }
 
