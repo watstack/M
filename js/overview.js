@@ -258,11 +258,13 @@
     document.getElementById('ovBetTopBtn').href     = betHref;
     renderTournamentSwitcher(code);
 
-    // Expose a self-identifying deep link for the install flow: code + the
-    // participant token (#me=) so an installed/home-screen launch re-hooks this
-    // user into their tournament even with a fresh storage scope.
-    window.__kickoffDeepLink = `overview.html?code=${encodeURIComponent(code)}` +
-      (myParticipantId ? `#me=${encodeURIComponent(myParticipantId)}` : '');
+    // Expose the install deep link for pwa.js — built lazily at click time so it
+    // carries the user's *current* full set of browser tokens (all tournaments +
+    // identities), landing them on this tournament's overview.
+    window.__kickoffInstallLink = () =>
+      (typeof buildInstallLink === 'function'
+        ? buildInstallLink(code)
+        : `overview.html?code=${encodeURIComponent(code)}`);
 
     activate('stateOverview');
 
@@ -469,6 +471,15 @@
 
     const params = new URLSearchParams(window.location.search);
     const code   = (params.get('code') || '').toUpperCase();
+
+    // Import a full token bundle carried by an install/launch deep link (e.g. an
+    // installed iOS app whose storage starts empty) so the user arrives with all
+    // their tournaments + identities, then drop it from the URL.
+    const tkMatch = window.location.hash.match(/[#&]tk=([A-Za-z0-9_-]+)/);
+    if (tkMatch && typeof importSessionTokens === 'function') {
+      try { importSessionTokens(decodeSessionTokens(tkMatch[1])); } catch (_) {}
+      history.replaceState(null, '', location.pathname + location.search);
+    }
 
     // Support #me= deep-link for participant ID
     const meMatch = window.location.hash.match(/me=([0-9a-fA-F-]+)/);
