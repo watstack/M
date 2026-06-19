@@ -258,6 +258,17 @@
     document.getElementById('ovBetTopBtn').href     = betHref;
     renderTournamentSwitcher(code);
 
+    // Make sure this tournament is in the device's membership list so recovery,
+    // the switcher, and the token bundle all know about it (some join paths don't
+    // record it — e.g. admin-seeded participants).
+    try {
+      const _joined = JSON.parse(localStorage.getItem('wc26_my_joined') || '[]');
+      if (myParticipantId && !_joined.find((t) => t && t.code === code)) {
+        _joined.unshift({ code, name: tournament.name, joinedAt: Date.now() });
+        localStorage.setItem('wc26_my_joined', JSON.stringify(_joined));
+      }
+    } catch (_) {}
+
     // Expose the install deep link for pwa.js — built lazily at click time so it
     // carries the user's *current* full set of browser tokens (all tournaments +
     // identities), landing them on this tournament's overview.
@@ -265,6 +276,12 @@
       (typeof buildInstallLink === 'function'
         ? buildInstallLink(code)
         : `overview.html?code=${encodeURIComponent(code)}`);
+
+    // Personalise the manifest so the installed app's start_url (which iOS uses
+    // for the launch URL) opens this tournament's overview with the tokens.
+    if (typeof personaliseManifest === 'function' && typeof buildInstallStartUrl === 'function') {
+      personaliseManifest(buildInstallStartUrl(code));
+    }
 
     activate('stateOverview');
 
@@ -474,11 +491,15 @@
 
     // Import a full token bundle carried by an install/launch deep link (e.g. an
     // installed iOS app whose storage starts empty) so the user arrives with all
-    // their tournaments + identities, then drop it from the URL.
-    const tkMatch = window.location.hash.match(/[#&]tk=([A-Za-z0-9_-]+)/);
-    if (tkMatch && typeof importSessionTokens === 'function') {
-      try { importSessionTokens(decodeSessionTokens(tkMatch[1])); } catch (_) {}
-      history.replaceState(null, '', location.pathname + location.search);
+    // their tournaments + identities, then drop it from the URL. The bundle may
+    // ride in the query (manifest start_url) or the hash (captured URL).
+    const tkRaw = params.get('tk') ||
+      (window.location.hash.match(/[#&]tk=([A-Za-z0-9_-]+)/) || [])[1];
+    if (tkRaw && typeof importSessionTokens === 'function') {
+      try { importSessionTokens(decodeSessionTokens(tkRaw)); } catch (_) {}
+      params.delete('tk');
+      const qs = params.toString();
+      history.replaceState(null, '', location.pathname + (qs ? '?' + qs : ''));
     }
 
     // Support #me= deep-link for participant ID

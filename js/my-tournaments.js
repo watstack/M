@@ -83,6 +83,8 @@ function importSessionTokens(bundle) {
 
 // Build the install deep link: open the current tournament's overview, carrying
 // every browser token in the hash so a fresh install arrives fully hydrated.
+// Used to stamp the address bar (the path that works when a browser captures the
+// current URL on "Add to Home Screen").
 function buildInstallLink(currentCode) {
   const base = currentCode
     ? 'overview.html?code=' + encodeURIComponent(String(currentCode).toUpperCase())
@@ -91,9 +93,41 @@ function buildInstallLink(currentCode) {
   return tk ? base + '#tk=' + tk : base;
 }
 
+// Same payload but in the *query string* — used as the manifest start_url. iOS
+// launches the installed app at the manifest start_url (not the captured URL),
+// and query params survive that round-trip more reliably than the hash.
+function buildInstallStartUrl(currentCode) {
+  const base = currentCode
+    ? 'overview.html?code=' + encodeURIComponent(String(currentCode).toUpperCase())
+    : 'overview.html';
+  const tk = encodeSessionTokens(collectSessionTokens());
+  return tk ? base + (base.includes('?') ? '&' : '?') + 'tk=' + tk : base;
+}
+
+// Rewrite the page's manifest at runtime so its start_url carries the user's
+// tournament + tokens. This is what makes the installed app (which iOS launches
+// at the manifest start_url) open the right overview already hydrated, instead
+// of the generic start_url. URLs are made absolute because a data: manifest has
+// no base to resolve relative paths against.
+async function personaliseManifest(startUrl) {
+  const link = document.querySelector('link[rel="manifest"]');
+  if (!link || !startUrl) return;
+  try {
+    const res = await fetch(link.href, { cache: 'no-store' });
+    const m = await res.json();
+    const abs = (u) => new URL(u, document.baseURI).href;
+    m.start_url = abs(startUrl);
+    if (m.scope) m.scope = abs(m.scope);
+    if (Array.isArray(m.icons)) m.icons.forEach((ic) => { if (ic && ic.src) ic.src = abs(ic.src); });
+    link.setAttribute('href', 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(m)));
+  } catch (_) { /* keep the static manifest on failure */ }
+}
+
 if (typeof window !== 'undefined') {
-  window.collectSessionTokens = collectSessionTokens;
-  window.importSessionTokens  = importSessionTokens;
-  window.decodeSessionTokens  = decodeSessionTokens;
-  window.buildInstallLink     = buildInstallLink;
+  window.collectSessionTokens  = collectSessionTokens;
+  window.importSessionTokens   = importSessionTokens;
+  window.decodeSessionTokens   = decodeSessionTokens;
+  window.buildInstallLink      = buildInstallLink;
+  window.buildInstallStartUrl  = buildInstallStartUrl;
+  window.personaliseManifest   = personaliseManifest;
 }
