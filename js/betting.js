@@ -637,16 +637,18 @@ async function submitBetRequest() {
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
 
   try {
-    const { error } = await db.rpc('submit_bet_request', {
-      p_participant_id: _participant.id,
-      p_tournament_id:  _tournament.id,
-      p_outcome_text:   text,
-      p_options_json:   options,
+    const r = await fetch('/api/submit-bet-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, participantId: _participant.id, outcomeText: text, options }),
     });
-    if (error) {
-      if (error.message.includes('outcome_text_empty'))    throw new Error('Please enter an outcome');
-      if (error.message.includes('outcome_text_too_long')) throw new Error('Max 200 characters');
-      throw error;
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const msg = j.error || '';
+      if (msg.includes('outcome_text_empty'))    throw new Error('Please enter an outcome');
+      if (msg.includes('outcome_text_too_long')) throw new Error('Max 200 characters');
+      if (msg.includes('participant_not_found')) throw new Error('You are not in this tournament');
+      throw new Error(msg || 'Failed to submit request');
     }
     showToast('Request sent! Admin will review it.');
     toggleRequestBet();

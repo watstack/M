@@ -254,6 +254,11 @@
         </div>
       </div>
 
+      <div class="result-section" id="notifSection">
+        <h3>Notifications</h3>
+        <div id="notifToggle"><p class="muted" style="font-size:0.85rem">Loading…</p></div>
+      </div>
+
       <a href="" id="goToSweepstakeBtn" class="btn btn-full btn-gold">Go to sweepstake →</a>
 
     </div>
@@ -390,6 +395,7 @@
       createForm.style.display = 'none';
       resultPanel.classList.add('show');
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      initNotifications(tournament.code, tournament.admin_token);
 
     } catch (err) {
       showToast('Something went wrong: ' + err.message);
@@ -435,5 +441,110 @@
 </script>
 <script src="js/analytics.js?v=17818741"></script>
 <script src="js/pwa.js?v=17818741"></script>
+<script>
+  let _notifCode = null;
+  let _notifAdminToken = null;
+  let _pushSub = null;
+  let _vapidKey = null;
+
+  async function initNotifications(code, adminToken) {
+    _notifCode = code;
+    _notifAdminToken = adminToken;
+    const el = document.getElementById('notifToggle');
+    if (!el) return;
+
+    if (!('PushManager' in window) || !('serviceWorker' in navigator)) {
+      el.innerHTML = '<p class="muted" style="font-size:0.85rem">Push notifications are not supported in this browser.</p>';
+      return;
+    }
+
+    try {
+      const r = await fetch('/api/push-config');
+      if (!r.ok) throw new Error('Push not configured on server');
+      const j = await r.json();
+      _vapidKey = j.publicKey;
+    } catch (e) {
+      el.innerHTML = `<p class="muted" style="font-size:0.85rem">Notifications unavailable: ${e.message}</p>`;
+      return;
+    }
+
+    const reg = await navigator.serviceWorker.ready;
+    _pushSub = await reg.pushManager.getSubscription();
+    renderNotifToggle(!!_pushSub);
+  }
+
+  function renderNotifToggle(isEnabled) {
+    const el = document.getElementById('notifToggle');
+    if (!el) return;
+    if (Notification.permission === 'denied') {
+      el.innerHTML = '<p class="muted" style="font-size:0.85rem">Notifications are blocked in your browser settings.</p>';
+      return;
+    }
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <button class="btn btn-full" id="notifBtn" onclick="toggleNotification()" style="max-width:260px">
+          ${isEnabled ? 'Disable notifications' : 'Enable notifications'}
+        </button>
+        <span class="muted" style="font-size:0.82rem">
+          ${isEnabled ? 'Active on this device — you\'ll be notified when a player submits a bet request.' : 'Get notified when a player submits a bet request.'}
+        </span>
+      </div>`;
+  }
+
+  async function toggleNotification() {
+    const btn = document.getElementById('notifBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+    try {
+      const reg = await navigator.serviceWorker.ready;
+
+      if (_pushSub) {
+        await _pushSub.unsubscribe();
+        await fetch('/api/subscribe-push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: _notifCode, adminToken: _notifAdminToken,
+            action: 'unsubscribe', subscription: { endpoint: _pushSub.endpoint },
+          }),
+        });
+        _pushSub = null;
+        renderNotifToggle(false);
+        showToast('Notifications disabled');
+      } else {
+        if (Notification.permission !== 'granted') {
+          const perm = await Notification.requestPermission();
+          if (perm !== 'granted') { showToast('Permission denied'); renderNotifToggle(false); return; }
+        }
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(_vapidKey),
+        });
+        const r = await fetch('/api/subscribe-push', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code: _notifCode, adminToken: _notifAdminToken,
+            action: 'subscribe', subscription: sub.toJSON(),
+          }),
+        });
+        if (!r.ok) { await sub.unsubscribe(); throw new Error('Server rejected subscription'); }
+        _pushSub = sub;
+        renderNotifToggle(true);
+        showToast('Notifications enabled!');
+      }
+    } catch (e) {
+      showToast(e.message || 'Failed to update notifications');
+      if (btn) { btn.disabled = false; }
+    }
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw     = atob(base64);
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+  }
+</script>
 </body>
 </html>
