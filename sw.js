@@ -62,3 +62,32 @@ self.addEventListener('fetch', (event) => {
   }
   // Cross-origin (fonts, Supabase, etc.): leave to the network/browser.
 });
+
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  let payload;
+  try { payload = event.data.json(); } catch { payload = { title: 'Kickoff', body: event.data.text() }; }
+  const title   = payload.title || 'Kickoff';
+  const options = {
+    body:               payload.body || 'New notification',
+    icon:               './assets/icons/icon-192.png',
+    badge:              './assets/icons/icon-192.png',
+    data:               { url: payload.url || './betting.html' },
+    requireInteraction: true,
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) || './betting.html';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      const target = new URL(targetUrl, self.location.origin);
+      for (const win of wins) {
+        if (new URL(win.url).pathname === target.pathname && 'focus' in win) return win.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(targetUrl);
+    })
+  );
+});
