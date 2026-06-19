@@ -4,6 +4,8 @@
 const RANK_MEDALS = ['🥇', '🥈', '🥉'];
 
 let _lbChannel = null;
+let _lbRows = [];
+let _onLbRowsUpdated = null;
 
 async function loadLeaderboard(tournamentId) {
   const { data, error } = await db
@@ -61,6 +63,7 @@ function renderLeaderboard(rows, myId, container) {
 
 async function refreshLeaderboard(tournamentId, myId, container) {
   const rows = await loadLeaderboard(tournamentId);
+  _lbRows = rows;
   const prevVals = {};
   container.querySelectorAll('[data-pid]').forEach(el => {
     const coinsEl = el.querySelector('.lb-coins');
@@ -68,6 +71,7 @@ async function refreshLeaderboard(tournamentId, myId, container) {
   });
 
   renderLeaderboard(rows, myId, container);
+  if (_onLbRowsUpdated) _onLbRowsUpdated();
 
   // Briefly flash rows whose balance changed
   rows.forEach(p => {
