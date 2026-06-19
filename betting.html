@@ -908,9 +908,13 @@ function renderBetCarousel() {
     (side?.code && typeof teamFlagEmoji === 'function') ? teamFlagEmoji(side.code) : '🏳';
 
   el.innerHTML = all.map(f => {
-    const ko     = new Date(f.kickoff_utc).getTime();
-    const isPast = ko <= now && (now - ko) >= _CAROUSEL_LIVE_MS;
-    const isLive = ko <= now && (now - ko) < _CAROUSEL_LIVE_MS;
+    const ko       = new Date(f.kickoff_utc).getTime();
+    const matchKey = f.home.code && f.away.code ? `${f.home.code}_${f.away.code}` : null;
+    const matchData = matchKey ? _matchesByKey[matchKey] : null;
+    const dbStatus = matchData?.status;
+    const isPast = dbStatus === 'FINISHED' || (!dbStatus && ko <= now && (now - ko) >= _CAROUSEL_LIVE_MS);
+    const isLive = (dbStatus === 'IN_PLAY' || dbStatus === 'PAUSED') ||
+                   (!dbStatus && ko <= now && (now - ko) < _CAROUSEL_LIVE_MS);
     const isMy   = (f.home.code && _teamSet.has(f.home.code)) || (f.away.code && _teamSet.has(f.away.code));
     const hasBet = !!_pendingByMatchNo[f.match_no];
     const classes = ['fix-card',
@@ -928,9 +932,6 @@ function renderBetCarousel() {
     if (d >= todayMid && d < tomMid) dateLabel = `Today ${timeStr}`;
     else if (d >= tomMid && d < dayAfterMid) dateLabel = `Tomorrow ${timeStr}`;
     else dateLabel = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-
-    const matchKey = f.home.code && f.away.code ? `${f.home.code}_${f.away.code}` : null;
-    const matchData = matchKey ? _matchesByKey[matchKey] : null;
     let scoreHtml = '';
     if (isLive) {
       const mins = Math.floor((now - ko) / 60000);

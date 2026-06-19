@@ -324,9 +324,13 @@
     if (!all.length) { el.innerHTML = ''; return; }
 
     el.innerHTML = all.map(f => {
-      const ko     = new Date(f.kickoff_utc).getTime();
-      const isPast = ko <= now && (now - ko) >= LIVE_WINDOW_MS;
-      const isLive = ko <= now && (now - ko) < LIVE_WINDOW_MS;
+      const ko       = new Date(f.kickoff_utc).getTime();
+      const matchKey = f.home.code && f.away.code ? `${f.home.code}_${f.away.code}` : null;
+      const matchData = matchKey ? (matchesByKey || {})[matchKey] : null;
+      const dbStatus = matchData?.status;
+      const isPast = dbStatus === 'FINISHED' || (!dbStatus && ko <= now && (now - ko) >= LIVE_WINDOW_MS);
+      const isLive = (dbStatus === 'IN_PLAY' || dbStatus === 'PAUSED') ||
+                     (!dbStatus && ko <= now && (now - ko) < LIVE_WINDOW_MS);
       const isMy   = (f.home.code && teamSet.has(f.home.code)) || (f.away.code && teamSet.has(f.away.code));
       const hasBet = !!pendingByMatchNo[f.match_no];
       const classes = ['fix-card',
@@ -348,8 +352,6 @@
       const dateHtml = `<div class="fix-card-time">${dateLabel}</div>`;
 
       // Score / status area
-      const matchKey = f.home.code && f.away.code ? `${f.home.code}_${f.away.code}` : null;
-      const matchData = matchKey ? (matchesByKey || {})[matchKey] : null;
       let scoreHtml = '';
       if (isLive) {
         const mins = Math.floor((now - ko) / 60000);
