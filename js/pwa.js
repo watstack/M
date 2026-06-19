@@ -30,16 +30,21 @@
 
   let deferredPrompt = null;
 
-  // Android / desktop Chromium: a real install prompt is available.
+  // Android / desktop Chromium: a real install prompt is available. Stash it so
+  // the button can trigger it; the button itself stays visible regardless.
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    section.hidden = false;
   });
 
+  // Keep the entry point visible after installing (so the tile can be re-added);
+  // just acknowledge the install.
   window.addEventListener('appinstalled', () => {
-    section.hidden = true;
     deferredPrompt = null;
+    if (hint) {
+      hint.textContent = 'Installed ✓ — open Kickoff from your home screen.';
+      hint.hidden = false;
+    }
   });
 
   // Put the user's self-identifying deep link (code + participant token) into
@@ -52,28 +57,31 @@
     }
   }
 
+  // Default hint copy per platform (used as the manual fallback when there's no
+  // native prompt — e.g. iOS, or an already-installed Android/desktop browser).
+  if (hint) {
+    const isCriOS = /CriOS/i.test(ua);   // Chrome on iOS
+    const isFxOS = /FxiOS/i.test(ua);    // Firefox on iOS
+    hint.textContent = isIOS
+      ? ((isCriOS || isFxOS)
+          ? 'Tap the ⋯ / Share menu, then “Add to Home Screen”.'
+          : 'Tap the Share icon, then “Add to Home Screen”.')
+      : 'Open your browser menu, then “Install” / “Add to Home Screen”.';
+  }
+
   btn.addEventListener('click', async () => {
+    // Always carry the user's identity into the install (code + #me token).
+    stampDeepLink();
     if (deferredPrompt) {
       deferredPrompt.prompt();
       await deferredPrompt.userChoice.catch(() => {});
       deferredPrompt = null;
-      section.hidden = true;
-      return;
     }
-    // iOS (Safari/Chrome/etc. — all WebKit, no prompt API): reveal instructions.
-    stampDeepLink();
+    // Reveal the add-to-home-screen instructions / confirmation either way.
     if (hint) hint.hidden = false;
   });
 
-  // iOS has no beforeinstallprompt, so surface the button with the right gesture.
-  if (isIOS) {
-    const isCriOS = /CriOS/i.test(ua);   // Chrome on iOS
-    const isFxOS = /FxiOS/i.test(ua);    // Firefox on iOS
-    if (hint) {
-      hint.textContent = (isCriOS || isFxOS)
-        ? 'Tap the ⋯ / Share menu, then “Add to Home Screen”.'
-        : 'Tap the Share icon, then “Add to Home Screen”.';
-    }
-    section.hidden = false;
-  }
+  // Persist the install entry point whenever we're in a browser tab (it's hidden
+  // only when already running as the installed standalone app, handled above).
+  section.hidden = false;
 })();
