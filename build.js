@@ -66,22 +66,27 @@ console.log('✓ js/vendor/supabase.js written');
 // Inject PWA tags (manifest, apple meta, icons, SW registration) into every HTML
 // page — idempotent, so re-runs never duplicate. Keeps installability DRY and
 // auto-covers any future page without editing each file by hand.
-const PWA_HEAD = `  <link rel="manifest" href="/manifest.webmanifest">
+// Relative hrefs so the app installs under any base path — works at the site
+// root (Vercel) and under a subpath (GitHub Pages serves this repo at /M/).
+const PWA_HEAD = `  <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#140a18">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Kickoff">
-  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
-  <link rel="icon" href="/assets/icons/favicon.png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="icon" href="assets/icons/favicon.png">
 `;
+// Self-healing: strip any previously-injected block (absolute or relative) then
+// re-inject the current one, so re-runs never duplicate and old paths migrate.
 function injectPwaTags(html) {
-  if (!html.includes('rel="manifest"') && html.includes('</head>')) {
-    html = html.replace('</head>', `${PWA_HEAD}</head>`);
-  }
-  if (!html.includes('js/pwa.js') && html.includes('</body>')) {
-    html = html.replace('</body>', `<script src="js/pwa.js"></script>\n</body>`);
-  }
+  html = html.replace(
+    /[ \t]*<link rel="manifest"[^>]*>[\s\S]*?<link rel="icon" href="[^"]*assets\/icons\/favicon\.png">\n?/,
+    ''
+  );
+  html = html.replace(/[ \t]*<script src="[^"]*js\/pwa\.js[^"]*"><\/script>\n?/, '');
+  if (html.includes('</head>')) html = html.replace('</head>', `${PWA_HEAD}</head>`);
+  if (html.includes('</body>')) html = html.replace('</body>', `<script src="js/pwa.js"></script>\n</body>`);
   return html;
 }
 

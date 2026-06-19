@@ -4,7 +4,8 @@
   // ── 1. Register the service worker ──
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch((err) =>
+      // Relative path so it works under any base (Vercel root and GitHub Pages /M/).
+      navigator.serviceWorker.register('sw.js').catch((err) =>
         console.warn('[pwa] service worker registration failed:', err)
       );
     });
