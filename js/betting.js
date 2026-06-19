@@ -59,9 +59,9 @@ function buildDoubleChanceRow(marketId, matchNo, oddsJson, canBet) {
       ? oddsBtn(marketId, sel, label, o[sel], false, false, matchNo, 'double_chance')
       : oddsTbc(label);
   return `<div class="dc-row">
-    ${btn('1x', '1X')}
-    ${btn('x2', 'X2')}
-    ${btn('12', '12')}
+    ${btn('1x', 'Home Draw')}
+    ${btn('x2', 'Draw Away')}
+    ${btn('12', 'Home Away')}
   </div>`;
 }
 
