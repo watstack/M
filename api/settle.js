@@ -10,7 +10,7 @@
 // advances after extra time / penalties; for group games it is derived from the
 // score and ignored for propagation.
 
-const { makeRest, verifyAdmin, propagateResult, settleMarketRpc } = require('./_lib/settle-lib');
+const { makeRest, verifyAdmin, verifyParticipantAdmin, propagateResult, settleMarketRpc } = require('./_lib/settle-lib');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -18,9 +18,9 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.end(); return; }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const { code, adminToken, matchNo, homeScore, awayScore, winner } = req.body || {};
-  if (!code || !adminToken || matchNo == null || homeScore == null || awayScore == null) {
-    return res.status(400).json({ error: 'code, adminToken, matchNo, homeScore, awayScore required' });
+  const { code, adminToken, participantId, matchNo, homeScore, awayScore, winner } = req.body || {};
+  if (!code || (!adminToken && !participantId) || matchNo == null || homeScore == null || awayScore == null) {
+    return res.status(400).json({ error: 'code, adminToken or participantId, matchNo, homeScore, awayScore required' });
   }
   const h = Number(homeScore), a = Number(awayScore);
   if (!Number.isInteger(h) || !Number.isInteger(a) || h < 0 || a < 0) {
@@ -34,8 +34,10 @@ module.exports = async function handler(req, res) {
   const rest = makeRest(supaUrl, supaKey);
 
   try {
-    const tournamentId = await verifyAdmin(rest, code, adminToken);
-    if (!tournamentId) return res.status(403).json({ error: 'Invalid tournament code or admin token' });
+    const tournamentId = adminToken
+      ? await verifyAdmin(rest, code, adminToken)
+      : await verifyParticipantAdmin(rest, code, participantId);
+    if (!tournamentId) return res.status(403).json({ error: 'Unauthorized' });
 
     const matchResult = h > a ? 'home' : a > h ? 'away' : 'draw';
     const correctScore = `${h}-${a}`;

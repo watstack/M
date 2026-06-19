@@ -33,6 +33,23 @@ async function verifyAdmin(rest, code, adminToken) {
   return rows.length ? rows[0].id : null;
 }
 
+// Resolve a tournament id from code + participant id (must have is_admin = true).
+async function verifyParticipantAdmin(rest, code, participantId) {
+  if (!code || !participantId) return null;
+  const tr = await rest(`/tournaments?code=eq.${encodeURIComponent(code)}&select=id`);
+  if (!tr.ok) return null;
+  const tRows = await tr.json();
+  if (!tRows.length) return null;
+  const tournamentId = tRows[0].id;
+  const pr = await rest(
+    `/participants?id=eq.${encodeURIComponent(participantId)}` +
+    `&tournament_id=eq.${encodeURIComponent(tournamentId)}&is_admin=eq.true&select=id`
+  );
+  if (!pr.ok) return null;
+  const pRows = await pr.json();
+  return pRows.length ? tournamentId : null;
+}
+
 // Display name for one side of a match: the resolved team name, else the static
 // fixture's slot label (e.g. "Winner Group A"), else "TBC".
 function sideLabel(matchNo, which, code) {
@@ -106,5 +123,5 @@ async function settleMarketRpc(rest, marketId, result) {
 }
 
 module.exports = {
-  teamName, makeRest, verifyAdmin, setMatchTeams, propagateResult, settleMarketRpc,
+  teamName, makeRest, verifyAdmin, verifyParticipantAdmin, setMatchTeams, propagateResult, settleMarketRpc,
 };

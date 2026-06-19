@@ -859,13 +859,13 @@ async function init() {
       })
     .subscribe();
 
-  // Admin controls (settle/resolve) — only when an admin token is present
-  // (carried in the URL hash like the sweepstake, or remembered in localStorage).
+  // Admin controls — shown when a master admin token is present OR the participant
+  // has been granted is_admin via the admin panel.
   const am = window.location.hash.match(/admin=([a-zA-Z0-9\-]+)/);
   const fromHash = am ? am[1] : null;
   if (fromHash) localStorage.setItem(`wc26_admin_${code}`, fromHash);
   _adminToken = fromHash || localStorage.getItem(`wc26_admin_${code}`) || null;
-  if (_adminToken) document.getElementById('tabAdmin').style.display = '';
+  if (_adminToken || part.is_admin) document.getElementById('tabAdmin').style.display = '';
 
   // Load user's team allocations and pending bets for carousel
   const [allocRes, pendingCarouselRes] = await Promise.all([
@@ -1148,10 +1148,18 @@ async function adminSaveParticipant(participantId) {
   const cans  = parseInt(document.getElementById(`adm-cans-${participantId}`).value,  10);
   if (Number.isNaN(coins) || Number.isNaN(cans)) { showToast('Enter valid numbers'); return; }
   try {
-    const { data, error } = await db.rpc('admin_update_participant', {
-      p_code: code, p_admin_token: _adminToken,
-      p_participant_id: participantId, p_coin_balance: coins, p_cans_owed: cans,
-    });
+    let data, error;
+    if (_adminToken) {
+      ({ data, error } = await db.rpc('admin_update_participant', {
+        p_code: code, p_admin_token: _adminToken,
+        p_participant_id: participantId, p_coin_balance: coins, p_cans_owed: cans,
+      }));
+    } else {
+      ({ data, error } = await db.rpc('participant_update_participant', {
+        p_code: code, p_actor_participant_id: _participant.id,
+        p_target_participant_id: participantId, p_coin_balance: coins, p_cans_owed: cans,
+      }));
+    }
     if (error) throw error;
     if (!data) throw new Error('Unauthorized or participant not found');
     showToast('Saved');
@@ -1164,7 +1172,9 @@ async function adminSettle(matchNo) {
   const as = parseInt(document.getElementById(`adm-as-${matchNo}`).value, 10);
   if (Number.isNaN(hs) || Number.isNaN(as)) { showToast('Enter both scores'); return; }
   const winSel = document.getElementById(`adm-win-${matchNo}`);
-  const body = { code, adminToken: _adminToken, matchNo, homeScore: hs, awayScore: as };
+  const body = _adminToken
+    ? { code, adminToken: _adminToken, matchNo, homeScore: hs, awayScore: as }
+    : { code, participantId: _participant.id, matchNo, homeScore: hs, awayScore: as };
   if (winSel && winSel.value !== 'auto') body.winner = winSel.value;
   try {
     const r = await fetch('/api/settle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -1180,7 +1190,9 @@ async function adminResolve(matchNo) {
   const hc = document.getElementById(`adm-hc-${matchNo}`).value.trim().toUpperCase();
   const ac = document.getElementById(`adm-ac-${matchNo}`).value.trim().toUpperCase();
   if (!hc && !ac) { showToast('Enter at least one team code'); return; }
-  const body = { code, adminToken: _adminToken, matchNo };
+  const body = _adminToken
+    ? { code, adminToken: _adminToken, matchNo }
+    : { code, participantId: _participant.id, matchNo };
   if (hc) body.homeCode = hc;
   if (ac) body.awayCode = ac;
   try {
