@@ -871,19 +871,29 @@ async function init() {
   _adminToken = fromHash || localStorage.getItem(`wc26_admin_${code}`) || null;
   if (_adminToken || part.is_admin) document.getElementById('tabAdmin').style.display = '';
 
-  // Load user's team allocations and pending bets for carousel
-  const [allocRes, pendingCarouselRes] = await Promise.all([
+  // Load user's team allocations, pending bets, and match scores for carousel
+  const [allocRes, pendingCarouselRes, matchesCarouselRes] = await Promise.all([
     db.from('allocations').select('team_code')
       .eq('tournament_id', _tournament.id).eq('participant_id', _participant.id),
     db.from('bets').select('bet_markets(match_no)')
       .eq('tournament_id', _tournament.id).eq('participant_id', _participant.id)
       .eq('status', 'pending'),
+    db.from('wc_matches').select('home_tla, away_tla, home_score, away_score, status'),
   ]);
   _teamSet = new Set((allocRes.data || []).map(a => a.team_code));
   _pendingByMatchNo = {};
   for (const b of (pendingCarouselRes.data || [])) {
     const mn = b.bet_markets?.match_no;
     if (mn) _pendingByMatchNo[mn] = b;
+  }
+  _matchesByKey = {};
+  for (const m of (matchesCarouselRes.data || [])) {
+    const ht = m.home_tla, at = m.away_tla;
+    if (ht && at) _matchesByKey[`${ht}_${at}`] = {
+      home_score: m.home_score,
+      away_score: m.away_score,
+      status: m.status,
+    };
   }
   renderBetCarousel();
 

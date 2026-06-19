@@ -288,6 +288,13 @@
     try {
       const tid = tournament.id;
 
+      try {
+        await Promise.race([
+          fetch('/api/sync'),
+          new Promise(r => setTimeout(r, 3000)),
+        ]);
+      } catch {}
+
       const [myPRes, allocRes, pendingRes, settledRes, settledParlaysRes, matchesRes] = await Promise.all([
         db.from('participants').select('coin_balance, nickname').eq('id', myParticipantId).single(),
         db.from('allocations').select('team_code, team_name').eq('tournament_id', tid).eq('participant_id', myParticipantId),
