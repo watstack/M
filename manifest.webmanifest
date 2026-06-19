@@ -1,0 +1,17 @@
+{
+  "name": "Kickoff",
+  "short_name": "Kickoff",
+  "description": "Your World Cup 2026 sweepstake — teams, bracket and bets in one place.",
+  "start_url": "/overview.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#140a18",
+  "theme_color": "#140a18",
+  "icons": [
+    { "src": "/assets/icons/icon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/assets/icons/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+    { "src": "/assets/icons/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+    { "src": "/assets/icons/icon-maskable-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+  ]
+}
