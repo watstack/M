@@ -42,6 +42,16 @@
     deferredPrompt = null;
   });
 
+  // Put the user's self-identifying deep link (code + participant token) into
+  // the address bar so that when iOS captures the current URL for the home
+  // screen, the installed app re-hooks them into their tournament.
+  function stampDeepLink() {
+    const dl = window.__kickoffDeepLink;
+    if (dl) {
+      try { history.replaceState(null, '', dl); } catch (_) {}
+    }
+  }
+
   btn.addEventListener('click', async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
@@ -51,6 +61,7 @@
       return;
     }
     // iOS (Safari/Chrome/etc. — all WebKit, no prompt API): reveal instructions.
+    stampDeepLink();
     if (hint) hint.hidden = false;
   });
 

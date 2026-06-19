@@ -258,6 +258,12 @@
     document.getElementById('ovBetTopBtn').href     = betHref;
     renderTournamentSwitcher(code);
 
+    // Expose a self-identifying deep link for the install flow: code + the
+    // participant token (#me=) so an installed/home-screen launch re-hooks this
+    // user into their tournament even with a fresh storage scope.
+    window.__kickoffDeepLink = `overview.html?code=${encodeURIComponent(code)}` +
+      (myParticipantId ? `#me=${encodeURIComponent(myParticipantId)}` : '');
+
     activate('stateOverview');
 
     try {
@@ -472,7 +478,23 @@
     }
 
     if (!code) {
-      showError('No tournament code in the link. Ask your admin for the correct invite link.');
+      // Launched with no tournament code — e.g. the installed app opening its
+      // start_url, or a bare link. Re-hook the user into their tournament from
+      // the membership stored on this device (their "browser token") instead of
+      // dead-ending on "not found".
+      const mine = (typeof getMyTournaments === 'function') ? getMyTournaments() : [];
+      if (mine.length === 1) {
+        location.replace('overview.html?code=' + encodeURIComponent(mine[0].code));
+        return;
+      }
+      if (mine.length > 1) {
+        // Multiple tournaments: land on the home page where they're all listed.
+        location.replace('index.html');
+        return;
+      }
+      // Nothing known on this device — send them to the landing page (enter a
+      // code / see invites) rather than a dead-end error.
+      location.replace('index.html');
       return;
     }
     if (!db) {
