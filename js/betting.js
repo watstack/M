@@ -556,9 +556,8 @@ function renderRequestBetCard() {
       </div>
     </div>
     <div id="reqBetCollapsed" class="req-bet-collapsed">
-      <button class="odds-btn" style="width:100%;justify-content:center" onclick="toggleRequestBet()">
-        <span class="odds-label">Tap to request</span>
-        <span class="odds-price" style="font-size:0.8rem">+ Add</span>
+      <button class="odds-btn" style="width:100%;justify-content:center;height:48px" onclick="toggleRequestBet()">
+        <span class="odds-price" style="font-size:0.85rem">＋ Add</span>
       </button>
     </div>
     <div id="reqBetExpanded" class="req-bet-expanded" style="display:none">
