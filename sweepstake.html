@@ -854,6 +854,7 @@
   <div class="admin-bar" id="adminBar" style="display:none">
     <span class="admin-bar-label">⚙ Admin controls</span>
     <button class="btn-ghost" id="removeParticipantBtn" style="font-size:0.82rem;padding:7px 12px">Remove participant</button>
+    <button class="btn-ghost" id="assignAdminBtn" style="font-size:0.82rem;padding:7px 12px">Assign admin</button>
     <button class="btn-danger btn-pixel" id="reopenBtn" style="font-size:0.55rem;padding:7px 12px;display:none">Reset draw</button>
     <button class="btn-gold btn-pixel" id="startDrawBtn" style="display:none">
       🎲 Start draw
@@ -1277,6 +1278,16 @@ async function removeParticipant(tournCode, adminToken, participantId) {
   if (error) throw error;
   return data;
 }
+async function setParticipantAdmin(tournCode, tok, participantId, isAdminVal) {
+  const { data, error } = await db.rpc('set_participant_admin', { p_code: tournCode, p_admin_token: tok, p_participant_id: participantId, p_is_admin: isAdminVal });
+  if (error) throw error;
+  return data;
+}
+async function participantSetAdmin(tournCode, actorId, targetId, isAdminVal) {
+  const { data, error } = await db.rpc('participant_set_admin', { p_code: tournCode, p_actor_participant_id: actorId, p_target_participant_id: targetId, p_is_admin: isAdminVal });
+  if (error) throw error;
+  return data;
+}
 async function insertAllocation(tournamentId, participantId, teamCode, teamName, drawOrder) {
   const { data, error } = await db.from('allocations')
     .insert({ tournament_id: tournamentId, participant_id: participantId, team_code: teamCode, team_name: teamName, draw_order: drawOrder })
@@ -1396,11 +1407,12 @@ function renderParticipantList(container, participants, showTeams = false) {
           })()
         : `<span class="p-slots">${p.team_slots} team${p.team_slots > 1 ? 's' : ''}</span>`;
     const isMe = p.id === myParticipantId ? 'style="border-color:var(--gold)"' : '';
+    const adminBadge = isAdmin && p.is_admin ? `<span style="font-size:0.7rem;color:var(--green);font-weight:700;margin-left:2px" title="Admin">⚙</span>` : '';
     return `<div class="participant-row" ${isMe} data-avatar="${p.avatar_type}">
       ${av}
-      <span class="p-name">${esc(p.nickname)}</span>
+      <span class="p-name">${esc(p.nickname)}${adminBadge}</span>
       <span class="p-teams">${teams}</span>
-      ${isAdmin && p.id !== myParticipantId ? `<button class="btn-ghost" onclick="handleRemove('${p.id}')" style="font-size:0.75rem;padding:4px 8px">✕</button>` : ''}
+      ${adminToken && p.id !== myParticipantId ? `<button class="btn-ghost" onclick="handleRemove('${p.id}')" style="font-size:0.75rem;padding:4px 8px">✕</button>` : ''}
     </div>`;
   }).join('');
 }
@@ -2429,6 +2441,14 @@ async function init() {
       participants: a.participants || allParticipants.find(p => p.id === a.participant_id),
     }));
 
+    if (!isAdmin && myParticipantId) {
+      const me = allParticipants.find(p => p.id === myParticipantId);
+      if (me?.is_admin) {
+        isAdmin = true;
+        document.getElementById('adminBar').style.display = 'flex';
+      }
+    }
+
     subscribeToTournament(tournament.id, {
       onTournamentUpdate,
       onParticipantJoin,
@@ -3104,6 +3124,46 @@ const RC = (() => {
   };
 })();
 
+function openAssignAdminModal() {
+  const modal = document.getElementById('assignAdminModal');
+  const list = document.getElementById('assignAdminList');
+  list.innerHTML = allParticipants.map(p => {
+    const isMe = p.id === myParticipantId;
+    const statusColor = p.is_admin ? 'var(--green)' : 'rgba(255,255,255,.35)';
+    const statusLabel = p.is_admin ? '⚙ Admin' : 'User';
+    const toggleLabel = p.is_admin ? 'Remove' : 'Make admin';
+    const meTag = isMe ? `<span style="color:var(--gold);font-size:0.72rem;margin-left:4px">(you)</span>` : '';
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)">
+      ${renderAvatar(p.avatar_type, null, 32)}
+      <span style="flex:1;font-size:0.9rem">${esc(p.nickname)}${meTag}</span>
+      <span style="font-size:0.72rem;color:${statusColor};font-weight:700;min-width:52px;text-align:right">${statusLabel}</span>
+      ${!isMe ? `<button class="btn-ghost" style="font-size:0.75rem;padding:4px 10px" onclick="toggleParticipantAdmin('${p.id}',${!p.is_admin})">${toggleLabel}</button>` : ''}
+    </div>`;
+  }).join('');
+  modal.style.display = 'flex';
+}
+
+window.toggleParticipantAdmin = async function(participantId, newIsAdmin) {
+  try {
+    let ok;
+    if (adminToken) {
+      ok = await setParticipantAdmin(code, adminToken, participantId, newIsAdmin);
+    } else {
+      ok = await participantSetAdmin(code, myParticipantId, participantId, newIsAdmin);
+    }
+    if (!ok) { showToast('Failed — permission denied.'); return; }
+    const idx = allParticipants.findIndex(p => p.id === participantId);
+    if (idx >= 0) allParticipants[idx] = { ...allParticipants[idx], is_admin: newIsAdmin };
+    openAssignAdminModal();
+    showToast(newIsAdmin ? 'Admin granted.' : 'Admin removed.');
+    if (tournament.status === 'open') refreshWaitingRoom();
+  } catch (err) {
+    showToast('Error: ' + err.message);
+  }
+};
+
+document.getElementById('assignAdminBtn')?.addEventListener('click', openAssignAdminModal);
+
 BracketZoom.init();
 
 init();
@@ -3111,5 +3171,14 @@ init();
 <script src="js/analytics.js?v=17818741"></script>
 
 <script src="js/pwa.js?v=17818741"></script>
+
+<div id="assignAdminModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--bg);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:28px;max-width:400px;width:90%;max-height:80vh;overflow-y:auto">
+    <h3 style="margin:0 0 6px;font-family:var(--font-display)">Admin Access</h3>
+    <p class="muted" style="font-size:0.85rem;margin:0 0 16px">Admins can manage the tournament without needing the admin URL.</p>
+    <div id="assignAdminList"></div>
+    <button class="btn-ghost" style="margin-top:16px;width:100%" onclick="document.getElementById('assignAdminModal').style.display='none'">Close</button>
+  </div>
+</div>
 </body>
 </html>
