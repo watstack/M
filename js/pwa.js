@@ -15,6 +15,8 @@
   const section = document.getElementById('ovInstall');
   const btn = document.getElementById('ovInstallBtn');
   const hint = document.getElementById('ovInstallHint');
+  const btnWrap = document.getElementById('ovInstallBtnWrap'); // Android/desktop: one-tap
+  const steps = document.getElementById('ovInstallSteps');     // iOS: manual steps
   if (!section || !btn) return;
 
   const ua = navigator.userAgent || '';
@@ -58,29 +60,28 @@
     }
   }
 
-  // Default hint copy per platform (used as the manual fallback when there's no
-  // native prompt — e.g. iOS, or an already-installed Android/desktop browser).
-  if (hint) {
-    const isCriOS = /CriOS/i.test(ua);   // Chrome on iOS
-    const isFxOS = /FxiOS/i.test(ua);    // Firefox on iOS
-    hint.textContent = isIOS
-      ? ((isCriOS || isFxOS)
-          ? 'Tap the ⋯ / Share menu, then “Add to Home Screen”.'
-          : 'Tap the Share icon, then “Add to Home Screen”.')
-      : 'Open your browser menu, then “Install” / “Add to Home Screen”.';
-  }
-
   btn.addEventListener('click', async () => {
-    // Always carry the user's identity into the install (code + #me token).
+    // Always carry the user's identity into the install (code + token bundle).
     stampDeepLink();
     if (deferredPrompt) {
       deferredPrompt.prompt();
       await deferredPrompt.userChoice.catch(() => {});
       deferredPrompt = null;
+    } else if (hint) {
+      // No native prompt (e.g. already installed): show the manual fallback.
+      hint.textContent = 'Open your browser menu, then “Install” / “Add to Home Screen”.';
+      hint.hidden = false;
     }
-    // Reveal the add-to-home-screen instructions / confirmation either way.
-    if (hint) hint.hidden = false;
   });
+
+  // Split the UI by platform: iOS can't be triggered programmatically, so show
+  // the manual steps; everyone else gets the one-tap Install button. (The iOS
+  // tokens ride in via the personalised manifest, so no click is needed there.)
+  if (isIOS) {
+    if (steps) steps.hidden = false;
+  } else if (btnWrap) {
+    btnWrap.hidden = false;
+  }
 
   // Persist the install entry point whenever we're in a browser tab (it's hidden
   // only when already running as the installed standalone app, handled above).
