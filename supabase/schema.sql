@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS participants (
   nickname        text NOT NULL,
   avatar_type     int NOT NULL DEFAULT 1,         -- 1-7
   team_slots      int NOT NULL DEFAULT 1,
+  is_admin        boolean NOT NULL DEFAULT false,
   created_at      timestamptz DEFAULT now(),
   UNIQUE(tournament_id, nickname)
 );
