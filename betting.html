@@ -1128,11 +1128,17 @@ function initBettingLeaderboard() {
   const container = document.getElementById('lbBetContent');
 
   _onLbRowsUpdated = function() {
-    const el = document.getElementById('potBannerSection');
-    if (!el) return;
     const newHtml = renderPotBanner();
-    if (newHtml) el.outerHTML = newHtml;
-    else el.remove();
+    const existing = document.getElementById('potBannerSection');
+    if (existing) {
+      if (newHtml) existing.outerHTML = newHtml;
+      else existing.remove();
+    } else {
+      const matchListEl = document.getElementById('matchList');
+      if (matchListEl && matchListEl.style.display !== 'none' && newHtml) {
+        matchListEl.insertAdjacentHTML('afterbegin', newHtml);
+      }
+    }
   };
 
   async function refresh() {
