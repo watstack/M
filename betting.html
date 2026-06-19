@@ -1189,7 +1189,7 @@ async function renderAdminPanel() {
     renderAdminCustomMarketsView(_customMarkets);
   await loadAndRenderBetRequests();
   await loadAdminParticipants();
-  if (_adminToken) initBettingPushNotifications();
+  if (_adminToken || (_participant && _participant.is_admin)) initBettingPushNotifications();
 }
 
 let _bettingPushSub = null;
@@ -1239,7 +1239,8 @@ async function toggleBettingPushNotification() {
       await _bettingPushSub.unsubscribe();
       await fetch('/api/subscribe-push', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, adminToken: _adminToken, action: 'unsubscribe', subscription: { endpoint: _bettingPushSub.endpoint } }),
+        body: JSON.stringify(Object.assign({ code, action: 'unsubscribe', subscription: { endpoint: _bettingPushSub.endpoint } },
+          _adminToken ? { adminToken: _adminToken } : { participantId: _participant && _participant.id })),
       });
       _bettingPushSub = null;
       renderBettingNotifToggle(false);
@@ -1255,7 +1256,8 @@ async function toggleBettingPushNotification() {
       });
       const r = await fetch('/api/subscribe-push', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, adminToken: _adminToken, action: 'subscribe', subscription: sub.toJSON() }),
+        body: JSON.stringify(Object.assign({ code, action: 'subscribe', subscription: sub.toJSON() },
+          _adminToken ? { adminToken: _adminToken } : { participantId: _participant && _participant.id })),
       });
       if (!r.ok) { await sub.unsubscribe(); throw new Error('Server rejected subscription'); }
       _bettingPushSub = sub;
