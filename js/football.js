@@ -9,6 +9,8 @@ const CACHE_TTL_IDLE = 300_000;
 let _pollTimer = null;
 let _pollCallback = null;
 let _syncFired   = false;   // only fire background sync once per session
+let _prevStatuses = {};     // matchId → last seen status, for FINISHED transition detection
+let _settledMatchIds = new Set(); // match IDs for which auto-settle has been triggered
 
 // ─── Primary path: Supabase ───────────────────────────────────────────────────
 
@@ -195,6 +197,8 @@ function stopPolling() {
   if (_pollTimer) clearTimeout(_pollTimer);
   _pollTimer = null;
   _pollCallback = null;
+  _prevStatuses = {};
+  _settledMatchIds = new Set();
 }
 
 async function _schedulePoll() {
@@ -203,11 +207,26 @@ async function _schedulePoll() {
     _syncFired = false;          // allow a fresh sync each poll cycle
     const data = await getAllMatchData();
     _pollCallback(data);
+    _detectFinishedTransitions(data);
     const delay = hasLiveMatch(data) ? CACHE_TTL_LIVE : CACHE_TTL_IDLE;
     _pollTimer = setTimeout(_schedulePoll, delay);
   } catch (e) {
     console.warn('[football] poll error:', e.message);
     _pollTimer = setTimeout(_schedulePoll, 120_000);
+  }
+}
+
+function _detectFinishedTransitions(data) {
+  const matches = data?.matches || [];
+  for (const m of matches) {
+    const prev = _prevStatuses[m.id];
+    if ((prev === 'IN_PLAY' || prev === 'PAUSED') && m.status === 'FINISHED') {
+      if (!_settledMatchIds.has(m.id)) {
+        _settledMatchIds.add(m.id);
+        fetch('/api/auto-settle').catch(e => console.warn('[football] auto-settle trigger failed:', e.message));
+      }
+    }
+    _prevStatuses[m.id] = m.status;
   }
 }
 

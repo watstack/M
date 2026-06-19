@@ -12,7 +12,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const FBD_TOKEN    = process.env.FOOTBALL_API_TOKEN;
 
-const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 
 async function syncMatches(rest) {
   let matches = [];
@@ -40,7 +40,7 @@ async function main() {
   console.log(`[auto-settle] synced ${synced} matches`);
 
   const now    = new Date().toISOString();
-  const cutoff = new Date(Date.now() - THREE_HOURS_MS).toISOString();
+  const cutoff = new Date(Date.now() - TWO_HOURS_MS).toISOString();
   const [finRes, mkRes] = await Promise.all([
     rest(`/wc_matches?status=eq.FINISHED&utc_date=lt.${cutoff}&select=home_tla,away_tla,home_score,away_score`),
     rest(`/bet_markets?status=in.(open,closed)&close_time=lte.${now}&select=id,tournament_id,match_no,market_type,stage,home_code,away_code`),

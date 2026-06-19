@@ -6,7 +6,7 @@ name: Auto-settle finished matches
 
 on:
   schedule:
-    - cron: '0 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch: {}
 
 concurrency:
