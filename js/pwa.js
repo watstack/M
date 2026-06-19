@@ -47,11 +47,12 @@
     }
   });
 
-  // Put the user's self-identifying deep link (code + participant token) into
-  // the address bar so that when iOS captures the current URL for the home
-  // screen, the installed app re-hooks them into their tournament.
+  // Put a deep link carrying all of the user's browser tokens into the address
+  // bar so that when iOS captures the current URL for the home screen, the
+  // installed app launches fully hydrated with their tournaments + identities.
   function stampDeepLink() {
-    const dl = window.__kickoffDeepLink;
+    const fn = window.__kickoffInstallLink;
+    const dl = typeof fn === 'function' ? fn() : (typeof fn === 'string' ? fn : window.__kickoffDeepLink);
     if (dl) {
       try { history.replaceState(null, '', dl); } catch (_) {}
     }
