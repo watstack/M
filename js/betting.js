@@ -797,12 +797,10 @@ async function adminApproveBetRequest(requestId) {
     return;
   }
   try {
-    const { error } = await db.rpc('approve_bet_request', {
-      p_code:        code,
-      p_admin_token: _adminToken,
-      p_request_id:  requestId,
-      p_odds_json:   oddsJson,
-    });
+    const rpcArgs = { p_code: code, p_request_id: requestId, p_odds_json: oddsJson };
+    if (_adminToken) rpcArgs.p_admin_token    = _adminToken;
+    else             rpcArgs.p_participant_id = _participant.id;
+    const { error } = await db.rpc('approve_bet_request', rpcArgs);
     if (error) {
       if (error.message.includes('request_not_found')) throw new Error('Request not found or already handled');
       if (error.message.includes('odds_too_low'))      throw new Error('Odds must be at least 1.01');
@@ -818,11 +816,10 @@ async function adminApproveBetRequest(requestId) {
 
 async function adminRejectBetRequest(requestId) {
   try {
-    const { error } = await db.rpc('reject_bet_request', {
-      p_code:        code,
-      p_admin_token: _adminToken,
-      p_request_id:  requestId,
-    });
+    const rpcArgs = { p_code: code, p_request_id: requestId };
+    if (_adminToken) rpcArgs.p_admin_token    = _adminToken;
+    else             rpcArgs.p_participant_id = _participant.id;
+    const { error } = await db.rpc('reject_bet_request', rpcArgs);
     if (error) throw error;
     showToast('Request rejected.');
     const row = document.getElementById(`req-row-${requestId}`);

@@ -1070,7 +1070,7 @@ function renderMarketsView(markets) {
   const marketsByNo = indexMarketsByMatchNo(markets);
   _marketsByNo = marketsByNo;
   _customMarkets = loadCustomMarkets(markets);
-  if (_adminToken && _currentTab === 'admin') renderAdminPanel();
+  if ((_adminToken || _participant?.is_admin) && _currentTab === 'admin') renderAdminPanel();
 
   const potHtml = renderPotBanner();
   const html = _matchSort === 'custom'
