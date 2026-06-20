@@ -117,11 +117,17 @@
       padding: 8px 14px;
       border-radius: var(--radius);
       cursor: pointer;
+      white-space: nowrap;
       box-shadow: 3px 3px 0 rgba(0,0,0,.6);
     }
     .bet-tab.active { background: var(--green); border-color: var(--green); color: #0a0805; box-shadow: 2px 2px 0 rgba(0,0,0,.5); }
     .bet-tab:hover:not(.active):not(.locked) { color: var(--text); }
     .bet-tab.locked { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+    /* ── Stage tab row: single row, horizontal scroll ── */
+    .stage-tabs-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin-bottom: 16px; }
+    .stage-tabs-wrap::-webkit-scrollbar { display: none; }
+    .stage-tabs { display: flex; gap: 8px; flex-wrap: nowrap; min-width: max-content; padding-bottom: 6px; }
+    .stage-tab-divider { width: 1px; background: var(--border); margin: 2px 4px; flex-shrink: 0; align-self: stretch; }
 
     /* ── Players grid view ── */
     #playerView { display: none; padding-bottom: 40px; }
