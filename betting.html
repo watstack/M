@@ -1204,12 +1204,8 @@ async function initBettingPushNotifications() {
   }
   try {
     const r = await fetch('/api/push-config');
-    if (!r.ok) throw new Error('Push not configured');
-    _bettingVapidKey = (await r.json()).publicKey;
-  } catch (e) {
-    el.innerHTML = `<p class="admin-hint" style="color:var(--muted)">Notifications unavailable: ${escapeHtml(e.message)}</p>`;
-    return;
-  }
+    if (r.ok) _bettingVapidKey = (await r.json()).publicKey;
+  } catch (e) { /* server not configured — toggle still renders, toast shown on click */ }
   const reg = await navigator.serviceWorker.ready;
   _bettingPushSub = await reg.pushManager.getSubscription();
   renderBettingNotifToggle(!!_bettingPushSub);
@@ -1218,15 +1214,17 @@ async function initBettingPushNotifications() {
 function renderBettingNotifToggle(isEnabled) {
   const el = document.getElementById('bettingNotifToggle');
   if (!el) return;
-  if (Notification.permission === 'denied') {
-    el.innerHTML = '<p class="admin-hint" style="color:var(--muted)">Notifications blocked in browser settings.</p>';
-    return;
-  }
+  const denied = Notification.permission === 'denied';
+  const hint = isEnabled
+    ? 'Active on this device'
+    : denied
+      ? 'Blocked — open browser Settings → Notifications to allow'
+      : 'Get notified when a player submits a bet request';
   el.innerHTML = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
     <button class="adm-btn" id="bettingNotifBtn" onclick="toggleBettingPushNotification()">
       ${isEnabled ? 'Disable notifications' : 'Enable notifications'}
     </button>
-    <span style="font-size:0.75rem;color:var(--muted)">${isEnabled ? 'Active on this device' : 'Get notified when a player submits a bet request'}</span>
+    <span style="font-size:0.75rem;color:var(--muted)">${hint}</span>
   </div>`;
 }
 
@@ -1248,8 +1246,9 @@ async function toggleBettingPushNotification() {
     } else {
       if (Notification.permission !== 'granted') {
         const perm = await Notification.requestPermission();
-        if (perm !== 'granted') { showToast('Permission denied'); renderBettingNotifToggle(false); return; }
+        if (perm !== 'granted') { showToast('Notifications blocked — check browser settings'); renderBettingNotifToggle(false); return; }
       }
+      if (!_bettingVapidKey) { showToast('Push not configured on server'); renderBettingNotifToggle(false); return; }
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: _bettingUrlBase64ToUint8Array(_bettingVapidKey),
