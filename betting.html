@@ -896,15 +896,26 @@
       <div class="adm-acc-content hidden" id="adminRequestsList"></div>
     </div>
 
-    <!-- Match Settlement accordion -->
+    <!-- Matches accordion -->
     <div class="adm-accordion">
       <div class="adm-acc-toggle" onclick="toggleAdminAccordion(this)">
-        <span class="adm-acc-title">Match Settlement</span>
+        <span class="adm-acc-title">Matches</span>
         <span class="adm-acc-arrow">▾</span>
       </div>
       <div class="adm-acc-content hidden">
         <p class="admin-hint">Enter the 90-minute score to settle a match. For knockout fixtures, set the two team codes to resolve the matchup, and pick which side advances when settling.</p>
-        <div id="adminList" class="admin-list"></div>
+        <div id="adminMatchesList" class="admin-list"></div>
+      </div>
+    </div>
+
+    <!-- Custom Markets accordion (hidden when none exist) -->
+    <div class="adm-accordion" id="admAccCustomMarkets" style="display:none">
+      <div class="adm-acc-toggle" onclick="toggleAdminAccordion(this)">
+        <span class="adm-acc-title">Custom Markets</span>
+        <span class="adm-acc-arrow">▾</span>
+      </div>
+      <div class="adm-acc-content hidden">
+        <div id="adminCustomMarketsList" class="admin-list"></div>
       </div>
     </div>
 
@@ -1342,9 +1353,11 @@ function showTab(tab) {
 }
 
 async function renderAdminPanel() {
-  document.getElementById('adminList').innerHTML =
-    renderAdminView(_marketsByNo) +
-    renderAdminCustomMarketsView(_customMarkets);
+  document.getElementById('adminMatchesList').innerHTML = renderAdminView(_marketsByNo);
+  const customHtml = renderAdminCustomMarketsView(_customMarkets);
+  const customAcc  = document.getElementById('admAccCustomMarkets');
+  if (customAcc) customAcc.style.display = customHtml ? '' : 'none';
+  document.getElementById('adminCustomMarketsList').innerHTML = customHtml;
   await loadAndRenderBetRequests();
   await loadAdminParticipants();
   if (_adminToken || (_participant && _participant.is_admin)) initBettingPushNotifications();
