@@ -25,6 +25,26 @@ live, writing the roast, and handing back finished text to paste into WhatsApp.
 
 ---
 
+## The beer tab & rebuy mechanic
+
+There's a real-world stake bolted onto the virtual coins: a **beer tab**, tracked per player
+in `participants.cans_owed`.
+
+- **Baseline = 3 cans** — the entry buy-in everyone owes just for playing.
+- **Rebuy:** when a player burns down to 0 coins, an admin tops their `coin_balance` back up
+  (typically to a round figure like ~1,000) **and** bumps their `cans_owed` — i.e. running
+  dry costs you real beers, not just pride.
+- Both `coin_balance` and `cans_owed` are **manually-edited snapshot columns** (via
+  `api/admin-coins.js` → `admin_update_participant`). There is **no timestamped history** of
+  rebuys — no log, no audit table. So the bulletin reports **current standings**, not
+  per-period deltas.
+- **"Just rebought" is a heuristic, not a fact.** Lead with the hard number (`cans_owed`).
+  You may *infer* a fresh rebuy when a player's `coin_balance` is restored near a round
+  top-up figure (~1,000) **and** their `cans_owed` is above the baseline 3 — but phrase it as
+  an inference ("looks like a fresh rebuy"), never as logged truth.
+
+---
+
 ## WhatsApp formatting rules (NOT Markdown)
 
 WhatsApp ignores Markdown. Author the bulletin in WhatsApp's own lightweight syntax so it
@@ -58,12 +78,17 @@ Each block is 1–3 short lines.
 
 1. **Header** — title + date range + league code
 2. 💰 **Money Table** — top 3 by `coin_balance`, plus a bankrupt / rock-bottom callout
-3. 📈 **Form Watch** — 3 players, one-line verdict each on their last-3-days record
+3. 🍺 **Beer Tab** — biggest beer debts (top `cans_owed`), extra shade if they're *also*
+   skint (drinking on credit). Optionally flag a likely fresh rebuy per the heuristic above.
+4. 📈 **Form Watch** — 3 players, one-line verdict each on their last-3-days record
    (hot streak, perfect-loss record, volume-with-no-quality, etc.)
-4. 🗑️ **Bet of the Bin** — the single dumbest / biggest losing bet of the window
-5. 🙈 **Seen Hiding** — players with zero / near-zero bets (spectators on starter coins)
-6. ⏳ **Still Sweating** — biggest pending exposure / longshots still live
-7. **Sign-off** — "Next reckoning in 3 days."
+5. 🗑️ **Bet of the Bin** — the single dumbest / biggest losing bet of the window
+6. 🙈 **Seen Hiding** — players with zero / near-zero bets (spectators on starter coins)
+7. ⏳ **Still Sweating** — biggest pending exposure / longshots still live
+8. **Sign-off** — "Next reckoning in 3 days."
+
+With all blocks in, the bulletin may run a touch over the ~1,000-char target — trim a line
+or rotate a block out (Form Watch and Seen Hiding are the easiest to shorten) to stay tight.
 
 Rotating optional extras (swap in occasionally for variety):
 - 🎯 **Grudging Nod** — sarcastic, backhanded credit for the best winning bet
@@ -112,6 +137,20 @@ ORDER BY p.coin_balance DESC;
   (`won = 0, lost > 0`), a volume merchant (`total_bets` high, `won` low), etc.
 - **Seen Hiding:** players with `total_bets = 0` (or near 0) sitting on the 1,000 starter.
 
+The same result drives the **Beer Tab** — it already returns `cans_owed` and `coin_balance`.
+For a focused view, order by the tab instead:
+
+```sql
+SELECT p.nickname, p.cans_owed, p.coin_balance
+FROM participants p
+WHERE p.tournament_id = ':tid'
+ORDER BY p.cans_owed DESC, p.coin_balance ASC;
+```
+
+- **Beer Tab:** top `cans_owed` = biggest real-world debt. Anyone with a high tab *and* a low
+  `coin_balance` is "drinking on credit." A restored `coin_balance` (~1,000) alongside a tab
+  above the baseline 3 *looks like* a fresh rebuy — flag it as an inference, not a fact.
+
 ### 3. Bet of the Bin + settled action (last 3 days)
 
 ```sql
@@ -157,10 +196,14 @@ _15–18 Jun · League 9HE9Y5_
 🥇 Alex 2,067 · 🥈 Baz 1,500 · 🥉 Kraken 983
 💀 *0 coins:* bigjohn69 & Oscarini. Broke.
 
+🍺 *THE BEER TAB*
+🥇 Hoarey owes *7* and is still on zero coins — drinking entirely on credit.
+🆕 bigjohn69 looks freshly rebought: clean 1,000 back, tab bumped to 5. Money's fake, the beers aren't.
+
 📈 *FORM WATCH*
 • Alex — 6 wins, top of the pile, unbearable about it.
 • Box2box Boddie — bet 4, lost 4. A flawless record, wrong direction.
-• Hoarey — 15 bets, 1 win. Volume merchant, zero quality control.
+• Hoarey — 15 bets, 1 win, 7 beers deep. A business model.
 
 🗑️ *BET OF THE BIN*
 CG backed the Uzbek–Colombia scoreline twice — 2-1 AND 1-2, 250 each. It finished *1-3*. 500 coins, wrong in two directions.
@@ -169,9 +212,9 @@ CG backed the Uzbek–Colombia scoreline twice — 2-1 AND 1-2, 250 each. It fin
 Alessandro Scallario: *0 bets*. Still hugging his starter 1,000 like a pension.
 
 ⏳ *STILL SWEATING*
-Hoarey has *11 bets* live on a 150-coin balance. Alex is chasing a *4-2 Germany* @40. Pray for them.
+Alex is chasing a *4-2 Germany* @40. Top of the league, still buying lottery tickets.
 
-🏁 _Next reckoning in 3 days._
+🏁 _Next reckoning in 3 days. Get the beers in._
 ```
 
 ---
