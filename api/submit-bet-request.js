@@ -4,7 +4,6 @@
 // push notifications to all registered admin subscriptions for that tournament.
 // Push failures are best-effort and never block the response.
 
-const webPush = require('web-push');
 const { makeRest } = require('./_lib/settle-lib');
 
 module.exports = async function handler(req, res) {
@@ -53,34 +52,39 @@ module.exports = async function handler(req, res) {
 
     // Fire push notifications (best-effort)
     if (vapidPub && vapidKey && vapidSub) {
-      webPush.setVapidDetails(vapidSub, vapidPub, vapidKey);
+      try {
+        const webPush = require('web-push');
+        webPush.setVapidDetails(vapidSub, vapidPub, vapidKey);
 
-      const subsRes = await rest(
-        `/push_subscriptions?tournament_id=eq.${encodeURIComponent(tournamentId)}&select=endpoint,p256dh,auth`
-      );
-      if (subsRes.ok) {
-        const subs = await subsRes.json();
-        const payload = JSON.stringify({
-          title: 'New bet request',
-          body:  `"${outcomeText.trim().slice(0, 80)}"`,
-          url:   `/b/${encodeURIComponent(code)}`,
-        });
-        await Promise.allSettled(subs.map(sub =>
-          webPush.sendNotification(
-            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-            payload,
-            { TTL: 3600 }
-          ).catch(err => {
-            // 410 Gone = subscription revoked — prune it
-            if (err.statusCode === 410) {
-              rest(
-                `/push_subscriptions?endpoint=eq.${encodeURIComponent(sub.endpoint)}`,
-                { method: 'DELETE', headers: { Prefer: 'return=minimal' } }
-              ).catch(() => {});
-            }
-            console.warn('[push] send failed:', err.statusCode, err.message);
-          })
-        ));
+        const subsRes = await rest(
+          `/push_subscriptions?tournament_id=eq.${encodeURIComponent(tournamentId)}&select=endpoint,p256dh,auth`
+        );
+        if (subsRes.ok) {
+          const subs = await subsRes.json();
+          const payload = JSON.stringify({
+            title: 'New bet request',
+            body:  `"${outcomeText.trim().slice(0, 80)}"`,
+            url:   `/b/${encodeURIComponent(code)}`,
+          });
+          await Promise.allSettled(subs.map(sub =>
+            webPush.sendNotification(
+              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+              payload,
+              { TTL: 3600 }
+            ).catch(err => {
+              // 410 Gone = subscription revoked — prune it
+              if (err.statusCode === 410) {
+                rest(
+                  `/push_subscriptions?endpoint=eq.${encodeURIComponent(sub.endpoint)}`,
+                  { method: 'DELETE', headers: { Prefer: 'return=minimal' } }
+                ).catch(() => {});
+              }
+              console.warn('[push] send failed:', err.statusCode, err.message);
+            })
+          ));
+        }
+      } catch (pushErr) {
+        console.warn('[push] failed:', pushErr.message);
       }
     }
 
