@@ -27,6 +27,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           FOOTBALL_API_TOKEN: ${{ secrets.FOOTBALL_API_TOKEN }}
+          API_BASE_URL: https://m-watstacks-projects.vercel.app
           GITHUB_SHA: ${{ github.sha }}
       - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3

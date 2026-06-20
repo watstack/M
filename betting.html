@@ -1326,9 +1326,10 @@ async function initBettingPushNotifications() {
     return;
   }
   try {
-    const r = await fetch('/api/push-config', { cache: 'no-cache' });
+    const _cfgBase = (window.CONFIG && window.CONFIG.API_BASE) || '';
+    const r = await fetch(`${_cfgBase}/api/push-config`);
     if (r.ok) _bettingVapidKey = (await r.json()).publicKey;
-  } catch (e) { /* server not configured — toggle still renders, toast shown on click */ }
+  } catch (e) { /* null key — toggle still renders, error shown on subscribe */ }
   const reg = await navigator.serviceWorker.ready;
   _bettingPushSub = await reg.pushManager.getSubscription();
   renderBettingNotifToggle(!!_bettingPushSub);
@@ -1354,11 +1355,12 @@ function renderBettingNotifToggle(isEnabled) {
 async function toggleBettingPushNotification() {
   const btn = document.getElementById('bettingNotifBtn');
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  const _apiBase = (window.CONFIG && window.CONFIG.API_BASE) || '';
   try {
     const reg = await navigator.serviceWorker.ready;
     if (_bettingPushSub) {
       await _bettingPushSub.unsubscribe();
-      await fetch('/api/subscribe-push', {
+      await fetch(`${_apiBase}/api/subscribe-push`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(Object.assign({ code, action: 'unsubscribe', subscription: { endpoint: _bettingPushSub.endpoint } },
           _adminToken ? { adminToken: _adminToken } : { participantId: _participant && _participant.id })),
@@ -1376,7 +1378,7 @@ async function toggleBettingPushNotification() {
         userVisibleOnly: true,
         applicationServerKey: _bettingUrlBase64ToUint8Array(_bettingVapidKey),
       });
-      const r = await fetch('/api/subscribe-push', {
+      const r = await fetch(`${_apiBase}/api/subscribe-push`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(Object.assign({ code, action: 'subscribe', subscription: sub.toJSON() },
           _adminToken ? { adminToken: _adminToken } : { participantId: _participant && _participant.id })),
