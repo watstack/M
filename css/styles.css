@@ -514,32 +514,15 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 .team-owner-chip { display: flex; align-items: center; gap: 5px; }
 .team-owner-label { font-size: 0.7rem; color: var(--muted); font-weight: 600; font-family: var(--font-body); }
 
-/* ── ESPN-style stage tabs ───────────────────────────────────────────────── */
+/* ── Stage tab scroll wrapper ────────────────────────────────────────────── */
 .stage-tabs-wrap {
-  overflow-x: auto; -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; padding-bottom: 4px; margin-bottom: 16px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin-bottom: 16px;
 }
 .stage-tabs-wrap::-webkit-scrollbar { display: none; }
-.stage-tabs { display: flex; gap: 8px; min-width: max-content; padding: 2px 0; }
-
-.stage-tab {
-  background: var(--mid);
-  border: 2px solid var(--border);
-  border-radius: 999px;
-  color: var(--muted);
-  font-family: var(--font-display);
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 8px 18px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-  box-shadow: 2px 2px 0 rgba(0,0,0,.4);
-  line-height: 1.4;
-}
-.stage-tab:hover:not(.active):not(.locked) { border-color: var(--muted); color: var(--text); }
-.stage-tab.active { background: var(--text); border-color: var(--text); color: var(--dark); box-shadow: 1px 1px 0 rgba(0,0,0,.4); }
-.stage-tab.locked { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+.stage-tabs { display: flex; gap: 8px; flex-wrap: nowrap; min-width: max-content; padding: 2px 0 6px; }
 .stage-tab-divider { width: 1px; background: var(--border); margin: 2px 4px; flex-shrink: 0; align-self: stretch; }
 
 /* ── Stage match view ─────────────────────────────────────────────────────── */
