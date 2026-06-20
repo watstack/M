@@ -514,6 +514,84 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 .team-owner-chip { display: flex; align-items: center; gap: 5px; }
 .team-owner-label { font-size: 0.7rem; color: var(--muted); font-weight: 600; font-family: var(--font-body); }
 
+/* ── ESPN-style stage tabs ───────────────────────────────────────────────── */
+.stage-tabs-wrap {
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; padding-bottom: 4px; margin-bottom: 16px;
+}
+.stage-tabs-wrap::-webkit-scrollbar { display: none; }
+.stage-tabs { display: flex; gap: 8px; min-width: max-content; padding: 2px 0; }
+
+.stage-tab {
+  background: var(--mid);
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 8px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  box-shadow: 2px 2px 0 rgba(0,0,0,.4);
+  line-height: 1.4;
+}
+.stage-tab:hover:not(.active):not(.locked) { border-color: var(--muted); color: var(--text); }
+.stage-tab.active { background: var(--text); border-color: var(--text); color: var(--dark); box-shadow: 1px 1px 0 rgba(0,0,0,.4); }
+.stage-tab.locked { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+.stage-tab-divider { width: 1px; background: var(--border); margin: 2px 4px; flex-shrink: 0; align-self: stretch; }
+
+/* ── Stage match view ─────────────────────────────────────────────────────── */
+#stageMatchesView { padding-bottom: 40px; }
+
+.smv-section-label {
+  font-family: var(--font-pixel); font-size: 0.38rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+  padding-bottom: 10px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.smv-section-label + .smv-section-label { margin-top: 24px; }
+
+.smv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.smv-groups-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 14px;
+}
+
+.smv-match {
+  background: var(--panel); border: 2px solid #2c3e54;
+  border-radius: var(--radius); overflow: hidden;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.4), 3px 3px 0 rgba(0,0,0,.5);
+}
+.smv-match.live     { border-color: var(--live-pulse); box-shadow: 0 0 0 1px var(--live-pulse), 0 0 14px rgba(255,154,208,.2); }
+.smv-match.finished { border-color: var(--border); }
+.smv-match-meta {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 10px 4px;
+  font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+.smv-match-meta-badge { margin-left: auto; }
+.smv-match-team {
+  display: flex; align-items: center; gap: 7px;
+  padding: 8px 10px; min-height: 48px;
+}
+.smv-match-team + .smv-match-team { border-top: 1px solid var(--border); }
+.smv-match-team.winner { background: rgba(255,154,208,0.1); }
+.smv-match-team.mine   { background: rgba(255,106,31,0.1); }
+.smv-match-team.mine .smv-match-name { color: var(--green); }
+.smv-match-name { flex: 1; font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.smv-match-score { font-family: var(--font-mono); font-weight: 800; font-size: 0.9rem; min-width: 18px; text-align: right; flex-shrink: 0; }
+.smv-match-owner { font-size: 0.65rem; color: var(--muted); font-family: var(--font-body); flex-shrink: 0; }
+.smv-tbd { color: var(--muted); }
+
 /* ── Share box ───────────────────────────────────────────────────────────── */
 .share-box {
   display: flex; align-items: center; gap: 8px; background: #0c1622;

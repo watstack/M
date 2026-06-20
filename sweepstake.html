@@ -1032,12 +1032,19 @@
       <!-- Bracket column -->
       <div class="live-bracket-col" id="liveBracketPanel">
 
-        <!-- Tabs (mirrors bet-tabs) -->
-        <div class="bet-tabs" id="bracketFilter">
-          <button class="bet-tab bracket-filter-btn active" data-filter="current" onclick="setBracketFilter('current')">Current Stage</button>
-          <button class="bet-tab bracket-filter-btn" data-filter="all" onclick="setBracketFilter('all')">All</button>
-          <button class="bet-tab bracket-filter-btn" data-filter="players" onclick="setBracketFilter('players')">Players</button>
-          <button class="bet-tab bracket-filter-btn" data-filter="highlights" onclick="setBracketFilter('highlights')">Highlights</button>
+        <!-- ESPN-style stage pills -->
+        <div class="stage-tabs-wrap">
+          <div class="stage-tabs" id="bracketFilter">
+            <button class="stage-tab bracket-filter-btn active" data-filter="groups"     onclick="setBracketFilter('groups')">Group Stage</button>
+            <button class="stage-tab bracket-filter-btn"        data-filter="r32"        onclick="setBracketFilter('r32')">Round of 32</button>
+            <button class="stage-tab bracket-filter-btn"        data-filter="r16"        onclick="setBracketFilter('r16')">Round of 16</button>
+            <button class="stage-tab bracket-filter-btn"        data-filter="qf"         onclick="setBracketFilter('qf')">Quarterfinals</button>
+            <button class="stage-tab bracket-filter-btn"        data-filter="sf"         onclick="setBracketFilter('sf')">Semifinals</button>
+            <button class="stage-tab bracket-filter-btn"        data-filter="final"      onclick="setBracketFilter('final')">3rd-Place Match &amp; Final</button>
+            <div class="stage-tab-divider"></div>
+            <button class="stage-tab bracket-filter-btn"        data-filter="players"    onclick="setBracketFilter('players')">Players</button>
+            <button class="stage-tab bracket-filter-btn"        data-filter="highlights" onclick="setBracketFilter('highlights')">Highlights</button>
+          </div>
         </div>
 
         <!-- Your teams (persistent below tabs) -->
@@ -1077,13 +1084,16 @@
 
         <p class="muted" style="font-size:0.78rem;margin-top:12px;text-align:center" id="apiUpdateTime"></p>
 
+        <!-- Stage match list (shown for all stage tabs; replaces bracket tree as primary view) -->
+        <div id="stageMatchesView" style="display:none"></div>
+
         <!-- Players grid view (shown instead of bracket when filter = 'players') -->
         <div id="playerView"></div>
 
         <!-- Highlights / daily recap battle view -->
         <div id="recapPanel">
           <div id="rc-close-bar">
-            <button id="rc-close-btn" onclick="setBracketFilter('current')">✕ CLOSE</button>
+            <button id="rc-close-btn" onclick="setBracketFilter(_currentBracketStage)">✕ CLOSE</button>
           </div>
           <div id="rc-wrap">
             <div class="rc-sky"></div>
@@ -1115,7 +1125,7 @@
               <div class="rc-end-h">RECAP COMPLETE</div>
               <div class="rc-end-s" id="rc-end-s">ALL RESULTS SHOWN</div>
               <button class="rc-replay-btn" onclick="RC.replay()">▶ REPLAY</button>
-              <button class="rc-replay-btn" style="background:none;color:var(--muted);border-color:#444" onclick="setBracketFilter('current')">✕ CLOSE</button>
+              <button class="rc-replay-btn" style="background:none;color:var(--muted);border-color:#444" onclick="setBracketFilter(_currentBracketStage)">✕ CLOSE</button>
             </div>
 
             <div id="rc-hud">
@@ -1989,12 +1999,14 @@ function renderBracketState() {
     }
   }
 
-  _bracketFilter = 'current';
+  _bracketFilter = 'groups';
   _lastStandings = [];
   document.getElementById('playerView').classList.remove('show');
   document.getElementById('recapPanel').classList.remove('show');
-  document.querySelector('.bracket-zoom-outer').style.display = '';
-  document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'current'));
+  document.querySelector('.bracket-zoom-outer').style.display = 'none';
+  const smv = document.getElementById('stageMatchesView');
+  if (smv) smv.style.display = '';
+  document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'groups'));
 
   loadBracketData().then(() => setTimeout(BracketZoom.fit, 60));
 }
@@ -2048,10 +2060,22 @@ function buildSyntheticStandings() {
 }
 
 let _currentBracketStage = 'groups';
-let _bracketFilter = 'current';
+let _bracketFilter = 'groups';
 let _lastStandings = [];
 let _lastMatchData = null;
 let _autoHighlightsShown = false;
+
+const STAGE_ORDER = ['groups', 'r32', 'r16', 'qf', 'sf', 'final'];
+
+function updateTabLockState() {
+  const currentIdx = STAGE_ORDER.indexOf(_currentBracketStage);
+  document.querySelectorAll('.bracket-filter-btn[data-filter]').forEach(btn => {
+    const f = btn.dataset.filter;
+    const stageIdx = STAGE_ORDER.indexOf(f);
+    if (stageIdx === -1) return; // players/highlights always unlocked
+    btn.classList.toggle('locked', stageIdx > currentIdx);
+  });
+}
 
 function detectBracketStage(matches) {
   const order = ['groups', 'r32', 'r16', 'qf', 'sf', 'final'];
@@ -2066,11 +2090,117 @@ function detectBracketStage(matches) {
 }
 
 function applyBracketFilter() {
-  const stage = _bracketFilter === 'current' ? _currentBracketStage : null;
-  document.querySelectorAll('#bracketTree .b-col').forEach(col => {
-    col.style.display = (!stage || col.dataset.stage === stage) ? '' : 'none';
-  });
-  setTimeout(BracketZoom.fit, 30);
+  updateTabLockState();
+  if (!['players', 'highlights'].includes(_bracketFilter)) {
+    renderStageView(_bracketFilter);
+  }
+}
+
+// ── Stage match list view ─────────────────────────────────────────────────────
+
+function renderStageView(stageKey) {
+  const el = document.getElementById('stageMatchesView');
+  if (!el) return;
+
+  const currentIdx = STAGE_ORDER.indexOf(_currentBracketStage);
+  const tabIdx     = STAGE_ORDER.indexOf(stageKey);
+
+  if (tabIdx > currentIdx) {
+    el.innerHTML = `<div style="text-align:center;padding:48px 24px;color:var(--muted)">
+      <div style="font-size:2rem;opacity:0.4;margin-bottom:14px">🔒</div>
+      <div style="font-family:var(--font-pixel);font-size:0.42rem;letter-spacing:0.1em;text-transform:uppercase">Unlocks when this stage begins</div>
+    </div>`;
+    return;
+  }
+
+  const allocMap = buildAllocMap();
+  const matches  = (_lastMatchData?.matches) || [];
+
+  if (stageKey === 'groups') {
+    const standings = _lastStandings.length ? _lastStandings : buildSyntheticStandings();
+    el.innerHTML = `<div class="smv-groups-grid">${standings.map(g => renderGroupMini(g, allocMap)).join('')}</div>`;
+    return;
+  }
+
+  const stageFilter = {
+    r32:   m => m.stage === 'ROUND_OF_32'    || m.stage === 'LAST_32',
+    r16:   m => m.stage === 'ROUND_OF_16'    || m.stage === 'LAST_16',
+    qf:    m => m.stage === 'QUARTER_FINALS',
+    sf:    m => m.stage === 'SEMI_FINALS',
+    final: m => m.stage === 'THIRD_PLACE'    || m.stage === 'FINAL',
+  }[stageKey];
+
+  if (!stageFilter) { el.innerHTML = ''; return; }
+
+  const stageMatches = matches.filter(stageFilter);
+
+  if (stageKey === 'final') {
+    const finalM = stageMatches.find(m => m.stage === 'FINAL')  || null;
+    const thirdM = stageMatches.find(m => m.stage === 'THIRD_PLACE') || null;
+    el.innerHTML =
+      `<div class="smv-section-label" style="color:var(--gold)">🏆 Final</div>
+       <div class="smv-grid">${renderSmvMatch(finalM, allocMap, true)}</div>
+       <div class="smv-section-label" style="margin-top:24px">3rd-Place Match</div>
+       <div class="smv-grid">${renderSmvMatch(thirdM, allocMap, false)}</div>`;
+    return;
+  }
+
+  const emptyCounts = { r32: 16, r16: 8, qf: 4, sf: 2 };
+  const cards = stageMatches.length
+    ? stageMatches.map(m => renderSmvMatch(m, allocMap, false)).join('')
+    : Array.from({ length: emptyCounts[stageKey] || 4 }, () => renderSmvMatch(null, allocMap, false)).join('');
+
+  el.innerHTML = `<div class="smv-grid">${cards}</div>`;
+}
+
+function renderSmvMatch(match, allocMap, isFinal) {
+  if (!match) {
+    return `<div class="smv-match">
+      <div class="smv-match-team"><span class="smv-match-name smv-tbd">TBD</span><span class="smv-match-score">–</span></div>
+      <div class="smv-match-team"><span class="smv-match-name smv-tbd">TBD</span><span class="smv-match-score">–</span></div>
+    </div>`;
+  }
+  const score     = getScore(match);
+  const statusCls = matchStatusClass(match);
+  const isLive    = statusCls === 'live';
+  const isFinished = statusCls === 'finished';
+
+  let dateStr = '';
+  if (match.utcDate) {
+    const d = new Date(match.utcDate);
+    dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+      + ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  }
+  const badge = isLive
+    ? `<span class="smv-match-meta-badge"><span class="live-badge" style="font-size:0.55rem;padding:1px 6px"><span class="live-dot"></span>LIVE</span></span>`
+    : isFinished ? `<span class="smv-match-meta-badge" style="font-family:var(--font-mono);font-size:0.6rem;font-weight:700;color:var(--muted)">FT</span>` : '';
+
+  function teamRow(team, scoreVal, isHome) {
+    if (!team) return `<div class="smv-match-team"><span class="smv-match-name smv-tbd">TBD</span><span class="smv-match-score">–</span></div>`;
+    const tla   = normTeamCode(team.tla || '');
+    const alloc = allocMap[tla];
+    const isMine = alloc?.participant_id === myParticipantId;
+    const won = score.home !== null && score.away !== null &&
+      ((isHome && score.home > score.away) || (!isHome && score.away > score.home));
+    const flag = team.crest
+      ? `<img src="${team.crest}" alt="" style="width:18px;height:13px;object-fit:cover;border-radius:2px;flex-shrink:0">`
+      : `<span style="flex-shrink:0">${teamFlagEmoji(tla)}</span>`;
+    const owner = alloc?.participants
+      ? `<span class="smv-match-owner">${esc(alloc.participants.nickname)}</span>` : '';
+    return `<div class="smv-match-team${won ? ' winner' : ''}${isMine ? ' mine' : ''}">
+      ${flag}
+      <span class="smv-match-name">${esc(team.shortName || team.name || tla)}</span>
+      ${owner}
+      <span class="smv-match-score">${scoreVal !== null ? scoreVal : '–'}</span>
+    </div>`;
+  }
+
+  const cardCls = isFinal ? `smv-match ${statusCls} b-final-card` : `smv-match ${statusCls}`;
+  return `<div class="${cardCls}">
+    <div class="smv-match-meta">${dateStr}${badge}</div>
+    ${teamRow(match.homeTeam, score.home, true)}
+    ${teamRow(match.awayTeam, score.away, false)}
+  </div>`;
 }
 
 function renderPlayerView() {
@@ -2135,23 +2265,33 @@ function renderPlayerView() {
 window.setBracketFilter = function(filter) {
   _bracketFilter = filter;
   document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
-  const bracketOuter = document.querySelector('.bracket-zoom-outer');
-  const apiTime      = document.getElementById('apiUpdateTime');
-  const playerView   = document.getElementById('playerView');
-  const recapPanel   = document.getElementById('recapPanel');
+
+  const bracketOuter  = document.querySelector('.bracket-zoom-outer');
+  const apiTime       = document.getElementById('apiUpdateTime');
+  const playerView    = document.getElementById('playerView');
+  const recapPanel    = document.getElementById('recapPanel');
+  const stageView     = document.getElementById('stageMatchesView');
+
   const isPlayers    = filter === 'players';
   const isHighlights = filter === 'highlights';
-  const showBracket  = !isPlayers && !isHighlights;
-  bracketOuter.style.display = showBracket ? '' : 'none';
-  if (apiTime) apiTime.style.display = showBracket ? '' : 'none';
-  playerView.classList.toggle('show', isPlayers);
-  recapPanel.classList.toggle('show', isHighlights);
+  const isStage      = !isPlayers && !isHighlights;
+
+  if (bracketOuter) bracketOuter.style.display = 'none';
+  if (apiTime)      apiTime.style.display      = isStage ? '' : 'none';
+  playerView.classList.remove('show');
+  recapPanel.classList.remove('show');
+  if (stageView) stageView.style.display = isStage ? '' : 'none';
+
+  updateTabLockState();
+
   if (isPlayers) {
+    playerView.classList.add('show');
     renderPlayerView();
   } else if (isHighlights) {
+    recapPanel.classList.add('show');
     RC.start();
   } else {
-    applyBracketFilter();
+    renderStageView(filter);
   }
 };
 
@@ -2162,8 +2302,23 @@ async function loadBracketData() {
     _lastMatchData = data;
     if (data.standings.length) saveGroupCache(data.standings);
     _currentBracketStage = detectBracketStage(data.matches);
+
+    // Auto-advance: if current filter is a now-locked stage, jump to the current stage
+    const filterIdx  = STAGE_ORDER.indexOf(_bracketFilter);
+    const currentIdx = STAGE_ORDER.indexOf(_currentBracketStage);
+    if (filterIdx !== -1 && filterIdx > currentIdx) {
+      _bracketFilter = _currentBracketStage;
+    }
+    // On first load, jump straight to current tournament stage
+    if (_bracketFilter === 'groups' && _currentBracketStage !== 'groups') {
+      _bracketFilter = _currentBracketStage;
+    }
+
     renderBracketFull(data);
     applyBracketFilter();
+    document.querySelectorAll('.bracket-filter-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.filter === _bracketFilter)
+    );
 
     if (!_autoHighlightsShown && (data.matches || []).some(m => m.status === 'FINISHED')) {
       _autoHighlightsShown = true;
@@ -2172,18 +2327,31 @@ async function loadBracketData() {
 
     startPolling(freshData => {
       if (freshData.standings.length) saveGroupCache(freshData.standings);
+      _lastMatchData = freshData;
       _currentBracketStage = detectBracketStage(freshData.matches);
+      // Auto-advance if tournament moved past current filter
+      const fi = STAGE_ORDER.indexOf(_bracketFilter);
+      const ci = STAGE_ORDER.indexOf(_currentBracketStage);
+      if (fi !== -1 && fi > ci) {
+        _bracketFilter = _currentBracketStage;
+        document.querySelectorAll('.bracket-filter-btn').forEach(b =>
+          b.classList.toggle('active', b.dataset.filter === _bracketFilter)
+        );
+      }
       renderBracketFull(freshData);
       applyBracketFilter();
       const live = hasLiveMatch({ matches: freshData.matches });
       document.getElementById('liveIndicator').style.display = live ? 'inline' : 'none';
-      document.getElementById('bracketLiveTag').style.display  = live ? 'inline' : 'none';
+      const liveTag = document.getElementById('bracketLiveTag');
+      if (liveTag) liveTag.style.display = live ? 'inline' : 'none';
       document.getElementById('apiUpdateTime').textContent =
         'Last updated: ' + new Date().toLocaleTimeString();
     });
   } catch (err) {
+    _lastMatchData = { teams: [], matches: [], standings: [] };
     const standings = buildSyntheticStandings();
     renderBracketFull({ teams: [], matches: [], standings });
+    applyBracketFilter();
     document.getElementById('apiUpdateTime').textContent =
       'Showing group positions — scores will update once matches start.';
   }
