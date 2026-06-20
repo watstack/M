@@ -1210,7 +1210,7 @@ async function initBettingPushNotifications() {
     return;
   }
   try {
-    const r = await fetch('/api/push-config');
+    const r = await fetch('/api/push-config', { cache: 'no-cache' });
     if (r.ok) _bettingVapidKey = (await r.json()).publicKey;
   } catch (e) { /* server not configured — toggle still renders, toast shown on click */ }
   const reg = await navigator.serviceWorker.ready;
