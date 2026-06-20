@@ -57,7 +57,7 @@ const _WC2026_GROUP_ROWS = [
   [31, 'F', 1, 'NED', 'JPN', '2026-06-14T20:00:00Z', 'AT&T Stadium, Dallas'],
   [32, 'F', 1, 'SWE', 'TUN', '2026-06-15T02:00:00Z', 'Estadio BBVA, Monterrey'],
   [33, 'F', 2, 'NED', 'SWE', '2026-06-20T17:00:00Z', 'NRG Stadium, Houston'],
-  [34, 'F', 2, 'TUN', 'JPN', '2026-06-20T04:00:00Z', 'Estadio BBVA, Monterrey'],
+  [34, 'F', 2, 'TUN', 'JPN', '2026-06-21T04:00:00Z', 'Estadio BBVA, Monterrey'],
   [35, 'F', 3, 'JPN', 'SWE', '2026-06-25T23:00:00Z', 'AT&T Stadium, Dallas'],
   [36, 'F', 3, 'TUN', 'NED', '2026-06-25T23:00:00Z', 'Arrowhead Stadium, Kansas City'],
   // ── Group G ──
