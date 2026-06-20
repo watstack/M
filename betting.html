@@ -1074,7 +1074,7 @@ function renderMarketsView(markets) {
 
   const potHtml = renderPotBanner();
   const html = _matchSort === 'custom'
-    ? potHtml + renderRequestBetCard() + renderAllCustomMarketsSection(_customMarkets)
+    ? potHtml + renderRequestBetCard() + renderCustomMarketsSection(_customMarkets)
     : potHtml + renderRequestBetCard() + renderFixturesView(marketsByNo, _matchSort);
 
   document.getElementById('marketsLoading').style.display = 'none';
@@ -1112,7 +1112,7 @@ function setMatchSort(mode) {
   const matchListEl = document.getElementById('matchList');
   const potHtml = renderPotBanner();
   if (mode === 'custom') {
-    matchListEl.innerHTML = potHtml + renderRequestBetCard() + renderAllCustomMarketsSection(_customMarkets);
+    matchListEl.innerHTML = potHtml + renderRequestBetCard() + renderCustomMarketsSection(_customMarkets);
   } else {
     matchListEl.innerHTML = potHtml + renderRequestBetCard() + renderFixturesView(_marketsByNo, mode);
   }
