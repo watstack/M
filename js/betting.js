@@ -539,10 +539,9 @@ function loadCustomMarkets(markets) {
   return (markets || []).filter(m => m.market_type === 'custom');
 }
 
-function reqOptionRow(label, odds, removable) {
+function reqOptionRow(label, _odds, removable) {
   return `<div class="req-opt-row">
     <input type="text" class="adm-in req-opt-label" placeholder="Option" maxlength="60" value="${escapeHtml(label)}">
-    <input type="number" class="adm-in req-opt-odds" placeholder="Odds" min="1.01" step="0.01" value="${odds != null ? odds : ''}">
     <button class="btn-ghost req-opt-remove" style="font-size:0.7rem;padding:4px 7px;${removable ? '' : 'visibility:hidden'}" onclick="removeBetRequestOption(this)">✕</button>
   </div>`;
 }
@@ -619,16 +618,13 @@ async function submitBetRequest() {
   if (!text) { showToast('Enter an outcome first'); return; }
   if (!_participant || !_tournament) { showToast('Not logged in'); return; }
 
-  // Collect options
+  // Collect options (labels only — admin sets odds when approving)
   const optRows = document.querySelectorAll('#reqBetOptions .req-opt-row');
   const options = [];
   for (const row of optRows) {
     const label = (row.querySelector('.req-opt-label').value || '').trim();
-    const oddsRaw = row.querySelector('.req-opt-odds').value;
     if (!label) { showToast('All options need a label'); return; }
-    const odds = oddsRaw !== '' ? parseFloat(oddsRaw) : null;
-    if (odds !== null && (isNaN(odds) || odds < 1.01)) { showToast('Odds must be at least 1.01'); return; }
-    options.push({ label, odds });
+    options.push({ label });
   }
   if (options.length < 2) { showToast('Add at least 2 options'); return; }
 
