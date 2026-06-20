@@ -4,11 +4,14 @@
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Cache-Control', 'public, max-age=86400');
   if (req.method === 'OPTIONS') { res.end(); return; }
 
   const publicKey = process.env.VAPID_PUBLIC_KEY;
-  if (!publicKey) return res.status(503).json({ error: 'Push not configured' });
+  if (!publicKey) {
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(503).json({ error: 'Push not configured' });
+  }
 
+  res.setHeader('Cache-Control', 'public, max-age=86400');
   return res.status(200).json({ publicKey });
 };
