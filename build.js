@@ -37,9 +37,15 @@ try {
   console.warn('⚠  api/_lib/fixtures.js generation skipped (using committed copy):', e.message);
 }
 
-const url   = process.env.SUPABASE_URL        || '';
-const key   = process.env.SUPABASE_ANON_KEY   || '';
-const token = process.env.FOOTBALL_API_TOKEN  || '';
+const url         = process.env.SUPABASE_URL        || '';
+const key         = process.env.SUPABASE_ANON_KEY   || '';
+const token       = process.env.FOOTBALL_API_TOKEN  || '';
+const vapidPubKey = process.env.VAPID_PUBLIC_KEY    || '';
+// On Vercel VERCEL_PROJECT_PRODUCTION_URL is set automatically.
+// On GitHub Pages pass API_BASE_URL env var pointing to the Vercel deployment.
+const apiBase = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : (process.env.API_BASE_URL || '');
 
 if (!url || !key) {
   console.warn('⚠  SUPABASE_URL or SUPABASE_ANON_KEY not set — js/config.js will have empty values.');
@@ -50,6 +56,8 @@ const CONFIG = {
   SUPABASE_URL: '${url}',
   SUPABASE_ANON_KEY: '${key}',
   FOOTBALL_API_TOKEN: '${token}',
+  VAPID_PUBLIC_KEY: '${vapidPubKey}',
+  API_BASE: '${apiBase}',
 };
 `;
 

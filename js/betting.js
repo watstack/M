@@ -636,7 +636,7 @@ async function submitBetRequest() {
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
 
   try {
-    const r = await fetch('/api/submit-bet-request', {
+    const r = await fetch(`${(window.CONFIG && window.CONFIG.API_BASE) || ''}/api/submit-bet-request`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code, participantId: _participant.id, outcomeText: text, options }),

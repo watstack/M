@@ -8,7 +8,11 @@ const { makeRest, verifyAdmin, verifyParticipantAdmin } = require('./_lib/settle
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Cache-Control', 'no-store');
-  if (req.method === 'OPTIONS') { res.end(); return; }
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.end(); return;
+  }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   const { code, adminToken, participantId, action, subscription } = req.body || {};
