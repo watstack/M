@@ -651,6 +651,105 @@
     }
     .boost-hint.hidden { display: none; }
 
+    /* ── Spin the Wheel Promo ── */
+    .spin-promo-overlay {
+      position: fixed; inset: 0; z-index: 800;
+      background: rgba(0,0,0,.8);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .spin-promo-overlay.hidden { display: none; }
+    .spin-promo-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px 24px;
+      max-width: 320px;
+      width: 90vw;
+      text-align: center;
+      box-shadow: 0 8px 40px rgba(0,0,0,.6);
+    }
+    .spin-promo-date-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--gold);
+      background: rgba(255,200,50,.1);
+      border: 1px solid rgba(255,200,50,.3);
+      border-radius: 20px;
+      padding: 3px 10px;
+      margin-bottom: 10px;
+    }
+    .spin-promo-title {
+      font-family: var(--font-pixel);
+      font-size: 0.7rem;
+      margin: 0 0 6px;
+      color: var(--text);
+    }
+    .spin-promo-sub {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin: 0 0 18px;
+    }
+    .spin-wheel-wrap {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 18px;
+    }
+    .spin-pointer {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.2rem;
+      color: var(--text);
+      z-index: 2;
+      line-height: 1;
+    }
+    #spinCanvas {
+      display: block;
+      border-radius: 50%;
+      border: 3px solid var(--border);
+    }
+    .spin-btn {
+      font-family: var(--font-pixel);
+      font-size: 0.6rem;
+      background: var(--green);
+      color: #000;
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px 32px;
+      cursor: pointer;
+      letter-spacing: 0.08em;
+      box-shadow: 0 3px 0 rgba(0,0,0,.4);
+      transition: opacity .15s;
+    }
+    .spin-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .spin-result {
+      margin-top: 14px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: var(--radius);
+    }
+    .spin-result.hidden { display: none; }
+    .spin-result--win { background: rgba(34,197,94,.15); color: #22c55e; border: 1px solid rgba(34,197,94,.35); }
+    .spin-result--lose { background: rgba(255,255,255,.05); color: var(--muted); border: 1px solid var(--border); }
+    .spin-close {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px;
+      cursor: pointer;
+    }
+    .spin-close.hidden { display: none; }
+    .spin-close:hover { color: var(--text); }
+
     /* ── No markets state ── */
     .no-markets { text-align: center; padding: 48px 0; color: var(--muted); }
     .no-markets-icon { font-size: 2.5rem; margin-bottom: 12px; }
@@ -696,6 +795,22 @@
 <body>
 
 <div id="bToast"></div>
+
+<!-- ── Spin the Wheel Promo Overlay ── -->
+<div id="spinPromoOverlay" class="spin-promo-overlay hidden">
+  <div class="spin-promo-card">
+    <div class="spin-promo-date-badge">Today Only &middot; 20 June 2026</div>
+    <h2 class="spin-promo-title">🎡 Spin the Wheel</h2>
+    <p class="spin-promo-sub">Win 1 extra Odds Boost!</p>
+    <div class="spin-wheel-wrap">
+      <div class="spin-pointer">&#9660;</div>
+      <canvas id="spinCanvas" width="260" height="260"></canvas>
+    </div>
+    <button id="spinBtn" class="spin-btn" onclick="doSpin()">SPIN</button>
+    <div id="spinResult" class="spin-result hidden"></div>
+    <button id="spinCloseBtn" class="spin-close hidden" onclick="closeSpinPromo()">Close</button>
+  </div>
+</div>
 
 <div class="bet-page">
 
@@ -883,6 +998,7 @@ async function init() {
   if (!part) return;
   _participant = part;
   initBoosts();
+  maybeShowSpinPromo();
 
   // Render header
   document.getElementById('avatarImg').innerHTML = renderAvatar(part.avatar_type, null, 28);
@@ -1751,6 +1867,126 @@ function showToast(msg) {
   el.classList.add('show');
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ── Spin the Wheel Promo ─────────────────────────────────────────────────────
+
+const SPIN_PROMO_DATE = '2026-06-20';
+const SPIN_SEGMENTS   = 6; // index 0 = WIN, 1-5 = LOSE
+
+function _spinPromoKey() { return `wc26_spin_promo_${_participant?.id}`; }
+
+function drawWheel(rotationRad) {
+  const canvas = document.getElementById('spinCanvas');
+  if (!canvas) return;
+  const ctx    = canvas.getContext('2d');
+  const cx     = canvas.width  / 2;
+  const cy     = canvas.height / 2;
+  const r      = cx - 4;
+  const arc    = (2 * Math.PI) / SPIN_SEGMENTS;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const labels = ['WIN', 'No Luck', 'No Luck', 'No Luck', 'No Luck', 'No Luck'];
+  const colors = ['#22c55e', '#2d3748', '#1f2937', '#2d3748', '#1f2937', '#2d3748'];
+
+  for (let i = 0; i < SPIN_SEGMENTS; i++) {
+    const start = rotationRad + i * arc - Math.PI / 2;
+    const end   = start + arc;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, end);
+    ctx.closePath();
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+    ctx.strokeStyle = '#111';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(start + arc / 2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = i === 0 ? '#000' : '#9ca3af';
+    ctx.font = `bold ${i === 0 ? 13 : 11}px 'DM Sans', sans-serif`;
+    ctx.fillText(labels[i], r - 10, 4);
+    ctx.restore();
+  }
+
+  // Center circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, 18, 0, 2 * Math.PI);
+  ctx.fillStyle = '#111';
+  ctx.fill();
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function maybeShowSpinPromo() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (today !== SPIN_PROMO_DATE) return;
+  const key = _spinPromoKey();
+  if (localStorage.getItem(key)) return;
+  drawWheel(0);
+  document.getElementById('spinPromoOverlay').classList.remove('hidden');
+}
+
+function doSpin() {
+  const btn = document.getElementById('spinBtn');
+  btn.disabled = true;
+
+  const won      = Math.random() < (1 / 6);
+  const arc      = (2 * Math.PI) / SPIN_SEGMENTS;
+  // Pointer is at top (−π/2). Segment i centre angle = −π/2 + (i + 0.5) * arc.
+  // We want segment i to stop at the top (pointer), so rotation R satisfies:
+  //   R + i * arc + arc/2 ≡ 0  (mod 2π)  →  R = -(i * arc + arc/2)
+  const targetSeg = won ? 0 : (1 + Math.floor(Math.random() * 5));
+  const baseSpins = 5 * 2 * Math.PI;
+  const targetRot = baseSpins + (-(targetSeg * arc + arc / 2));
+
+  const duration  = 3200;
+  const startTime = performance.now();
+  let startRot    = 0;
+
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+
+  function frame(now) {
+    const elapsed = now - startTime;
+    const t       = Math.min(elapsed / duration, 1);
+    const current = startRot + easeOut(t) * (targetRot - startRot);
+    drawWheel(current);
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      showSpinResult(won);
+    }
+  }
+
+  requestAnimationFrame(frame);
+  localStorage.setItem(_spinPromoKey(), '1');
+}
+
+function showSpinResult(won) {
+  const resultEl = document.getElementById('spinResult');
+  const closeBtn = document.getElementById('spinCloseBtn');
+  resultEl.classList.remove('hidden', 'spin-result--win', 'spin-result--lose');
+  if (won) {
+    _boostState.remaining++;
+    saveBoosts();
+    updateBoostUI();
+    resultEl.classList.add('spin-result--win');
+    resultEl.textContent = '🚀 You won an extra Odds Boost!';
+  } else {
+    resultEl.classList.add('spin-result--lose');
+    resultEl.textContent = 'No luck this time — good luck on your bets!';
+  }
+  closeBtn.classList.remove('hidden');
+}
+
+function closeSpinPromo() {
+  document.getElementById('spinPromoOverlay').classList.add('hidden');
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
