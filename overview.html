@@ -287,6 +287,69 @@
     }
 
     .ov-loading { padding: 16px; font-size: 0.85rem; color: var(--muted); }
+
+    /* ── Admin hub card ── */
+    .hub-admin .hub-head { cursor: default; }
+    .hub-admin .hub-head:hover { background: transparent; }
+    .hub-admin .hub-head:hover .hub-go { transform: none; color: var(--muted); }
+
+    /* ── Admin settle/resolve ── */
+    .admin-hint { color: var(--muted); font-size: 0.82rem; margin-bottom: 14px; line-height: 1.5; }
+    .admin-list { display: flex; flex-direction: column; gap: 6px; }
+    .admin-row {
+      display: grid;
+      grid-template-columns: 84px 1fr auto;
+      align-items: center;
+      gap: 10px;
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      box-shadow: 2px 2px 0 rgba(0,0,0,.4);
+    }
+    .admin-meta  { display: flex; flex-direction: column; gap: 2px; }
+    .adm-no      { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text); }
+    .adm-stage   { font-family: var(--font-pixel); font-size: 0.28rem; color: var(--muted); }
+    .admin-name  { font-size: 0.85rem; font-weight: 700; min-width: 0; }
+    .adm-v       { color: var(--muted); font-weight: 400; margin: 0 2px; }
+    .admin-ctrls { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+    .adm-in {
+      background: var(--mid); border: 2px solid var(--border); border-radius: var(--radius);
+      color: var(--text); font-family: var(--font-mono); font-size: 0.82rem; padding: 5px 6px;
+    }
+    .adm-in:focus { border-color: var(--green); outline: none; }
+    .adm-score { width: 38px; text-align: center; }
+    .adm-code  { width: 56px; text-transform: uppercase; }
+    .adm-win   { font-size: 0.7rem; padding: 5px 4px; }
+    .adm-dash  { color: var(--muted); }
+    .adm-btn {
+      background: var(--green); border: none; border-radius: var(--radius);
+      color: #0a0805; font-family: var(--font-pixel); font-size: 0.32rem;
+      padding: 7px 10px; cursor: pointer; box-shadow: 2px 2px 0 rgba(0,0,0,.5);
+    }
+    .adm-btn:hover { transform: translate(1px,1px); box-shadow: 1px 1px 0 rgba(0,0,0,.5); }
+    .adm-settled { font-family: var(--font-pixel); font-size: 0.3rem; color: #3cb04a; }
+    @media (max-width: 560px) {
+      .admin-row { grid-template-columns: 1fr; gap: 6px; }
+      .admin-ctrls { justify-content: flex-start; }
+    }
+
+    /* ── Admin: participants section ── */
+    .adm-participants-list { display: flex; flex-direction: column; gap: 6px; }
+    .adm-p-row { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 8px; background: var(--panel); border: 2px solid var(--border); border-radius: var(--radius); padding: 8px 12px; }
+    .adm-p-name { font-size: 0.85rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .adm-p-label { font-family: var(--font-pixel); font-size: 0.26rem; color: var(--muted); display: block; margin-bottom: 2px; }
+    @media (max-width: 560px) { .adm-p-row { grid-template-columns: 1fr 1fr; } .adm-p-row .adm-btn { grid-column: 1 / -1; } }
+
+    /* ── Admin accordions ── */
+    .adm-accordion { border: 2px solid var(--border); border-radius: var(--radius); background: var(--panel); box-shadow: 2px 2px 0 rgba(0,0,0,.4); overflow: hidden; margin-bottom: 8px; }
+    .adm-acc-toggle { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; user-select: none; }
+    .adm-acc-toggle:hover { background: rgba(255,255,255,.03); }
+    .adm-acc-title { font-family: var(--font-pixel); font-size: 0.38rem; color: var(--muted); letter-spacing: .08em; }
+    .adm-acc-arrow { font-size: 0.7rem; transition: transform .15s; color: var(--muted); }
+    .adm-acc-toggle.open .adm-acc-arrow { transform: rotate(180deg); }
+    .adm-acc-content { padding: 10px 12px 12px; border-top: 1px solid var(--border); }
+    .adm-acc-content.hidden { display: none; }
   </style>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#140a18">
@@ -428,6 +491,68 @@
         <div class="hub-bet-stats" id="ovBetStats"></div>
       </div>
 
+      <!-- Admin hub card (hidden until admin identity confirmed) -->
+      <div class="hub-card hub-admin" id="ovAdminCard" hidden>
+        <div class="hub-head" style="cursor:default">
+          <span class="hub-icon" style="background:var(--panel);border:1px solid var(--border);font-size:1rem">⚙</span>
+          <span class="hub-titles">
+            <span class="hub-kicker">Admin</span>
+            <span class="hub-sub">Tournament &amp; betting controls</span>
+          </span>
+        </div>
+
+        <!-- Draw controls + participant management -->
+        <div id="ovAdmDrawControls" style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-gold btn-pixel" id="admStartDrawBtn" style="display:none" onclick="AdminPanel.startDraw()">🎲 Start draw</button>
+          <button class="btn-danger btn-pixel" id="admReopenBtn" style="display:none" onclick="AdminPanel.reopenTournament()">↺ Reset draw</button>
+          <button class="btn-ghost" style="font-size:0.82rem;padding:7px 12px" onclick="AdminPanel.openAssignAdminModal()">Manage admins</button>
+        </div>
+
+        <!-- Push notification toggle -->
+        <div id="admPanelNotif" style="padding:10px 16px;border-bottom:1px solid var(--border)"></div>
+
+        <div style="padding:8px 12px 12px">
+          <!-- Bet Requests accordion (hidden until requests exist) -->
+          <div class="adm-accordion" id="admAccRequests" style="display:none">
+            <div class="adm-acc-toggle" onclick="AdminPanel.toggleAccordion(this)">
+              <span class="adm-acc-title">Bet Requests</span><span class="adm-acc-arrow">▾</span>
+            </div>
+            <div class="adm-acc-content hidden" id="admPanelBetRequests"></div>
+          </div>
+
+          <!-- Match Settlement accordion -->
+          <div class="adm-accordion">
+            <div class="adm-acc-toggle" onclick="AdminPanel.toggleAccordion(this)">
+              <span class="adm-acc-title">Match Settlement</span><span class="adm-acc-arrow">▾</span>
+            </div>
+            <div class="adm-acc-content hidden">
+              <p class="admin-hint">Enter the 90-minute score to settle a match. For knockout fixtures, set the two team codes to resolve the matchup first.</p>
+              <div id="admPanelMatchSettlement" class="admin-list"></div>
+            </div>
+          </div>
+
+          <!-- Participants accordion -->
+          <div class="adm-accordion">
+            <div class="adm-acc-toggle" onclick="AdminPanel.toggleAccordion(this)">
+              <span class="adm-acc-title">Participants</span><span class="adm-acc-arrow">▾</span>
+            </div>
+            <div class="adm-acc-content hidden">
+              <div id="admPanelParticipants" class="adm-participants-list"><p class="admin-hint">Loading…</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assign admin modal -->
+      <div id="ovAssignAdminModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;align-items:center;justify-content:center">
+        <div style="background:var(--bg);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:28px;max-width:400px;width:90%;max-height:80vh;overflow-y:auto">
+          <h3 style="margin:0 0 6px;font-family:var(--font-display)">Admin Access</h3>
+          <p class="muted" style="font-size:0.85rem;margin:0 0 16px">Admins can manage the tournament without needing the admin URL.</p>
+          <div id="ovAssignAdminList"></div>
+          <button class="btn-ghost" style="margin-top:16px;width:100%" onclick="document.getElementById('ovAssignAdminModal').style.display='none'">Close</button>
+        </div>
+      </div>
+
       <!-- Install entry point -->
       <div class="ov-install" id="ovInstall" hidden>
         <!-- Android / desktop Chromium: one-tap install -->
@@ -474,6 +599,7 @@
 <script src="js/wc2026-fixtures.js?v=17818741"></script>
 <script src="js/my-tournaments.js?v=17818741"></script>
 <script src="js/overview.js?v=17818741"></script>
+<script src="js/admin.js?v=17818741"></script>
 <script src="js/pwa.js?v=17818741"></script>
 </body>
 </html>
