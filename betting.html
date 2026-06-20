@@ -1209,7 +1209,11 @@ async function initBettingPushNotifications() {
     el.innerHTML = '<p class="admin-hint" style="color:var(--muted)">Push notifications not supported in this browser.</p>';
     return;
   }
-  _bettingVapidKey = (window.CONFIG && window.CONFIG.VAPID_PUBLIC_KEY) || null;
+  try {
+    const _cfgBase = (window.CONFIG && window.CONFIG.API_BASE) || '';
+    const r = await fetch(`${_cfgBase}/api/push-config`);
+    if (r.ok) _bettingVapidKey = (await r.json()).publicKey;
+  } catch (e) { /* null key — toggle still renders, error shown on subscribe */ }
   const reg = await navigator.serviceWorker.ready;
   _bettingPushSub = await reg.pushManager.getSubscription();
   renderBettingNotifToggle(!!_bettingPushSub);

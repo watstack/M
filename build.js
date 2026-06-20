@@ -40,7 +40,6 @@ try {
 const url         = process.env.SUPABASE_URL        || '';
 const key         = process.env.SUPABASE_ANON_KEY   || '';
 const token       = process.env.FOOTBALL_API_TOKEN  || '';
-const vapidPubKey = process.env.VAPID_PUBLIC_KEY    || '';
 // On Vercel VERCEL_PROJECT_PRODUCTION_URL is set automatically.
 // On GitHub Pages pass API_BASE_URL env var pointing to the Vercel deployment.
 const apiBase = process.env.VERCEL_PROJECT_PRODUCTION_URL
@@ -56,7 +55,6 @@ const CONFIG = {
   SUPABASE_URL: '${url}',
   SUPABASE_ANON_KEY: '${key}',
   FOOTBALL_API_TOKEN: '${token}',
-  VAPID_PUBLIC_KEY: '${vapidPubKey}',
   API_BASE: '${apiBase}',
 };
 `;
