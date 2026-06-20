@@ -907,15 +907,22 @@ async function init() {
   _adminToken = fromHash || localStorage.getItem(`wc26_admin_${code}`) || null;
   if (_adminToken || part.is_admin) document.getElementById('tabAdmin').style.display = '';
 
-  // Load user's team allocations, pending bets, and match scores for carousel
-  const [allocRes, pendingCarouselRes, matchesCarouselRes] = await Promise.all([
+  // Fire sync in background while loading user-specific data so wc_matches
+  // has fresh scores/status by the time we read it.
+  const _syncP = fetch('/api/sync').catch(() => {});
+
+  // Load user's team allocations and pending bets
+  const [allocRes, pendingCarouselRes] = await Promise.all([
     db.from('allocations').select('team_code')
       .eq('tournament_id', _tournament.id).eq('participant_id', _participant.id),
     db.from('bets').select('bet_markets(match_no)')
       .eq('tournament_id', _tournament.id).eq('participant_id', _participant.id)
       .eq('status', 'pending'),
-    db.from('wc_matches').select('home_tla, away_tla, home_score, away_score, status'),
   ]);
+
+  // Wait for sync (up to 3s) then read fresh match data
+  await Promise.race([_syncP, new Promise(r => setTimeout(r, 3000))]);
+  const matchesCarouselRes = await db.from('wc_matches').select('home_tla, away_tla, home_score, away_score, status');
   _teamSet = new Set((allocRes.data || []).map(a => a.team_code));
   _pendingByMatchNo = {};
   for (const b of (pendingCarouselRes.data || [])) {
