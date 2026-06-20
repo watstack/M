@@ -36,7 +36,7 @@ module.exports = async function handler(req, res) {
       return res.json({ ok: true, synced: 0, note: 'No events from ESPN or FBD' });
     }
 
-    const r = await fetch(`${supaUrl}/rest/v1/wc_matches`, {
+    const r = await fetch(`${supaUrl}/rest/v1/wc_matches?on_conflict=home_tla,away_tla,utc_date`, {
       method: 'POST',
       headers: {
         'apikey': supaKey,
