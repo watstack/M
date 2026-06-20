@@ -472,6 +472,16 @@
     .adm-p-label { font-family: var(--font-pixel); font-size: 0.26rem; color: var(--muted); display: block; margin-bottom: 2px; }
     @media (max-width: 560px) { .adm-p-row { grid-template-columns: 1fr 1fr; } .adm-p-row .adm-btn { grid-column: 1 / -1; } }
 
+    /* ── Admin accordions ── */
+    .adm-accordion { border: 2px solid var(--border); border-radius: var(--radius); background: var(--panel); box-shadow: 2px 2px 0 rgba(0,0,0,.4); overflow: hidden; margin-bottom: 8px; }
+    .adm-acc-toggle { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; cursor: pointer; user-select: none; }
+    .adm-acc-toggle:hover { background: rgba(255,255,255,.03); }
+    .adm-acc-title { font-family: var(--font-pixel); font-size: 0.38rem; color: var(--muted); letter-spacing: .08em; }
+    .adm-acc-arrow { font-size: 0.7rem; transition: transform .15s; color: var(--muted); }
+    .adm-acc-toggle.open .adm-acc-arrow { transform: rotate(180deg); }
+    .adm-acc-content { padding: 10px 12px 12px; border-top: 1px solid var(--border); }
+    .adm-acc-content.hidden { display: none; }
+
     /* ── Request-a-Bet card ── */
     .req-bet-card { border-color: rgba(255,106,31,.35); }
     .req-bet-collapsed { padding: 0 16px 14px; }
@@ -876,14 +886,39 @@
   <!-- Admin: settle / resolve (only shown when an admin token is present) -->
   <div id="panelAdmin" style="display:none">
     <div id="bettingNotifToggle" style="margin-bottom:16px"></div>
-    <p class="admin-hint">Enter the 90-minute score to settle a match. For knockout fixtures, set the two team codes to resolve the matchup, and pick which side advances when settling.</p>
-    <p class="adm-participants-title" id="adminRequestsTitle" style="display:none">Bet Requests</p>
-    <div id="adminRequestsList" class="admin-list" style="margin-bottom:16px"></div>
-    <div id="adminList" class="admin-list"></div>
 
-    <p class="adm-participants-title">Participants</p>
-    <div id="adminParticipantsList" class="adm-participants-list">
-      <p class="admin-hint">Loading…</p>
+    <!-- Bet Requests accordion (hidden until requests exist) -->
+    <div class="adm-accordion" id="admAccRequests" style="display:none">
+      <div class="adm-acc-toggle" onclick="toggleAdminAccordion(this)">
+        <span class="adm-acc-title">Bet Requests</span>
+        <span class="adm-acc-arrow">▾</span>
+      </div>
+      <div class="adm-acc-content hidden" id="adminRequestsList"></div>
+    </div>
+
+    <!-- Match Settlement accordion -->
+    <div class="adm-accordion">
+      <div class="adm-acc-toggle" onclick="toggleAdminAccordion(this)">
+        <span class="adm-acc-title">Match Settlement</span>
+        <span class="adm-acc-arrow">▾</span>
+      </div>
+      <div class="adm-acc-content hidden">
+        <p class="admin-hint">Enter the 90-minute score to settle a match. For knockout fixtures, set the two team codes to resolve the matchup, and pick which side advances when settling.</p>
+        <div id="adminList" class="admin-list"></div>
+      </div>
+    </div>
+
+    <!-- Participants accordion -->
+    <div class="adm-accordion">
+      <div class="adm-acc-toggle" onclick="toggleAdminAccordion(this)">
+        <span class="adm-acc-title">Participants</span>
+        <span class="adm-acc-arrow">▾</span>
+      </div>
+      <div class="adm-acc-content hidden">
+        <div id="adminParticipantsList" class="adm-participants-list">
+          <p class="admin-hint">Loading…</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1496,6 +1531,12 @@ async function adminResolve(matchNo) {
 // ── Correct score accordion ───────────────────────────────────────────────────
 
 function toggleCorrectScore(toggleEl) {
+  const content = toggleEl.nextElementSibling;
+  const open = content.classList.toggle('hidden') === false;
+  toggleEl.classList.toggle('open', open);
+}
+
+function toggleAdminAccordion(toggleEl) {
   const content = toggleEl.nextElementSibling;
   const open = content.classList.toggle('hidden') === false;
   toggleEl.classList.toggle('open', open);

@@ -759,20 +759,20 @@ function renderAdminBetRequestRow(req) {
 }
 
 async function loadAndRenderBetRequests() {
-  const listEl  = document.getElementById('adminRequestsList');
-  const titleEl = document.getElementById('adminRequestsTitle');
+  const listEl = document.getElementById('adminRequestsList');
+  const accEl  = document.getElementById('admAccRequests');
   if (!listEl || !_tournament) return;
   try {
     const reqs = await loadBetRequests(_tournament.id);
     if (!reqs.length) {
-      if (titleEl) titleEl.style.display = 'none';
+      if (accEl) accEl.style.display = 'none';
       listEl.innerHTML = '';
       return;
     }
-    if (titleEl) titleEl.style.display = '';
+    if (accEl) accEl.style.display = '';
     listEl.innerHTML = reqs.map(renderAdminBetRequestRow).join('');
   } catch (e) {
-    if (titleEl) titleEl.style.display = '';
+    if (accEl) accEl.style.display = '';
     listEl.innerHTML = `<p class="admin-hint">Error loading requests: ${escapeHtml(e.message)}</p>`;
   }
 }
@@ -821,10 +821,10 @@ async function adminRejectBetRequest(requestId) {
     showToast('Request rejected.');
     const row = document.getElementById(`req-row-${requestId}`);
     if (row) row.remove();
-    const listEl  = document.getElementById('adminRequestsList');
-    const titleEl = document.getElementById('adminRequestsTitle');
-    if (listEl && titleEl && !listEl.querySelector('.req-row')) {
-      titleEl.style.display = 'none';
+    const listEl = document.getElementById('adminRequestsList');
+    const accEl  = document.getElementById('admAccRequests');
+    if (listEl && accEl && !listEl.querySelector('.req-row')) {
+      accEl.style.display = 'none';
     }
   } catch (e) {
     showToast(e.message || 'Failed to reject');
