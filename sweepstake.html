@@ -850,18 +850,6 @@
     <a id="ovBackLink" href="index.html" class="muted" style="font-size:0.85rem;margin-left:12px">← Overview</a>
   </header>
 
-  <!-- Admin bar (only shown if admin token present) -->
-  <div class="admin-bar" id="adminBar" style="display:none">
-    <span class="admin-bar-label">⚙ Admin controls</span>
-    <button class="btn-ghost" id="removeParticipantBtn" style="font-size:0.82rem;padding:7px 12px">Remove participant</button>
-    <button class="btn-ghost" id="assignAdminBtn" style="font-size:0.82rem;padding:7px 12px">Assign admin</button>
-    <button class="btn-danger btn-pixel" id="reopenBtn" style="font-size:0.55rem;padding:7px 12px;display:none">Reset draw</button>
-    <button class="btn-gold btn-pixel" id="startDrawBtn" style="display:none">
-      🎲 Start draw
-      <span class="spinner" id="drawSpinner"></span>
-    </button>
-  </div>
-
   <!-- Loading (visible by default until init() completes) -->
   <div class="state active" id="stateLoading">
     <div style="text-align:center;padding:80px 20px">
@@ -1541,11 +1529,6 @@ function renderWaitingState() {
   document.getElementById('waitShareUrl').textContent = inviteUrl;
   setupCopy('waitCopyBtn', inviteUrl);
 
-  if (isAdmin) {
-    document.getElementById('startDrawBtn').style.display = 'inline-flex';
-    document.getElementById('startDrawBtn').addEventListener('click', handleStartDraw);
-  }
-
   refreshWaitingRoom();
 }
 
@@ -1605,11 +1588,6 @@ function renderDrawState() {
     </div>`;
   }).join('');
 
-  if (isAdmin) {
-    const btn = document.getElementById('reopenBtn');
-    btn.style.display = 'inline-flex';
-    btn.onclick = handleReopen;
-  }
 }
 
 function hexToRgba(hex, alpha) {
@@ -1793,9 +1771,6 @@ function playCinematicCountdown() {
 
 // ── Admin: run draw ───────────────────────────────────────────────────────────
 async function handleStartDraw() {
-  const btn     = document.getElementById('startDrawBtn');
-  const spinner = document.getElementById('drawSpinner');
-  btn.disabled = true; spinner.classList.add('show');
   _drawRunning = true;
 
   try {
@@ -1870,7 +1845,6 @@ async function handleStartDraw() {
 
   } catch (err) {
     showToast('Draw failed: ' + err.message);
-    btn.disabled = false; spinner.classList.remove('show');
   } finally {
     _drawRunning = false;
   }
@@ -1948,12 +1922,6 @@ function renderBracketState() {
   document.getElementById('stateBracket').classList.add('active');
   document.body.className = '';
   Music.play('mortal');
-  if (isAdmin) {
-    const reopenEl = document.getElementById('reopenBtn');
-    reopenEl.style.display = 'inline-flex';
-    reopenEl.onclick = handleReopen;
-  }
-
   // Wire up betting link in header
   const betUrl = `betting.html?code=${tournament.code}`;
   const bracketBetLink = document.getElementById('bracketBetLink');
@@ -2407,7 +2375,6 @@ async function init() {
 
   if (adminToken) {
     isAdmin = true;
-    document.getElementById('adminBar').style.display = 'flex';
   }
 
   setLoadingStatus('Looking up tournament…');
@@ -2445,7 +2412,6 @@ async function init() {
       const me = allParticipants.find(p => p.id === myParticipantId);
       if (me?.is_admin) {
         isAdmin = true;
-        document.getElementById('adminBar').style.display = 'flex';
       }
     }
 
@@ -2471,7 +2437,6 @@ async function init() {
         for (const a of allAllocations) revealDrawCard(a, allParticipants);
       }
     } else {
-      document.getElementById('adminBar').style.display = isAdmin ? 'flex' : 'none';
       if (myParticipantId && allParticipants.find(p => p.id === myParticipantId)) {
         renderWaitingState();
       } else if (isAdmin) {
@@ -3124,46 +3089,6 @@ const RC = (() => {
   };
 })();
 
-function openAssignAdminModal() {
-  const modal = document.getElementById('assignAdminModal');
-  const list = document.getElementById('assignAdminList');
-  list.innerHTML = allParticipants.map(p => {
-    const isMe = p.id === myParticipantId;
-    const statusColor = p.is_admin ? 'var(--green)' : 'rgba(255,255,255,.35)';
-    const statusLabel = p.is_admin ? '⚙ Admin' : 'User';
-    const toggleLabel = p.is_admin ? 'Remove' : 'Make admin';
-    const meTag = isMe ? `<span style="color:var(--gold);font-size:0.72rem;margin-left:4px">(you)</span>` : '';
-    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)">
-      ${renderAvatar(p.avatar_type, null, 32)}
-      <span style="flex:1;font-size:0.9rem">${esc(p.nickname)}${meTag}</span>
-      <span style="font-size:0.72rem;color:${statusColor};font-weight:700;min-width:52px;text-align:right">${statusLabel}</span>
-      ${!isMe ? `<button class="btn-ghost" style="font-size:0.75rem;padding:4px 10px" onclick="toggleParticipantAdmin('${p.id}',${!p.is_admin})">${toggleLabel}</button>` : ''}
-    </div>`;
-  }).join('');
-  modal.style.display = 'flex';
-}
-
-window.toggleParticipantAdmin = async function(participantId, newIsAdmin) {
-  try {
-    let ok;
-    if (adminToken) {
-      ok = await setParticipantAdmin(code, adminToken, participantId, newIsAdmin);
-    } else {
-      ok = await participantSetAdmin(code, myParticipantId, participantId, newIsAdmin);
-    }
-    if (!ok) { showToast('Failed — permission denied.'); return; }
-    const idx = allParticipants.findIndex(p => p.id === participantId);
-    if (idx >= 0) allParticipants[idx] = { ...allParticipants[idx], is_admin: newIsAdmin };
-    openAssignAdminModal();
-    showToast(newIsAdmin ? 'Admin granted.' : 'Admin removed.');
-    if (tournament.status === 'open') refreshWaitingRoom();
-  } catch (err) {
-    showToast('Error: ' + err.message);
-  }
-};
-
-document.getElementById('assignAdminBtn')?.addEventListener('click', openAssignAdminModal);
-
 BracketZoom.init();
 
 init();
@@ -3172,13 +3097,5 @@ init();
 
 <script src="js/pwa.js?v=17818741"></script>
 
-<div id="assignAdminModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;align-items:center;justify-content:center">
-  <div style="background:var(--bg);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:28px;max-width:400px;width:90%;max-height:80vh;overflow-y:auto">
-    <h3 style="margin:0 0 6px;font-family:var(--font-display)">Admin Access</h3>
-    <p class="muted" style="font-size:0.85rem;margin:0 0 16px">Admins can manage the tournament without needing the admin URL.</p>
-    <div id="assignAdminList"></div>
-    <button class="btn-ghost" style="margin-top:16px;width:100%" onclick="document.getElementById('assignAdminModal').style.display='none'">Close</button>
-  </div>
-</div>
 </body>
 </html>

@@ -258,6 +258,12 @@
     document.getElementById('ovBetTopBtn').href     = betHref;
     renderTournamentSwitcher(code);
 
+    // Admin detection — token from URL hash or localStorage
+    const hashAdminMatch = window.location.hash.match(/admin=([a-zA-Z0-9\-]+)/);
+    const adminFromHash  = hashAdminMatch ? hashAdminMatch[1] : null;
+    if (adminFromHash) localStorage.setItem(`wc26_admin_${code}`, adminFromHash);
+    const adminToken = adminFromHash || localStorage.getItem(`wc26_admin_${code}`) || null;
+
     // Make sure this tournament is in the device's membership list so recovery,
     // the switcher, and the token bundle all know about it (some join paths don't
     // record it — e.g. admin-seeded participants).
@@ -296,7 +302,7 @@
       } catch {}
 
       const [myPRes, allocRes, pendingRes, settledRes, settledParlaysRes, matchesRes] = await Promise.all([
-        db.from('participants').select('coin_balance, nickname').eq('id', myParticipantId).single(),
+        db.from('participants').select('coin_balance, nickname, is_admin').eq('id', myParticipantId).single(),
         db.from('allocations').select('team_code, team_name').eq('tournament_id', tid).eq('participant_id', myParticipantId),
         db.from('bets').select('selection, stake, potential_payout, odds, bet_markets(match_no)').eq('participant_id', myParticipantId).eq('tournament_id', tid).eq('status', 'pending'),
         db.from('bets').select('status, stake, potential_payout').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('placed_at', { ascending: false }),
@@ -308,6 +314,17 @@
       const allocations = allocRes.data  || [];
       const pendingBets = pendingRes.data || [];
       const settledBets = [...(settledRes.data || []), ...(settledParlaysRes.data || [])];
+
+      // Show admin hub card when this user has admin access
+      const isAdmin = !!adminToken || !!(myP && myP.is_admin);
+      if (isAdmin && typeof AdminPanel !== 'undefined') {
+        document.getElementById('ovAdminCard').hidden = false;
+        const startBtn  = document.getElementById('admStartDrawBtn');
+        const reopenBtn = document.getElementById('admReopenBtn');
+        if (tournament.status === 'open' && startBtn)  startBtn.style.display  = '';
+        if (tournament.status !== 'open' && reopenBtn) reopenBtn.style.display = '';
+        AdminPanel.init({ db, code, tournamentId: tournament.id, tournament, adminToken, participantId: myParticipantId });
+      }
 
       const balance     = myP?.coin_balance ?? null;
       const myTeamCodes = allocations.map(a => a.team_code);

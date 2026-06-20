@@ -845,7 +845,6 @@
       <button class="bet-tab" id="tabMyBets" onclick="showTab('mybets')">My Bets</button>
       <button class="bet-tab" id="tabAllBets" onclick="showTab('allbets')">All Bets</button>
       <button class="bet-tab" id="tabLeaderboard" onclick="showTab('leaderboard')">Leaderboard</button>
-      <button class="bet-tab" id="tabAdmin" onclick="showTab('admin')" style="display:none">⚙ Admin</button>
     </div>
     <!-- Contextual filter/sort row -->
     <div id="betFilterRow" class="bet-filter-row">
@@ -883,44 +882,6 @@
     <div id="lbBetContent" class="lb-rows"></div>
   </div>
 
-  <!-- Admin: settle / resolve (only shown when an admin token is present) -->
-  <div id="panelAdmin" style="display:none">
-    <div id="bettingNotifToggle" style="margin-bottom:16px"></div>
-
-    <!-- Bet Requests accordion (hidden until requests exist) -->
-    <div class="adm-accordion" id="admAccRequests" style="display:none">
-      <div class="adm-acc-toggle" onclick="toggleAdminAccordion(this)">
-        <span class="adm-acc-title">Bet Requests</span>
-        <span class="adm-acc-arrow">▾</span>
-      </div>
-      <div class="adm-acc-content hidden" id="adminRequestsList"></div>
-    </div>
-
-    <!-- Match Settlement accordion -->
-    <div class="adm-accordion">
-      <div class="adm-acc-toggle" onclick="toggleAdminAccordion(this)">
-        <span class="adm-acc-title">Match Settlement</span>
-        <span class="adm-acc-arrow">▾</span>
-      </div>
-      <div class="adm-acc-content hidden">
-        <p class="admin-hint">Enter the 90-minute score to settle a match. For knockout fixtures, set the two team codes to resolve the matchup, and pick which side advances when settling.</p>
-        <div id="adminList" class="admin-list"></div>
-      </div>
-    </div>
-
-    <!-- Participants accordion -->
-    <div class="adm-accordion">
-      <div class="adm-acc-toggle" onclick="toggleAdminAccordion(this)">
-        <span class="adm-acc-title">Participants</span>
-        <span class="adm-acc-arrow">▾</span>
-      </div>
-      <div class="adm-acc-content hidden">
-        <div id="adminParticipantsList" class="adm-participants-list">
-          <p class="admin-hint">Loading…</p>
-        </div>
-      </div>
-    </div>
-  </div>
 
 </div>
 
@@ -977,7 +938,6 @@ let _parlayLegs = []; // [{marketId, selection, odds, matchName, label}]
 let _currentTab = 'markets';
 let _matchSort = 'upcoming';
 let _balanceSub = null;
-let _adminToken = null;
 let _marketsByNo = {};
 let _customMarkets = [];
 let _allBets = [];
@@ -1049,14 +1009,6 @@ async function init() {
         document.getElementById('balanceAmt').textContent = p.new.coin_balance.toLocaleString();
       })
     .subscribe();
-
-  // Admin controls — shown when a master admin token is present OR the participant
-  // has been granted is_admin via the admin panel.
-  const am = window.location.hash.match(/admin=([a-zA-Z0-9\-]+)/);
-  const fromHash = am ? am[1] : null;
-  if (fromHash) localStorage.setItem(`wc26_admin_${code}`, fromHash);
-  _adminToken = fromHash || localStorage.getItem(`wc26_admin_${code}`) || null;
-  if (_adminToken || part.is_admin) document.getElementById('tabAdmin').style.display = '';
 
   // Fire sync in background while loading user-specific data so wc_matches
   // has fresh scores/status by the time we read it.
@@ -1221,7 +1173,6 @@ function renderMarketsView(markets) {
   const marketsByNo = indexMarketsByMatchNo(markets);
   _marketsByNo = marketsByNo;
   _customMarkets = loadCustomMarkets(markets);
-  if ((_adminToken || _participant?.is_admin) && _currentTab === 'admin') renderAdminPanel();
 
   const potHtml = renderPotBanner();
   const html = _matchSort === 'custom'
@@ -1325,12 +1276,10 @@ function showTab(tab) {
   document.getElementById('panelMyBets').style.display      = tab === 'mybets'      ? 'block' : 'none';
   document.getElementById('panelAllBets').style.display     = tab === 'allbets'     ? 'block' : 'none';
   document.getElementById('panelLeaderboard').style.display = tab === 'leaderboard' ? 'block' : 'none';
-  document.getElementById('panelAdmin').style.display       = tab === 'admin'       ? 'block' : 'none';
   document.getElementById('tabMarkets').classList.toggle('active', tab === 'markets');
   document.getElementById('tabMyBets').classList.toggle('active', tab === 'mybets');
   document.getElementById('tabAllBets').classList.toggle('active', tab === 'allbets');
   document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'leaderboard');
-  document.getElementById('tabAdmin').classList.toggle('active', tab === 'admin');
   // Toggle contextual filter/sort bar in sticky zone
   document.getElementById('betSortBar').style.display    = tab === 'markets' ? '' : 'none';
   document.getElementById('allBetsFilter').style.display = tab === 'allbets' ? '' : 'none';
@@ -1338,205 +1287,12 @@ function showTab(tab) {
   if (tab === 'mybets')      loadMyBetsView();
   if (tab === 'allbets')     loadAllBetsView();
   if (tab === 'leaderboard') refreshLeaderboard(_tournament.id, _participant?.id, document.getElementById('lbBetContent'));
-  if (tab === 'admin')       renderAdminPanel();
 }
 
-async function renderAdminPanel() {
-  document.getElementById('adminList').innerHTML =
-    renderAdminView(_marketsByNo) +
-    renderAdminCustomMarketsView(_customMarkets);
-  await loadAndRenderBetRequests();
-  await loadAdminParticipants();
-  if (_adminToken || (_participant && _participant.is_admin)) initBettingPushNotifications();
-}
-
-let _bettingPushSub = null;
-let _bettingVapidKey = null;
-
-async function initBettingPushNotifications() {
-  const el = document.getElementById('bettingNotifToggle');
-  if (!el) return;
-  if (!('PushManager' in window) || !('serviceWorker' in navigator)) {
-    el.innerHTML = '<p class="admin-hint" style="color:var(--muted)">Push notifications not supported in this browser.</p>';
-    return;
-  }
-  try {
-    const _cfgBase = (window.CONFIG && window.CONFIG.API_BASE) || '';
-    const r = await fetch(`${_cfgBase}/api/push-config`);
-    if (r.ok) _bettingVapidKey = (await r.json()).publicKey;
-  } catch (e) { /* null key — toggle still renders, error shown on subscribe */ }
-  const reg = await navigator.serviceWorker.ready;
-  _bettingPushSub = await reg.pushManager.getSubscription();
-  renderBettingNotifToggle(!!_bettingPushSub);
-}
-
-function renderBettingNotifToggle(isEnabled) {
-  const el = document.getElementById('bettingNotifToggle');
-  if (!el) return;
-  const denied = Notification.permission === 'denied';
-  const hint = isEnabled
-    ? 'Active on this device'
-    : denied
-      ? 'Blocked — open browser Settings → Notifications to allow'
-      : 'Get notified when a player submits a bet request';
-  el.innerHTML = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px">
-    <button class="adm-btn" id="bettingNotifBtn" onclick="toggleBettingPushNotification()">
-      ${isEnabled ? 'Disable notifications' : 'Enable notifications'}
-    </button>
-    <span style="font-size:0.75rem;color:var(--muted)">${hint}</span>
-  </div>`;
-}
-
-async function toggleBettingPushNotification() {
-  const btn = document.getElementById('bettingNotifBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '…'; }
-  const _apiBase = (window.CONFIG && window.CONFIG.API_BASE) || '';
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    if (_bettingPushSub) {
-      await _bettingPushSub.unsubscribe();
-      await fetch(`${_apiBase}/api/subscribe-push`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(Object.assign({ code, action: 'unsubscribe', subscription: { endpoint: _bettingPushSub.endpoint } },
-          _adminToken ? { adminToken: _adminToken } : { participantId: _participant && _participant.id })),
-      });
-      _bettingPushSub = null;
-      renderBettingNotifToggle(false);
-      showToast('Notifications disabled');
-    } else {
-      if (Notification.permission !== 'granted') {
-        const perm = await Notification.requestPermission();
-        if (perm !== 'granted') { showToast('Notifications blocked — check browser settings'); renderBettingNotifToggle(false); return; }
-      }
-      if (!_bettingVapidKey) { showToast('Push not configured on server'); renderBettingNotifToggle(false); return; }
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: _bettingUrlBase64ToUint8Array(_bettingVapidKey),
-      });
-      const r = await fetch(`${_apiBase}/api/subscribe-push`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(Object.assign({ code, action: 'subscribe', subscription: sub.toJSON() },
-          _adminToken ? { adminToken: _adminToken } : { participantId: _participant && _participant.id })),
-      });
-      if (!r.ok) { await sub.unsubscribe(); throw new Error('Server rejected subscription'); }
-      _bettingPushSub = sub;
-      renderBettingNotifToggle(true);
-      showToast('Notifications enabled!');
-    }
-  } catch (e) {
-    showToast(e.message || 'Failed to update notifications');
-    if (btn) { btn.disabled = false; }
-  }
-}
-
-function _bettingUrlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const raw     = atob(base64);
-  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
-}
-
-async function loadAdminParticipants() {
-  const el = document.getElementById('adminParticipantsList');
-  if (!el || !_tournament) return;
-  el.innerHTML = '<p class="admin-hint">Loading…</p>';
-  try {
-    const { data, error } = await db
-      .from('participants')
-      .select('id, nickname, coin_balance, cans_owed')
-      .eq('tournament_id', _tournament.id)
-      .order('nickname');
-    if (error) throw error;
-    if (!data || !data.length) { el.innerHTML = '<p class="admin-hint">No participants found.</p>'; return; }
-    el.innerHTML = data.map(p => `
-      <div class="adm-p-row">
-        <span class="adm-p-name">${escapeHtml(p.nickname)}</span>
-        <div>
-          <span class="adm-p-label">🪙 coins</span>
-          <input class="adm-in adm-score" style="width:80px" type="number" min="0" id="adm-coins-${p.id}" value="${p.coin_balance}">
-        </div>
-        <div>
-          <span class="adm-p-label">🍺 cans</span>
-          <input class="adm-in adm-score" style="width:56px" type="number" min="0" id="adm-cans-${p.id}" value="${p.cans_owed || 0}">
-        </div>
-        <button class="adm-btn" onclick="adminSaveParticipant('${p.id}')">Save</button>
-      </div>`).join('');
-  } catch(e) {
-    el.innerHTML = `<p class="admin-hint">Error: ${escapeHtml(e.message)}</p>`;
-  }
-}
-
-async function adminSaveParticipant(participantId) {
-  const coins = parseInt(document.getElementById(`adm-coins-${participantId}`).value, 10);
-  const cans  = parseInt(document.getElementById(`adm-cans-${participantId}`).value,  10);
-  if (Number.isNaN(coins) || Number.isNaN(cans)) { showToast('Enter valid numbers'); return; }
-  try {
-    let data, error;
-    if (_adminToken) {
-      ({ data, error } = await db.rpc('admin_update_participant', {
-        p_code: code, p_admin_token: _adminToken,
-        p_participant_id: participantId, p_coin_balance: coins, p_cans_owed: cans,
-      }));
-    } else {
-      ({ data, error } = await db.rpc('participant_update_participant', {
-        p_code: code, p_actor_participant_id: _participant.id,
-        p_target_participant_id: participantId, p_coin_balance: coins, p_cans_owed: cans,
-      }));
-    }
-    if (error) throw error;
-    if (!data) throw new Error('Unauthorized or participant not found');
-    showToast('Saved');
-    refreshLeaderboard(_tournament.id, _participant?.id, document.getElementById('lbBetContent'));
-  } catch(e) { showToast(e.message); }
-}
-
-async function adminSettle(matchNo) {
-  const hs = parseInt(document.getElementById(`adm-hs-${matchNo}`).value, 10);
-  const as = parseInt(document.getElementById(`adm-as-${matchNo}`).value, 10);
-  if (Number.isNaN(hs) || Number.isNaN(as)) { showToast('Enter both scores'); return; }
-  const winSel = document.getElementById(`adm-win-${matchNo}`);
-  const body = _adminToken
-    ? { code, adminToken: _adminToken, matchNo, homeScore: hs, awayScore: as }
-    : { code, participantId: _participant.id, matchNo, homeScore: hs, awayScore: as };
-  if (winSel && winSel.value !== 'auto') body.winner = winSel.value;
-  try {
-    const r = await fetch('/api/settle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.error || 'Settle failed');
-    showToast(`Settled #${matchNo}: ${j.settled} market(s)${j.propagated && j.propagated.length ? `, advanced ${j.propagated.join(',')}` : ''}`);
-    await loadMarketsView();
-    renderAdminPanel();
-  } catch (e) { showToast(e.message); }
-}
-
-async function adminResolve(matchNo) {
-  const hc = document.getElementById(`adm-hc-${matchNo}`).value.trim().toUpperCase();
-  const ac = document.getElementById(`adm-ac-${matchNo}`).value.trim().toUpperCase();
-  if (!hc && !ac) { showToast('Enter at least one team code'); return; }
-  const body = _adminToken
-    ? { code, adminToken: _adminToken, matchNo }
-    : { code, participantId: _participant.id, matchNo };
-  if (hc) body.homeCode = hc;
-  if (ac) body.awayCode = ac;
-  try {
-    const r = await fetch('/api/resolve', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.error || 'Resolve failed');
-    showToast(`Resolved #${matchNo}`);
-    await loadMarketsView();
-    renderAdminPanel();
-  } catch (e) { showToast(e.message); }
-}
 
 // ── Correct score accordion ───────────────────────────────────────────────────
 
 function toggleCorrectScore(toggleEl) {
-  const content = toggleEl.nextElementSibling;
-  const open = content.classList.toggle('hidden') === false;
-  toggleEl.classList.toggle('open', open);
-}
-
-function toggleAdminAccordion(toggleEl) {
   const content = toggleEl.nextElementSibling;
   const open = content.classList.toggle('hidden') === false;
   toggleEl.classList.toggle('open', open);
