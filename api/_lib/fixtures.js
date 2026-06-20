@@ -470,7 +470,7 @@ module.exports = {
       "stage": "group",
       "group": "F",
       "matchday": 2,
-      "kickoff_utc": "2026-06-20T04:00:00Z",
+      "kickoff_utc": "2026-06-21T04:00:00Z",
       "venue": "Estadio BBVA, Monterrey",
       "home": {
         "code": "TUN"
