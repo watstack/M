@@ -7,6 +7,7 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.end(); return; }
 
   const publicKey = process.env.VAPID_PUBLIC_KEY;
+  console.log('[push-config] VAPID_PUBLIC_KEY present:', !!publicKey, 'length:', publicKey ? publicKey.length : 0);
   if (!publicKey) {
     res.setHeader('Cache-Control', 'no-store');
     return res.status(503).json({ error: 'Push not configured' });
