@@ -1040,17 +1040,17 @@
       <div class="live-bracket-col" id="liveBracketPanel">
 
         <!-- Stage tabs — horizontal scroll, single row -->
-        <div class="stage-tabs-wrap">
-          <div class="stage-tabs" id="bracketFilter">
-            <button class="bet-tab bracket-filter-btn active" data-filter="groups"     onclick="setBracketFilter('groups')">Group Stage</button>
-            <button class="bet-tab bracket-filter-btn"        data-filter="r32"        onclick="setBracketFilter('r32')">Round of 32</button>
-            <button class="bet-tab bracket-filter-btn"        data-filter="r16"        onclick="setBracketFilter('r16')">Round of 16</button>
-            <button class="bet-tab bracket-filter-btn"        data-filter="qf"         onclick="setBracketFilter('qf')">Quarterfinals</button>
-            <button class="bet-tab bracket-filter-btn"        data-filter="sf"         onclick="setBracketFilter('sf')">Semifinals</button>
-            <button class="bet-tab bracket-filter-btn"        data-filter="final"      onclick="setBracketFilter('final')">3rd-Place Match &amp; Final</button>
-            <div class="stage-tab-divider"></div>
-            <button class="bet-tab bracket-filter-btn"        data-filter="players"    onclick="setBracketFilter('players')">Players</button>
-            <button class="bet-tab bracket-filter-btn"        data-filter="highlights" onclick="setBracketFilter('highlights')">Highlights</button>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-bottom:16px">
+          <div id="bracketFilter" style="display:flex;gap:8px;flex-wrap:nowrap;width:max-content;padding-bottom:6px">
+            <button class="bet-tab bracket-filter-btn active" data-filter="groups"     style="white-space:nowrap" onclick="setBracketFilter('groups')">Group Stage</button>
+            <button class="bet-tab bracket-filter-btn"        data-filter="r32"        style="white-space:nowrap" onclick="setBracketFilter('r32')">Round of 32</button>
+            <button class="bet-tab bracket-filter-btn"        data-filter="r16"        style="white-space:nowrap" onclick="setBracketFilter('r16')">Round of 16</button>
+            <button class="bet-tab bracket-filter-btn"        data-filter="qf"         style="white-space:nowrap" onclick="setBracketFilter('qf')">Quarterfinals</button>
+            <button class="bet-tab bracket-filter-btn"        data-filter="sf"         style="white-space:nowrap" onclick="setBracketFilter('sf')">Semifinals</button>
+            <button class="bet-tab bracket-filter-btn"        data-filter="final"      style="white-space:nowrap" onclick="setBracketFilter('final')">3rd-Place Match &amp; Final</button>
+            <div style="width:1px;background:var(--border);margin:2px 4px;flex-shrink:0;align-self:stretch"></div>
+            <button class="bet-tab bracket-filter-btn"        data-filter="players"    style="white-space:nowrap" onclick="setBracketFilter('players')">Players</button>
+            <button class="bet-tab bracket-filter-btn"        data-filter="highlights" style="white-space:nowrap" onclick="setBracketFilter('highlights')">Highlights</button>
           </div>
         </div>
 
