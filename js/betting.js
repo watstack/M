@@ -666,7 +666,8 @@ function renderCustomMarketsSection(customMarkets) {
 }
 
 function renderAllCustomMarketsSection(customMarkets) {
-  const all = (customMarkets || []).slice()
+  const all = (customMarkets || [])
+    .filter(m => m.status !== 'settled')
     .sort((a, b) => (b.created_at || '') > (a.created_at || '') ? 1 : -1);
   if (!all.length) return '<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem">No custom bets yet</div>';
   return `<div class="bet-section-title">Custom Bets</div>` +
