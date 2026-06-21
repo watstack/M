@@ -135,10 +135,21 @@ BEGIN
   SET coin_balance = p.coin_balance + b.potential_payout
   FROM bets b
   WHERE b.market_id = p_market_id
-    AND b.selection = p_result
     AND b.status = 'pending'
-    AND b.participant_id = p.id;
+    AND b.participant_id = p.id
+    AND (
+      b.selection = p_result
+      OR (p_result = 'home' AND b.selection IN ('1x', '12'))
+      OR (p_result = 'draw' AND b.selection IN ('1x', 'x2'))
+      OR (p_result = 'away' AND b.selection IN ('x2', '12'))
+    );
 
-  UPDATE bets SET status = CASE WHEN selection = p_result THEN 'won' ELSE 'lost' END
+  UPDATE bets SET status = CASE
+    WHEN selection = p_result                             THEN 'won'
+    WHEN p_result = 'home' AND selection IN ('1x', '12') THEN 'won'
+    WHEN p_result = 'draw' AND selection IN ('1x', 'x2') THEN 'won'
+    WHEN p_result = 'away' AND selection IN ('x2', '12') THEN 'won'
+    ELSE 'lost'
+  END
   WHERE market_id = p_market_id AND status = 'pending';
 END; $$;
