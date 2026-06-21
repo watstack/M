@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
     if (matches.length === 0) matches = await fetchESPNMatches();
 
     if (matches.length > 0) {
-      const r = await rest('/wc_matches', {
+      const r = await rest('/wc_matches?on_conflict=home_tla,away_tla,utc_date', {
         method: 'POST',
         headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
         body: JSON.stringify(matches),
