@@ -24,7 +24,10 @@ async function syncMatches(rest) {
     headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
     body: JSON.stringify(matches),
   });
-  if (!r.ok) throw new Error(`wc_matches upsert ${r.status}: ${await r.text().catch(() => '')}`);
+  if (!r.ok) {
+    console.warn(`[auto-settle] wc_matches upsert warning ${r.status}: ${await r.text().catch(() => '')} — continuing with settlement`);
+    return 0;
+  }
   return matches.length;
 }
 

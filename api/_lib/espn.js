@@ -22,7 +22,7 @@ async function fetchESPNMatches() {
     all.push(...results.flat());
   }
 
-  // Deduplicate by id
+  // Deduplicate by stable synthetic id (home-away-date)
   const seen = new Set();
   return all.filter(m => !seen.has(m.id) && seen.add(m.id));
 }
@@ -83,12 +83,15 @@ function normalizeEvent(ev) {
       team: { id: String(d.team?.id || '') },
     }));
 
+  const homeTla = (home.team?.abbreviation || '').toUpperCase();
+  const awayTla = (away.team?.abbreviation || '').toUpperCase();
+  const dateKey = (ev.date || comp.date || '').split('T')[0];
   return {
-    id: String(ev.id),
-    home_tla: (home.team?.abbreviation || '').toUpperCase(),
+    id: `${homeTla}-${awayTla}-${dateKey}`,
+    home_tla: homeTla,
     home_name: home.team?.shortDisplayName || home.team?.displayName || '',
     home_id: String(home.team?.id || ''),
-    away_tla: (away.team?.abbreviation || '').toUpperCase(),
+    away_tla: awayTla,
     away_name: away.team?.shortDisplayName || away.team?.displayName || '',
     away_id: String(away.team?.id || ''),
     home_score: homeScore,
