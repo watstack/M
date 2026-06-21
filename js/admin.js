@@ -493,7 +493,12 @@ window.AdminPanel = (function () {
         throw error;
       }
       showToast('Approved! Custom market is now live.');
+      const outcomeText = document.querySelector(`#adm-req-row-${requestId} .admin-name`)
+                            ?.textContent?.replace(/^[""“]|[""”]$/g, '').trim()
+                          || 'Custom bet';
+      const bettingUrl = new URL('betting.html?code=' + _code, window.location.href).toString();
       await refresh();
+      shareBetImage(outcomeText, oddsJson, bettingUrl);
     } catch (e) { showToast(e.message || 'Failed to approve'); }
   }
 
@@ -561,6 +566,128 @@ window.AdminPanel = (function () {
       showToast(newVal ? 'Admin granted.' : 'Admin removed.');
       openAssignAdminModal();
     } catch (e) { showToast('Error: ' + (e.message || String(e))); }
+  }
+
+  // ── Share bet image ───────────────────────────────────────────────────────────
+
+  async function loadHtml2Canvas() {
+    if (window.html2canvas) return window.html2canvas;
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[src*="html2canvas"]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(window.html2canvas));
+        existing.addEventListener('error', reject);
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.onload  = () => resolve(window.html2canvas);
+      s.onerror = () => reject(new Error('Failed to load html2canvas'));
+      document.head.appendChild(s);
+    });
+  }
+
+  function buildShareCard(outcomeText, oddsJson) {
+    const card = document.createElement('div');
+    Object.assign(card.style, {
+      position: 'fixed', left: '-9999px', top: '0',
+      width: '480px', height: '280px',
+      background: '#211327', border: '3px solid #3a1f3a', borderRadius: '4px',
+      fontFamily: "'DM Sans', system-ui, sans-serif",
+      overflow: 'hidden', boxSizing: 'border-box',
+      display: 'flex', flexDirection: 'column',
+    });
+    const bar = document.createElement('div');
+    Object.assign(bar.style, { width: '100%', height: '5px', background: 'linear-gradient(90deg,#ff6a1f,#ff3b5c)', flexShrink: '0' });
+    card.appendChild(bar);
+    const body = document.createElement('div');
+    Object.assign(body.style, { flex: '1', padding: '18px 24px 14px', display: 'flex', flexDirection: 'column' });
+    const eyebrow = document.createElement('div');
+    eyebrow.textContent = '🚨 NEW CUSTOM BET';
+    Object.assign(eyebrow.style, { fontFamily: "'Share Tech Mono',monospace", fontSize: '11px', color: '#ff9ad0', letterSpacing: '0.1em', marginBottom: '10px' });
+    body.appendChild(eyebrow);
+    const titleEl = document.createElement('div');
+    titleEl.textContent = outcomeText;
+    Object.assign(titleEl.style, { fontFamily: "'Chakra Petch','DM Sans',sans-serif", fontSize: '22px', fontWeight: '800', color: '#f6ead8', lineHeight: '1.3', marginBottom: '16px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical' });
+    body.appendChild(titleEl);
+    const pills = document.createElement('div');
+    Object.assign(pills.style, { display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' });
+    for (const [label, odds] of Object.entries(oddsJson)) {
+      const pill = document.createElement('div');
+      Object.assign(pill.style, { display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#140a18', border: '2px solid #3a1f3a', borderRadius: '4px', padding: '8px 16px', minWidth: '76px' });
+      const lEl = document.createElement('span');
+      lEl.textContent = label;
+      Object.assign(lEl.style, { fontSize: '11px', color: '#b58aa0', marginBottom: '4px' });
+      const oEl = document.createElement('span');
+      oEl.textContent = parseFloat(odds).toFixed(2);
+      Object.assign(oEl.style, { fontFamily: "'Share Tech Mono',monospace", fontSize: '20px', fontWeight: '700', color: '#ff6a1f' });
+      pill.appendChild(lEl);
+      pill.appendChild(oEl);
+      pills.appendChild(pill);
+    }
+    body.appendChild(pills);
+    const spacer = document.createElement('div');
+    spacer.style.flex = '1';
+    body.appendChild(spacer);
+    const sep = document.createElement('div');
+    Object.assign(sep.style, { height: '1px', background: '#3a1f3a', marginBottom: '8px' });
+    body.appendChild(sep);
+    const footer = document.createElement('div');
+    footer.textContent = 'Kickoff · Place your bet now ↗';
+    Object.assign(footer.style, { fontFamily: "'Share Tech Mono',monospace", fontSize: '11px', color: '#b58aa0' });
+    body.appendChild(footer);
+    card.appendChild(body);
+    return card;
+  }
+
+  async function shareBetImage(outcomeText, oddsJson, bettingUrl) {
+    let card = null;
+    try {
+      const h2c = await loadHtml2Canvas();
+      card = buildShareCard(outcomeText, oddsJson);
+      document.body.appendChild(card);
+      const canvas = await h2c(card, { width: 480, height: 280, scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#211327', logging: false });
+      document.body.removeChild(card);
+      card = null;
+      const shareText = `🚨 New custom bet!\n${outcomeText}\n\n${bettingUrl}`;
+      if (navigator.canShare) {
+        canvas.toBlob(async (blob) => {
+          if (!blob) { _fallbackShare(shareText); return; }
+          const file = new File([blob], 'bet.png', { type: 'image/png' });
+          try {
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({ files: [file], title: '🚨 New custom bet!', text: shareText });
+              return;
+            }
+          } catch (e) {
+            if (e.name !== 'AbortError') _fallbackShare(shareText);
+          }
+          _fallbackShare(shareText);
+        }, 'image/png');
+      } else if (navigator.share) {
+        try {
+          await navigator.share({ title: '🚨 New custom bet!', text: `🚨 New custom bet!\n${outcomeText}`, url: bettingUrl });
+        } catch (e) {
+          if (e.name !== 'AbortError') _fallbackShare(shareText);
+        }
+      } else {
+        _fallbackShare(shareText);
+      }
+    } catch (e) {
+      if (card && card.parentNode) card.parentNode.removeChild(card);
+      console.warn('[share] failed:', e);
+      showToast('Bet approved! (Share unavailable on this device)');
+    }
+  }
+
+  function _fallbackShare(text) {
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => showToast('Link copied — paste to share!'))
+        .catch(() => showToast('Bet approved! Share manually.'));
+    } else {
+      showToast('Bet approved! Share manually.');
+    }
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────────
