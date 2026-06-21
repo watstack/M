@@ -826,6 +826,47 @@
       min-width: 0;
       padding-right: 0;
     }
+
+    /* ── Sweepstake nav consistency with betting page ── */
+
+    /* Hide Kickoff site-header in the live bracket — it has its own bet-header */
+    #mainPage:has(#stateBracket.active) > header.site-header {
+      display: none;
+    }
+
+    /* Stage filter tabs → match bet-tab visual style */
+    #stateBracket .stage-tab {
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-family: var(--font-pixel);
+      font-size: 0.42rem;
+      padding: 8px 14px;
+      box-shadow: 3px 3px 0 rgba(0,0,0,.6);
+      white-space: nowrap;
+      transition: none;
+      line-height: 1;
+    }
+    #stateBracket .stage-tab.active {
+      background: var(--green);
+      border-color: var(--green);
+      color: #0a0805;
+      box-shadow: 2px 2px 0 rgba(0,0,0,.5);
+    }
+    #stateBracket .stage-tab:hover:not(.active) {
+      color: var(--text);
+    }
+
+    /* Sticky tab row — mirrors betting's .bet-sticky */
+    #stateBracket .stage-tabs-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--bg);
+      padding: 8px 0 4px;
+      margin: 0 0 16px;
+    }
   </style>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#140a18">
