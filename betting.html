@@ -1462,12 +1462,14 @@ function selectBet(btn) {
   const matchName  = marketCard?.querySelector('.match-name')?.textContent?.trim() || '';
   const label      = labelForSelection(selection, matchName);
 
-  // Block correlated same-match legs (match_result ↔ correct_score)
+  // Block correlated same-match legs (match_result / correct_score / double_chance)
   if (matchNo && marketType) {
+    const CORRELATED = ['match_result', 'correct_score', 'double_chance'];
     const conflict = _parlayLegs.find(l =>
-      l.matchNo === matchNo && l.marketType !== marketType &&
-      ((l.marketType === 'match_result' && marketType === 'correct_score') ||
-       (l.marketType === 'correct_score' && marketType === 'match_result'))
+      l.matchNo === matchNo &&
+      CORRELATED.includes(marketType) &&
+      CORRELATED.includes(l.marketType) &&
+      (l.marketType !== marketType || marketType === 'double_chance')
     );
     if (conflict) {
       showToast('nice try you cheeky bastard.\n\non ya bike 🚲');
