@@ -799,7 +799,7 @@
 <!-- ── Spin the Wheel Promo Overlay ── -->
 <div id="spinPromoOverlay" class="spin-promo-overlay hidden">
   <div class="spin-promo-card">
-    <div class="spin-promo-date-badge">Today Only &middot; 20 June 2026</div>
+    <div class="spin-promo-date-badge">Today Only &middot; 22 June 2026</div>
     <h2 class="spin-promo-title">🎡 Spin the Wheel</h2>
     <p class="spin-promo-sub">Win 1 extra Odds Boost!</p>
     <div class="spin-wheel-wrap">
@@ -1871,10 +1871,10 @@ function showToast(msg) {
 
 // ── Spin the Wheel Promo ─────────────────────────────────────────────────────
 
-const SPIN_PROMO_DATE = '2026-06-20';
+const SPIN_PROMO_DATE = '2026-06-22';
 const SPIN_SEGMENTS   = 6; // index 0 = WIN, 1-5 = LOSE
 
-function _spinPromoKey() { return `wc26_spin_promo_${_participant?.id}`; }
+function _spinPromoKey() { return `wc26_spin_promo_${SPIN_PROMO_DATE}_${_participant?.id}`; }
 
 function drawWheel(rotationRad) {
   const canvas = document.getElementById('spinCanvas');
