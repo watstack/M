@@ -1132,7 +1132,7 @@ function renderBetCarousel() {
     const firstCurrent = el.querySelector('.fix-card:not(.past-card)');
     if (firstCurrent) {
       requestAnimationFrame(() => {
-        el.scrollLeft = firstCurrent.offsetLeft;
+        el.scrollLeft = firstCurrent.getBoundingClientRect().left - el.getBoundingClientRect().left;
       });
     }
   } else {
