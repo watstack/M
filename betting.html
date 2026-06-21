@@ -946,6 +946,7 @@ let _allBetsParticipants = [];
 let _teamSet = new Set();
 let _pendingByMatchNo = {};
 let _matchesByKey = {};
+let _carouselInitScrollDone = false;
 let _boostState = { remaining: 2, resetAt: null, active: false, timerId: null };
 
 try {
@@ -1077,6 +1078,7 @@ function renderBetCarousel() {
   const flagOf = side =>
     (side?.code && typeof teamFlagEmoji === 'function') ? teamFlagEmoji(side.code) : '🏳';
 
+  const savedScroll = el.scrollLeft;
   el.innerHTML = all.map(f => {
     const ko       = new Date(f.kickoff_utc).getTime();
     const matchKey = f.home.code && f.away.code ? `${f.home.code}_${f.away.code}` : null;
@@ -1123,11 +1125,16 @@ function renderBetCarousel() {
     </div>`;
   }).join('');
 
-  const firstCurrent = el.querySelector('.fix-card:not(.past-card)');
-  if (firstCurrent) {
-    requestAnimationFrame(() => {
-      firstCurrent.scrollIntoView({ inline: 'start', behavior: 'instant', block: 'nearest' });
-    });
+  if (!_carouselInitScrollDone) {
+    _carouselInitScrollDone = true;
+    const firstCurrent = el.querySelector('.fix-card:not(.past-card)');
+    if (firstCurrent) {
+      requestAnimationFrame(() => {
+        el.scrollLeft = firstCurrent.offsetLeft;
+      });
+    }
+  } else {
+    el.scrollLeft = savedScroll;
   }
 }
 
