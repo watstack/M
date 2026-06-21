@@ -29,12 +29,15 @@ function normalizeFBDMatch(m) {
     scorer: { name: g.scorer?.name || '' },
     team: { id: String(g.team?.id || '') },
   }));
+  const homeTla = (m.homeTeam?.tla || '').toUpperCase();
+  const awayTla = (m.awayTeam?.tla || '').toUpperCase();
+  const dateKey = (m.utcDate || '').split('T')[0];
   return {
-    id: String(m.id),
-    home_tla: (m.homeTeam?.tla || '').toUpperCase(),
+    id: `${homeTla}-${awayTla}-${dateKey}`,
+    home_tla: homeTla,
     home_name: m.homeTeam?.shortName || m.homeTeam?.name || '',
     home_id: String(m.homeTeam?.id || ''),
-    away_tla: (m.awayTeam?.tla || '').toUpperCase(),
+    away_tla: awayTla,
     away_name: m.awayTeam?.shortName || m.awayTeam?.name || '',
     away_id: String(m.awayTeam?.id || ''),
     home_score: isPlayed ? (m.score?.fullTime?.home ?? null) : null,
