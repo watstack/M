@@ -1084,9 +1084,11 @@ function renderBetCarousel() {
     const matchKey = f.home.code && f.away.code ? `${f.home.code}_${f.away.code}` : null;
     const matchData = matchKey ? _matchesByKey[matchKey] : null;
     const dbStatus = matchData?.status;
-    const isPast = dbStatus === 'FINISHED' || (!dbStatus && ko <= now && (now - ko) >= _CAROUSEL_LIVE_MS);
-    const isLive = (dbStatus === 'IN_PLAY' || dbStatus === 'PAUSED') ||
-                   (!dbStatus && ko <= now && (now - ko) < _CAROUSEL_LIVE_MS);
+    const koMsAgo = now - ko;
+    const isPastByTime = ko <= now && koMsAgo >= _CAROUSEL_LIVE_MS;
+    const isPast = dbStatus === 'FINISHED' || isPastByTime;
+    const isLive = !isPastByTime && ((dbStatus === 'IN_PLAY' || dbStatus === 'PAUSED') ||
+                   (!dbStatus && ko <= now && koMsAgo < _CAROUSEL_LIVE_MS));
     const isMy   = (f.home.code && _teamSet.has(f.home.code)) || (f.away.code && _teamSet.has(f.away.code));
     const hasBet = !!_pendingByMatchNo[f.match_no];
     const classes = ['fix-card',
