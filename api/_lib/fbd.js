@@ -23,6 +23,7 @@ async function fetchFBDMatches(token) {
 
 function normalizeFBDMatch(m) {
   if (!m?.id || !m?.utcDate) return null;
+  if (!m.homeTeam?.tla || !m.awayTeam?.tla) return null; // skip unresolved knockout slots
   const isPlayed = ['FINISHED', 'IN_PLAY', 'PAUSED'].includes(m.status);
   const goals = (m.goals || []).map(g => ({
     minute: g.minute ?? null,
