@@ -528,6 +528,120 @@
     .adm-acc-content { padding: 10px 12px 12px; border-top: 1px solid var(--border); }
     .adm-acc-content.hidden { display: none; }
 
+    /* ── Promo carousel (Two Up + Request-a-Bet) ── */
+    .promo-carousel { margin: 0 -16px 16px; overflow: hidden; position: relative; }
+    .promo-track {
+      display: flex;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+    .promo-track::-webkit-scrollbar { display: none; }
+    .promo-slide {
+      flex-shrink: 0;
+      width: 100%;
+      scroll-snap-align: start;
+      padding: 0 16px;
+      box-sizing: border-box;
+    }
+    .promo-nav {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; padding: 6px 0 4px;
+    }
+    .promo-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: background .15s; display: inline-block; }
+    .promo-dot.active { background: var(--green); }
+    .promo-arrow {
+      background: none; border: none; color: var(--muted); font-size: 1.3rem; cursor: pointer;
+      padding: 2px 8px; line-height: 1;
+    }
+    .promo-arrow:hover { color: var(--text); }
+
+    /* ── Two Up card ── */
+    .two-up-card { border-color: rgba(104,136,200,.4); margin-bottom: 0; }
+    .tu-countdown { padding: 10px 16px 8px; border-top: 1px solid var(--border); text-align: center; }
+    .tu-cd-label { font-family: var(--font-body); font-size: 0.7rem; color: var(--muted); display: block; margin-bottom: 4px; }
+    .tu-cd-timer { font-family: var(--font-mono); font-size: 1.5rem; color: var(--text); letter-spacing: .04em; }
+    .tu-cd-seg { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .tu-cd-sep { color: var(--muted); margin: 0 1px; font-size: 1rem; }
+    .tu-coin-area { display: flex; justify-content: center; align-items: center; gap: 20px; padding: 12px 0 8px; }
+    .tu-coin {
+      width: 60px; height: 60px; border-radius: 50%;
+      border: 3px solid var(--pixel-sand);
+      background: var(--mid);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-pixel); font-size: 0.65rem; color: var(--pixel-sand);
+      box-shadow: 2px 2px 0 rgba(0,0,0,.5);
+      perspective: 400px;
+    }
+    .tu-coin--spinning { animation: tuCoinFlip 0.8s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+    .tu-coin--spinning:last-child { animation-delay: 150ms; }
+    @keyframes tuCoinFlip {
+      0%   { transform: rotateY(0deg) rotateX(0deg); }
+      100% { transform: rotateY(1080deg) rotateX(360deg); }
+    }
+    .tu-coin-pending { opacity: 0.4; }
+    .tu-vs { font-family: var(--font-pixel); font-size: 0.45rem; color: var(--muted); }
+    .tu-result { text-align: center; padding: 6px 16px 4px; font-family: var(--font-pixel); font-size: 0.6rem; }
+    .tu-result--heads { color: var(--pixel-sky); }
+    .tu-result--tails { color: var(--red); }
+    .tu-result--odd   { color: var(--gold); }
+    .tu-result-sub { font-family: var(--font-body); font-size: 0.72rem; color: var(--muted); text-align: center; padding-bottom: 4px; }
+    .tu-pot { padding: 10px 16px; border-top: 1px solid var(--border); }
+    .tu-pot-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-family: var(--font-mono); font-size: 0.88rem; margin-bottom: 4px; }
+    .tu-pot-total { font-family: var(--font-body); font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .tu-heads-val { color: var(--pixel-sky); font-weight: 700; }
+    .tu-tails-val { color: var(--red); font-weight: 700; }
+    .tu-pot-divider { color: var(--border); }
+    .tu-actions { padding: 10px 16px 14px; }
+    .tu-carousel-nav { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px 2px; border-top: 1px solid var(--border); }
+    .tu-carousel-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); }
+    .tu-carousel-arrows { display: flex; gap: 8px; }
+    .tu-carousel-btn {
+      background: var(--mid); border: 1px solid var(--border); border-radius: var(--radius);
+      color: var(--muted); font-size: 0.8rem; padding: 3px 8px; cursor: pointer; line-height: 1;
+    }
+    .tu-carousel-btn:hover { color: var(--text); border-color: var(--green); }
+    .tu-carousel-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .tu-rollover-badge {
+      display: inline-block; font-family: var(--font-mono); font-size: 0.65rem;
+      color: var(--gold); background: rgba(255,154,208,.1);
+      border: 1px solid rgba(255,154,208,.3); border-radius: 20px;
+      padding: 2px 8px; margin-left: 6px;
+    }
+
+    /* ── Two Up bet dialog ── */
+    .tu-bet-overlay {
+      position: fixed; inset: 0; z-index: 850;
+      background: rgba(0,0,0,.75);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tu-bet-overlay.hidden { display: none; }
+    .tu-bet-card {
+      background: var(--panel); border: 2px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      max-width: 340px; width: 92vw;
+      box-shadow: 3px 3px 0 rgba(0,0,0,.6);
+    }
+    .tu-bet-title {
+      font-family: var(--font-pixel); font-size: 0.5rem; color: var(--text);
+      margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;
+    }
+    .tu-outcome-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+    .tu-outcome-tab {
+      flex: 1; padding: 10px; border: 2px solid var(--border); border-radius: var(--radius);
+      background: var(--mid); color: var(--muted); font-family: var(--font-mono);
+      font-size: 0.85rem; font-weight: 700; cursor: pointer; text-align: center;
+      transition: border-color .1s, color .1s;
+    }
+    .tu-outcome-tab.active-heads { border-color: var(--pixel-sky); color: var(--pixel-sky); background: rgba(104,136,200,.12); }
+    .tu-outcome-tab.active-tails { border-color: var(--red); color: var(--red); background: rgba(255,59,92,.1); }
+    .tu-bet-label { font-family: var(--font-body); font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+    .tu-bet-amount { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .tu-bet-amount .adm-in { flex: 1; font-family: var(--font-mono); font-size: 1rem; }
+    .tu-bet-error { font-family: var(--font-body); font-size: 0.75rem; color: var(--red); min-height: 18px; margin-bottom: 8px; }
+    .tu-bet-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .tu-bet-actions button { flex: 1; }
+
     /* ── Request-a-Bet card ── */
     .req-bet-card { border-color: rgba(255,106,31,.35); }
     .req-bet-collapsed { padding: 0 16px 14px; }
@@ -1219,8 +1333,8 @@ function renderMarketsView(markets) {
 
   const potHtml = renderPotBanner();
   const html = _matchSort === 'custom'
-    ? potHtml + renderRequestBetCard() + renderAllCustomMarketsSection(_customMarkets)
-    : potHtml + renderRequestBetCard() + renderFixturesView(marketsByNo, _matchSort);
+    ? potHtml + renderPromoCarousel() + renderAllCustomMarketsSection(_customMarkets)
+    : potHtml + renderPromoCarousel() + renderFixturesView(marketsByNo, _matchSort);
 
   document.getElementById('marketsLoading').style.display = 'none';
 
@@ -1228,6 +1342,7 @@ function renderMarketsView(markets) {
   matchListEl.innerHTML = html;
   matchListEl.style.display = 'block';
 
+  setTimeout(initTwoUp, 0);
   autoClosePastKickoff();
   setInterval(autoClosePastKickoff, 30_000);
 }
@@ -1289,10 +1404,11 @@ function setMatchSort(mode) {
   const matchListEl = document.getElementById('matchList');
   const potHtml = renderPotBanner();
   if (mode === 'custom') {
-    matchListEl.innerHTML = potHtml + renderRequestBetCard() + renderAllCustomMarketsSection(_customMarkets);
+    matchListEl.innerHTML = potHtml + renderPromoCarousel() + renderAllCustomMarketsSection(_customMarkets);
   } else {
-    matchListEl.innerHTML = potHtml + renderRequestBetCard() + renderFixturesView(_marketsByNo, mode);
+    matchListEl.innerHTML = potHtml + renderPromoCarousel() + renderFixturesView(_marketsByNo, mode);
   }
+  setTimeout(initTwoUp, 0);
   autoClosePastKickoff();
 }
 

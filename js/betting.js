@@ -601,6 +601,356 @@ function loadCustomMarkets(markets) {
   return (markets || []).filter(m => m.market_type === 'custom');
 }
 
+// ─── Two Up Tuesday ───────────────────────────────────────────────────────────
+
+const _tuMockData = [
+  {
+    id: 1,
+    date: '2025-06-10',
+    label: 'Tue 10 Jun',
+    flipTime: '2025-06-10T12:00:00Z',
+    headsTotal: 450,
+    tailsTotal: 320,
+    houseStake: { amount: 100, outcome: 'Heads' },
+    result: 'HH',
+    status: 'flipped',
+    rolloverCarry: 0,
+  },
+  {
+    id: 2,
+    date: '2025-06-17',
+    label: 'Tue 17 Jun',
+    flipTime: '2025-06-17T12:00:00Z',
+    headsTotal: 200,
+    tailsTotal: 400,
+    houseStake: { amount: 100, outcome: 'Tails' },
+    result: 'HT',
+    status: 'rolled-over',
+    rolloverCarry: 700,
+  },
+  {
+    id: 3,
+    date: '2025-06-24',
+    label: 'Tue 24 Jun',
+    flipTime: '2025-06-24T12:00:00Z',
+    headsTotal: 250,
+    tailsTotal: 180,
+    houseStake: { amount: 100, outcome: 'Heads' },
+    result: null,
+    status: 'pending',
+    rolloverCarry: 700,
+  },
+];
+
+let _tuState = {
+  tuesdays: _tuMockData,
+  currentIdx: 2,
+  isSpinning: false,
+  intervalId: null,
+  selectedOutcome: 'Heads',
+};
+
+function _tuGetNextNoon() {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 0, 0));
+  const dow = d.getUTCDay();
+  let daysUntil = (2 - dow + 7) % 7;
+  if (daysUntil === 0 && now >= d) daysUntil = 7;
+  d.setUTCDate(d.getUTCDate() + daysUntil);
+  return d;
+}
+
+function _tuUpdateCountdown() {
+  const daysEl  = document.getElementById('tuDays');
+  const hoursEl = document.getElementById('tuHours');
+  const minsEl  = document.getElementById('tuMins');
+  const secsEl  = document.getElementById('tuSecs');
+  const labelEl = document.getElementById('tuCdLabel');
+  if (!daysEl) return;
+
+  const tu = _tuState.tuesdays[_tuState.currentIdx];
+  const target = tu ? new Date(tu.flipTime) : _tuGetNextNoon();
+  const diff = target - Date.now();
+
+  if (diff <= 0) {
+    daysEl.textContent = '00';
+    hoursEl.textContent = '00';
+    minsEl.textContent = '00';
+    secsEl.textContent = '00';
+    if (labelEl) labelEl.textContent = 'Flip time!';
+    return;
+  }
+
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  const s = Math.floor((diff % 60000) / 1000);
+
+  daysEl.textContent  = String(d).padStart(2, '0');
+  hoursEl.textContent = String(h).padStart(2, '0');
+  minsEl.textContent  = String(m).padStart(2, '0');
+  secsEl.textContent  = String(s).padStart(2, '0');
+
+  if (diff < 60000 && labelEl) {
+    labelEl.style.animation = 'none';
+    requestAnimationFrame(() => { if (labelEl) labelEl.style.animation = 'tuPulse 1s ease-in-out infinite'; });
+  }
+}
+
+function _tuRenderPot() {
+  const tu = _tuState.tuesdays[_tuState.currentIdx];
+  if (!tu) return;
+  const potEl = document.getElementById('tuPotRow');
+  const totalEl = document.getElementById('tuPotTotal');
+  if (!potEl) return;
+  const total = tu.headsTotal + tu.tailsTotal + tu.houseStake.amount + (tu.rolloverCarry || 0);
+  potEl.innerHTML = `
+    <span>🔵 <span class="tu-heads-val">🪙 ${tu.headsTotal}</span></span>
+    <span class="tu-pot-divider">|</span>
+    <span>🔴 <span class="tu-tails-val">🪙 ${tu.tailsTotal}</span></span>
+  `;
+  if (totalEl) {
+    let extra = '';
+    if (tu.rolloverCarry) extra = ` · Rollover carry: 🪙 ${tu.rolloverCarry}`;
+    totalEl.textContent = `Total pot: 🪙 ${total} · House: 🪙 ${tu.houseStake.amount} on ${tu.houseStake.outcome}${extra}`;
+  }
+}
+
+function _tuRenderResult() {
+  const tu = _tuState.tuesdays[_tuState.currentIdx];
+  if (!tu) return;
+  const resultEl = document.getElementById('tuResultArea');
+  const coin1 = document.getElementById('tuCoin1');
+  const coin2 = document.getElementById('tuCoin2');
+  const chipEl = document.getElementById('tuChip');
+  if (!resultEl) return;
+
+  if (!tu.result) {
+    if (coin1) { coin1.textContent = 'H'; coin1.className = 'tu-coin tu-coin-pending'; }
+    if (coin2) { coin2.textContent = 'T'; coin2.className = 'tu-coin tu-coin-pending'; }
+    resultEl.textContent = '';
+    resultEl.className = 'tu-result';
+    if (chipEl) { chipEl.className = 'market-chip open'; chipEl.textContent = 'Pending'; }
+    return;
+  }
+
+  const r = tu.result;
+  if (r === 'HH') {
+    if (coin1) { coin1.textContent = 'H'; coin1.className = 'tu-coin'; }
+    if (coin2) { coin2.textContent = 'H'; coin2.className = 'tu-coin'; }
+    resultEl.textContent = 'HEADS WINS';
+    resultEl.className = 'tu-result tu-result--heads';
+    if (chipEl) { chipEl.className = 'market-chip settled'; chipEl.textContent = 'Settled'; }
+  } else if (r === 'TT') {
+    if (coin1) { coin1.textContent = 'T'; coin1.className = 'tu-coin'; }
+    if (coin2) { coin2.textContent = 'T'; coin2.className = 'tu-coin'; }
+    resultEl.textContent = 'TAILS WINS';
+    resultEl.className = 'tu-result tu-result--tails';
+    if (chipEl) { chipEl.className = 'market-chip settled'; chipEl.textContent = 'Settled'; }
+  } else {
+    if (coin1) { coin1.textContent = 'H'; coin1.className = 'tu-coin'; }
+    if (coin2) { coin2.textContent = 'T'; coin2.className = 'tu-coin'; }
+    resultEl.textContent = 'ODD — ROLLOVER';
+    resultEl.className = 'tu-result tu-result--odd';
+    if (chipEl) { chipEl.className = 'market-chip closed'; chipEl.textContent = 'Rolled Over'; }
+  }
+}
+
+function _tuUpdateNav() {
+  const labelEl = document.getElementById('tuNavLabel');
+  const prevBtn = document.getElementById('tuPrev');
+  const nextBtn = document.getElementById('tuNext');
+  const tu = _tuState.tuesdays[_tuState.currentIdx];
+  if (labelEl && tu) labelEl.textContent = tu.label;
+  if (prevBtn) prevBtn.disabled = _tuState.currentIdx <= 0;
+  if (nextBtn) nextBtn.disabled = _tuState.currentIdx >= _tuState.tuesdays.length - 1;
+}
+
+function twoUpNav(dir) {
+  const next = _tuState.currentIdx + dir;
+  if (next < 0 || next >= _tuState.tuesdays.length) return;
+  _tuState.currentIdx = next;
+  _tuRenderResult();
+  _tuRenderPot();
+  _tuUpdateNav();
+}
+
+function renderTwoUpCard() {
+  const tu = _tuState.tuesdays[_tuState.currentIdx];
+  const isFlipped = tu && tu.status !== 'pending';
+  const cdLabel = isFlipped ? 'Next flip in' : 'Flip in';
+  const rolloverBadge = (tu && tu.rolloverCarry)
+    ? `<span class="tu-rollover-badge">🪙 ${tu.rolloverCarry} rollover</span>`
+    : '';
+  return `<div class="market-card two-up-card" id="twoUpCard" data-kickoff="">
+  <div class="market-card-header">
+    <div class="match-teams" style="flex-direction:column;align-items:flex-start;gap:2px">
+      <span style="font-family:var(--font-pixel);font-size:0.75rem;color:var(--pixel-sky)">Two Up Tuesday</span>
+      <span style="font-family:var(--font-body);font-size:0.7rem;color:var(--muted)">Classic coin flip · Every Tue 12PM UTC${rolloverBadge}</span>
+    </div>
+    <div class="match-meta"><span class="market-chip open" id="tuChip">Pending</span></div>
+  </div>
+  <div class="tu-countdown" id="tuCountdown">
+    <span class="tu-cd-label" id="tuCdLabel">${cdLabel}</span>
+    <div class="tu-cd-timer">
+      <span class="tu-cd-seg" id="tuDays">00</span><span class="tu-cd-sep">d</span>
+      <span class="tu-cd-seg" id="tuHours">00</span><span class="tu-cd-sep">h</span>
+      <span class="tu-cd-seg" id="tuMins">00</span><span class="tu-cd-sep">m</span>
+      <span class="tu-cd-seg" id="tuSecs">00</span><span class="tu-cd-sep">s</span>
+    </div>
+  </div>
+  <div class="tu-coin-area">
+    <div class="tu-coin tu-coin-pending" id="tuCoin1">H</div>
+    <span class="tu-vs">VS</span>
+    <div class="tu-coin tu-coin-pending" id="tuCoin2">T</div>
+  </div>
+  <div id="tuResultArea" class="tu-result"></div>
+  <div class="tu-pot" id="tuPot">
+    <div class="tu-pot-row" id="tuPotRow">
+      <span>🔵 <span class="tu-heads-val">🪙 —</span></span>
+      <span class="tu-pot-divider">|</span>
+      <span>🔴 <span class="tu-tails-val">🪙 —</span></span>
+    </div>
+    <div class="tu-pot-total" id="tuPotTotal">Loading…</div>
+  </div>
+  <div class="tu-carousel-nav">
+    <div class="tu-carousel-arrows">
+      <button class="tu-carousel-btn" id="tuPrev" onclick="twoUpNav(-1)" ${_tuState.currentIdx <= 0 ? 'disabled' : ''}>‹</button>
+      <button class="tu-carousel-btn" id="tuNext" onclick="twoUpNav(1)" ${_tuState.currentIdx >= _tuState.tuesdays.length - 1 ? 'disabled' : ''}>›</button>
+    </div>
+    <span class="tu-carousel-label" id="tuNavLabel">${tu ? tu.label : ''}</span>
+  </div>
+  <div class="tu-actions">
+    <button class="adm-btn" style="width:100%" onclick="openTwoUpBet()" ${isFlipped ? 'disabled' : ''}>
+      ${isFlipped ? 'Betting Closed' : 'Place Bet'}
+    </button>
+  </div>
+</div>`;
+}
+
+function renderPromoCarousel() {
+  return `<div class="promo-carousel" id="promoCarousel">
+  <div class="promo-track" id="promoTrack">
+    <div class="promo-slide" id="twoUpSlide">
+      ${renderTwoUpCard()}
+    </div>
+    <div class="promo-slide">
+      ${renderRequestBetCard()}
+    </div>
+  </div>
+  <div class="promo-nav">
+    <button class="promo-arrow" onclick="promoScroll(-1)">‹</button>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span class="promo-dot active" id="promoDot0"></span>
+      <span class="promo-dot" id="promoDot1"></span>
+    </div>
+    <button class="promo-arrow" onclick="promoScroll(1)">›</button>
+  </div>
+</div>`;
+}
+
+function promoScroll(dir) {
+  const track = document.getElementById('promoTrack');
+  if (!track) return;
+  track.scrollBy({ left: dir * track.clientWidth, behavior: 'smooth' });
+}
+
+function _tuInitPromoSync() {
+  const track = document.getElementById('promoTrack');
+  if (!track) return;
+  track.addEventListener('scroll', () => {
+    const idx = Math.round(track.scrollLeft / track.clientWidth);
+    document.querySelectorAll('.promo-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+  }, { passive: true });
+}
+
+function initTwoUp() {
+  _tuRenderResult();
+  _tuRenderPot();
+  _tuUpdateNav();
+  _tuUpdateCountdown();
+  _tuInitPromoSync();
+  if (_tuState.intervalId) clearInterval(_tuState.intervalId);
+  _tuState.intervalId = setInterval(_tuUpdateCountdown, 1000);
+}
+
+function openTwoUpBet() {
+  const tu = _tuState.tuesdays[_tuState.currentIdx];
+  if (!tu || tu.status !== 'pending') { showToast('Betting is closed for this round'); return; }
+  _tuState.selectedOutcome = 'Heads';
+  let overlay = document.getElementById('twoUpBetOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'twoUpBetOverlay';
+    overlay.className = 'tu-bet-overlay hidden';
+    overlay.innerHTML = `
+      <div class="tu-bet-card">
+        <div class="tu-bet-title">
+          <span>Place Your Bet</span>
+          <button class="close-slip-btn" onclick="closeTwoUpBet()">✕</button>
+        </div>
+        <div class="tu-outcome-tabs">
+          <button class="tu-outcome-tab active-heads" id="tuTabHeads" onclick="selectTwoUpOutcome('Heads')">🔵 Heads</button>
+          <button class="tu-outcome-tab" id="tuTabTails" onclick="selectTwoUpOutcome('Tails')">🔴 Tails</button>
+        </div>
+        <div class="tu-bet-label">Bet Amount (min 🪙 50)</div>
+        <div class="tu-bet-amount">
+          <input type="number" id="tuBetAmount" class="adm-in" value="50" min="50" step="5" style="font-family:var(--font-mono);font-size:1rem">
+          <span style="font-family:var(--font-mono);color:var(--muted)">🪙</span>
+        </div>
+        <div class="tu-bet-error" id="tuBetError"></div>
+        <div class="tu-bet-actions">
+          <button class="adm-btn" onclick="confirmTwoUpBet()">Confirm Bet</button>
+          <button class="btn-ghost" onclick="closeTwoUpBet()">Cancel</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+  document.getElementById('tuBetError').textContent = '';
+  document.getElementById('tuBetAmount').value = 50;
+  document.getElementById('tuTabHeads').className = 'tu-outcome-tab active-heads';
+  document.getElementById('tuTabTails').className = 'tu-outcome-tab';
+  overlay.classList.remove('hidden');
+}
+
+function closeTwoUpBet() {
+  const overlay = document.getElementById('twoUpBetOverlay');
+  if (overlay) overlay.classList.add('hidden');
+}
+
+function selectTwoUpOutcome(outcome) {
+  _tuState.selectedOutcome = outcome;
+  const headsTab = document.getElementById('tuTabHeads');
+  const tailsTab = document.getElementById('tuTabTails');
+  if (!headsTab || !tailsTab) return;
+  headsTab.className = outcome === 'Heads' ? 'tu-outcome-tab active-heads' : 'tu-outcome-tab';
+  tailsTab.className = outcome === 'Tails' ? 'tu-outcome-tab active-tails' : 'tu-outcome-tab';
+}
+
+function confirmTwoUpBet() {
+  const amountEl = document.getElementById('tuBetAmount');
+  const errorEl  = document.getElementById('tuBetError');
+  const amount   = parseFloat(amountEl ? amountEl.value : 0);
+
+  if (!amountEl || isNaN(amount) || amount < 50) {
+    if (errorEl) errorEl.textContent = 'Minimum bet is 🪙 50';
+    return;
+  }
+  if (errorEl) errorEl.textContent = '';
+
+  const tu = _tuState.tuesdays[_tuState.currentIdx];
+  if (!tu) return;
+  if (_tuState.selectedOutcome === 'Heads') {
+    tu.headsTotal += amount;
+  } else {
+    tu.tailsTotal += amount;
+  }
+
+  closeTwoUpBet();
+  _tuRenderPot();
+  showToast(`✓ Bet placed: 🪙 ${amount} on ${_tuState.selectedOutcome}`);
+}
+
 function reqOptionRow(label, _odds, removable) {
   return `<div class="req-opt-row">
     <input type="text" class="adm-in req-opt-label" placeholder="Option" maxlength="60" value="${escapeHtml(label)}">
