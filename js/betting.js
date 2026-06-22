@@ -829,13 +829,14 @@ function renderTwoUpCard() {
 }
 
 function renderPromoCarousel() {
+  const potHtml = (typeof renderPotBanner === 'function') ? renderPotBanner() : '';
   return `<div class="promo-carousel" id="promoCarousel">
   <div class="promo-track" id="promoTrack">
+    <div class="promo-slide" id="promoSlide0">
+      ${potHtml}${renderRequestBetCard()}
+    </div>
     <div class="promo-slide" id="twoUpSlide">
       ${renderTwoUpCard()}
-    </div>
-    <div class="promo-slide">
-      ${renderRequestBetCard()}
     </div>
   </div>
   <div class="promo-nav">

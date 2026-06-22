@@ -1331,10 +1331,9 @@ function renderMarketsView(markets) {
   _marketsByNo = marketsByNo;
   _customMarkets = loadCustomMarkets(markets);
 
-  const potHtml = renderPotBanner();
   const html = _matchSort === 'custom'
-    ? potHtml + renderPromoCarousel() + renderAllCustomMarketsSection(_customMarkets)
-    : potHtml + renderPromoCarousel() + renderFixturesView(marketsByNo, _matchSort);
+    ? renderPromoCarousel() + renderAllCustomMarketsSection(_customMarkets)
+    : renderPromoCarousel() + renderFixturesView(marketsByNo, _matchSort);
 
   document.getElementById('marketsLoading').style.display = 'none';
 
@@ -1402,11 +1401,10 @@ function setMatchSort(mode) {
   document.getElementById('sortByDate').classList.toggle('active', mode === 'upcoming');
   document.getElementById('sortCustom').classList.toggle('active', mode === 'custom');
   const matchListEl = document.getElementById('matchList');
-  const potHtml = renderPotBanner();
   if (mode === 'custom') {
-    matchListEl.innerHTML = potHtml + renderPromoCarousel() + renderAllCustomMarketsSection(_customMarkets);
+    matchListEl.innerHTML = renderPromoCarousel() + renderAllCustomMarketsSection(_customMarkets);
   } else {
-    matchListEl.innerHTML = potHtml + renderPromoCarousel() + renderFixturesView(_marketsByNo, mode);
+    matchListEl.innerHTML = renderPromoCarousel() + renderFixturesView(_marketsByNo, mode);
   }
   setTimeout(initTwoUp, 0);
   autoClosePastKickoff();
@@ -1429,10 +1427,8 @@ function initBettingLeaderboard() {
       if (newHtml) existing.outerHTML = newHtml;
       else existing.remove();
     } else {
-      const matchListEl = document.getElementById('matchList');
-      if (matchListEl && matchListEl.style.display !== 'none' && newHtml) {
-        matchListEl.insertAdjacentHTML('afterbegin', newHtml);
-      }
+      const slide0 = document.getElementById('promoSlide0');
+      if (slide0 && newHtml) slide0.insertAdjacentHTML('afterbegin', newHtml);
     }
   };
 
