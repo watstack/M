@@ -609,36 +609,33 @@ const _tuMockData = [
     date: '2025-06-10',
     label: 'Tue 10 Jun',
     flipTime: '2025-06-10T12:00:00Z',
-    headsTotal: 450,
-    tailsTotal: 320,
-    houseStake: { amount: 100, outcome: 'Heads' },
+    hhTotal: 450,
+    ttTotal: 320,
+    houseStake: { amount: 100, outcome: 'HH' },
     result: 'HH',
-    status: 'flipped',
-    rolloverCarry: 0,
+    status: 'settled',
   },
   {
     id: 2,
     date: '2025-06-17',
     label: 'Tue 17 Jun',
     flipTime: '2025-06-17T12:00:00Z',
-    headsTotal: 200,
-    tailsTotal: 400,
-    houseStake: { amount: 100, outcome: 'Tails' },
+    hhTotal: 200,
+    ttTotal: 400,
+    houseStake: { amount: 100, outcome: 'TT' },
     result: 'HT',
-    status: 'rolled-over',
-    rolloverCarry: 700,
+    status: 'settled',
   },
   {
     id: 3,
     date: '2025-06-24',
     label: 'Tue 24 Jun',
     flipTime: '2025-06-24T12:00:00Z',
-    headsTotal: 250,
-    tailsTotal: 180,
-    houseStake: { amount: 100, outcome: 'Heads' },
+    hhTotal: 250,
+    ttTotal: 180,
+    houseStake: { amount: 100, outcome: 'HH' },
     result: null,
     status: 'pending',
-    rolloverCarry: 700,
   },
 ];
 
@@ -647,7 +644,7 @@ let _tuState = {
   currentIdx: 2,
   isSpinning: false,
   intervalId: null,
-  selectedOutcome: 'Heads',
+  selectedOutcome: 'HH',
 };
 
 function _tuGetNextNoon() {
@@ -703,16 +700,14 @@ function _tuRenderPot() {
   const potEl = document.getElementById('tuPotRow');
   const totalEl = document.getElementById('tuPotTotal');
   if (!potEl) return;
-  const total = tu.headsTotal + tu.tailsTotal + tu.houseStake.amount + (tu.rolloverCarry || 0);
+  const total = tu.hhTotal + tu.ttTotal + tu.houseStake.amount;
   potEl.innerHTML = `
-    <span>🔵 <span class="tu-heads-val">🪙 ${tu.headsTotal}</span></span>
+    <span>HH <span class="tu-heads-val">🪙 ${tu.hhTotal}</span></span>
     <span class="tu-pot-divider">|</span>
-    <span>🔴 <span class="tu-tails-val">🪙 ${tu.tailsTotal}</span></span>
+    <span>TT <span class="tu-tails-val">🪙 ${tu.ttTotal}</span></span>
   `;
   if (totalEl) {
-    let extra = '';
-    if (tu.rolloverCarry) extra = ` · Rollover carry: 🪙 ${tu.rolloverCarry}`;
-    totalEl.textContent = `Total pot: 🪙 ${total} · House: 🪙 ${tu.houseStake.amount} on ${tu.houseStake.outcome}${extra}`;
+    totalEl.textContent = `Total pot: 🪙 ${total} · House: 🪙 ${tu.houseStake.amount} on ${tu.houseStake.outcome}`;
   }
 }
 
@@ -726,8 +721,8 @@ function _tuRenderResult() {
   if (!resultEl) return;
 
   if (!tu.result) {
-    if (coin1) { coin1.textContent = 'H'; coin1.className = 'tu-coin tu-coin-pending'; }
-    if (coin2) { coin2.textContent = 'T'; coin2.className = 'tu-coin tu-coin-pending'; }
+    if (coin1) { coin1.textContent = '?'; coin1.className = 'tu-coin tu-coin-pending'; }
+    if (coin2) { coin2.textContent = '?'; coin2.className = 'tu-coin tu-coin-pending'; }
     resultEl.textContent = '';
     resultEl.className = 'tu-result';
     if (chipEl) { chipEl.className = 'market-chip open'; chipEl.textContent = 'Pending'; }
@@ -736,23 +731,23 @@ function _tuRenderResult() {
 
   const r = tu.result;
   if (r === 'HH') {
-    if (coin1) { coin1.textContent = 'H'; coin1.className = 'tu-coin'; }
-    if (coin2) { coin2.textContent = 'H'; coin2.className = 'tu-coin'; }
-    resultEl.textContent = 'HEADS WINS';
+    if (coin1) { coin1.textContent = 'H'; coin1.className = 'tu-coin tu-coin-hh'; }
+    if (coin2) { coin2.textContent = 'H'; coin2.className = 'tu-coin tu-coin-hh'; }
+    resultEl.textContent = 'HEAD HEAD — HH WINS';
     resultEl.className = 'tu-result tu-result--heads';
     if (chipEl) { chipEl.className = 'market-chip settled'; chipEl.textContent = 'Settled'; }
   } else if (r === 'TT') {
-    if (coin1) { coin1.textContent = 'T'; coin1.className = 'tu-coin'; }
-    if (coin2) { coin2.textContent = 'T'; coin2.className = 'tu-coin'; }
-    resultEl.textContent = 'TAILS WINS';
+    if (coin1) { coin1.textContent = 'T'; coin1.className = 'tu-coin tu-coin-tt'; }
+    if (coin2) { coin2.textContent = 'T'; coin2.className = 'tu-coin tu-coin-tt'; }
+    resultEl.textContent = 'TAIL TAIL — TT WINS';
     resultEl.className = 'tu-result tu-result--tails';
     if (chipEl) { chipEl.className = 'market-chip settled'; chipEl.textContent = 'Settled'; }
   } else {
-    if (coin1) { coin1.textContent = 'H'; coin1.className = 'tu-coin'; }
-    if (coin2) { coin2.textContent = 'T'; coin2.className = 'tu-coin'; }
-    resultEl.textContent = 'ODD — ROLLOVER';
+    if (coin1) { coin1.textContent = 'H'; coin1.className = 'tu-coin tu-coin-pending'; }
+    if (coin2) { coin2.textContent = 'T'; coin2.className = 'tu-coin tu-coin-pending'; }
+    resultEl.textContent = 'ODD — ALL LOSE';
     resultEl.className = 'tu-result tu-result--odd';
-    if (chipEl) { chipEl.className = 'market-chip closed'; chipEl.textContent = 'Rolled Over'; }
+    if (chipEl) { chipEl.className = 'market-chip settled'; chipEl.textContent = 'Settled'; }
   }
 }
 
@@ -779,14 +774,11 @@ function renderTwoUpCard() {
   const tu = _tuState.tuesdays[_tuState.currentIdx];
   const isFlipped = tu && tu.status !== 'pending';
   const cdLabel = isFlipped ? 'Next flip in' : 'Flip in';
-  const rolloverBadge = (tu && tu.rolloverCarry)
-    ? `<span class="tu-rollover-badge">🪙 ${tu.rolloverCarry} rollover</span>`
-    : '';
   return `<div class="market-card two-up-card" id="twoUpCard" data-kickoff="">
   <div class="market-card-header">
     <div class="match-teams" style="flex-direction:column;align-items:flex-start;gap:2px">
       <span style="font-family:var(--font-pixel);font-size:0.75rem;color:var(--pixel-sky)">Two Up Tuesday</span>
-      <span style="font-family:var(--font-body);font-size:0.7rem;color:var(--muted)">Classic coin flip · Every Tue 12PM UTC${rolloverBadge}</span>
+      <span style="font-family:var(--font-body);font-size:0.7rem;color:var(--muted)">2 coins · Bet HH or TT · Odd = all lose · Every Tue 12PM UTC</span>
     </div>
     <div class="match-meta"><span class="market-chip open" id="tuChip">Pending</span></div>
   </div>
@@ -800,16 +792,15 @@ function renderTwoUpCard() {
     </div>
   </div>
   <div class="tu-coin-area">
-    <div class="tu-coin tu-coin-pending" id="tuCoin1">H</div>
-    <span class="tu-vs">VS</span>
-    <div class="tu-coin tu-coin-pending" id="tuCoin2">T</div>
+    <div class="tu-coin tu-coin-pending" id="tuCoin1">?</div>
+    <div class="tu-coin tu-coin-pending" id="tuCoin2">?</div>
   </div>
   <div id="tuResultArea" class="tu-result"></div>
   <div class="tu-pot" id="tuPot">
     <div class="tu-pot-row" id="tuPotRow">
-      <span>🔵 <span class="tu-heads-val">🪙 —</span></span>
+      <span>HH <span class="tu-heads-val">🪙 —</span></span>
       <span class="tu-pot-divider">|</span>
-      <span>🔴 <span class="tu-tails-val">🪙 —</span></span>
+      <span>TT <span class="tu-tails-val">🪙 —</span></span>
     </div>
     <div class="tu-pot-total" id="tuPotTotal">Loading…</div>
   </div>
@@ -829,13 +820,14 @@ function renderTwoUpCard() {
 }
 
 function renderPromoCarousel() {
+  const potHtml = (typeof renderPotBanner === 'function') ? renderPotBanner() : '';
   return `<div class="promo-carousel" id="promoCarousel">
   <div class="promo-track" id="promoTrack">
+    <div class="promo-slide" id="promoSlide0">
+      ${potHtml}${renderRequestBetCard()}
+    </div>
     <div class="promo-slide" id="twoUpSlide">
       ${renderTwoUpCard()}
-    </div>
-    <div class="promo-slide">
-      ${renderRequestBetCard()}
     </div>
   </div>
   <div class="promo-nav">
@@ -877,7 +869,7 @@ function initTwoUp() {
 function openTwoUpBet() {
   const tu = _tuState.tuesdays[_tuState.currentIdx];
   if (!tu || tu.status !== 'pending') { showToast('Betting is closed for this round'); return; }
-  _tuState.selectedOutcome = 'Heads';
+  _tuState.selectedOutcome = 'HH';
   let overlay = document.getElementById('twoUpBetOverlay');
   if (!overlay) {
     overlay = document.createElement('div');
@@ -890,8 +882,8 @@ function openTwoUpBet() {
           <button class="close-slip-btn" onclick="closeTwoUpBet()">✕</button>
         </div>
         <div class="tu-outcome-tabs">
-          <button class="tu-outcome-tab active-heads" id="tuTabHeads" onclick="selectTwoUpOutcome('Heads')">🔵 Heads</button>
-          <button class="tu-outcome-tab" id="tuTabTails" onclick="selectTwoUpOutcome('Tails')">🔴 Tails</button>
+          <button class="tu-outcome-tab active-heads" id="tuTabHH" onclick="selectTwoUpOutcome('HH')">Head Head</button>
+          <button class="tu-outcome-tab" id="tuTabTT" onclick="selectTwoUpOutcome('TT')">Tail Tail</button>
         </div>
         <div class="tu-bet-label">Bet Amount (min 🪙 50)</div>
         <div class="tu-bet-amount">
@@ -920,11 +912,11 @@ function closeTwoUpBet() {
 
 function selectTwoUpOutcome(outcome) {
   _tuState.selectedOutcome = outcome;
-  const headsTab = document.getElementById('tuTabHeads');
-  const tailsTab = document.getElementById('tuTabTails');
-  if (!headsTab || !tailsTab) return;
-  headsTab.className = outcome === 'Heads' ? 'tu-outcome-tab active-heads' : 'tu-outcome-tab';
-  tailsTab.className = outcome === 'Tails' ? 'tu-outcome-tab active-tails' : 'tu-outcome-tab';
+  const hhTab = document.getElementById('tuTabHH');
+  const ttTab = document.getElementById('tuTabTT');
+  if (!hhTab || !ttTab) return;
+  hhTab.className = outcome === 'HH' ? 'tu-outcome-tab active-heads' : 'tu-outcome-tab';
+  ttTab.className = outcome === 'TT' ? 'tu-outcome-tab active-tails' : 'tu-outcome-tab';
 }
 
 function confirmTwoUpBet() {
@@ -940,10 +932,10 @@ function confirmTwoUpBet() {
 
   const tu = _tuState.tuesdays[_tuState.currentIdx];
   if (!tu) return;
-  if (_tuState.selectedOutcome === 'Heads') {
-    tu.headsTotal += amount;
+  if (_tuState.selectedOutcome === 'HH') {
+    tu.hhTotal += amount;
   } else {
-    tu.tailsTotal += amount;
+    tu.ttTotal += amount;
   }
 
   closeTwoUpBet();
