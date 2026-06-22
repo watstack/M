@@ -19,6 +19,7 @@
       gap: 12px;
       padding: 16px 0 12px;
       border-bottom: 1px solid var(--border);
+      margin-bottom: 0;
       flex-wrap: wrap;
     }
     .bet-back {
@@ -105,7 +106,7 @@
     .bet-tabs {
       display: flex;
       gap: 8px;
-      padding: 12px 0 0;
+      padding: 10px 0;
       margin-bottom: 0;
     }
     .bet-filter-row { padding: 8px 0 4px; }
@@ -1100,21 +1101,23 @@
 
 <div class="bet-page">
 
+  <div class="bet-header">
+    <a id="backLink" href="#" class="bet-back">← Bracket</a>
+    <span class="bet-title">Betting</span>
+    <div class="bet-balance">🪙 <span class="bet-balance-num" id="balanceAmt">—</span></div>
+    <div class="bet-participant">
+      <span id="avatarImg"></span>
+      <span id="nicknameTxt"></span>
+    </div>
+  </div>
+
+  <!-- Fixture carousel (scrolls with page) -->
+  <div class="fix-carousel-wrap">
+    <div class="fix-carousel" id="betFixCarousel"></div>
+  </div>
+
+  <!-- Sticky tab bar + filters only -->
   <div class="bet-sticky">
-    <div class="bet-header">
-      <a id="backLink" href="#" class="bet-back">← Bracket</a>
-      <span class="bet-title">Betting</span>
-      <div class="bet-balance">🪙 <span class="bet-balance-num" id="balanceAmt">—</span></div>
-      <div class="bet-participant">
-        <span id="avatarImg"></span>
-        <span id="nicknameTxt"></span>
-      </div>
-    </div>
-    <!-- Fixture carousel -->
-    <div class="fix-carousel-wrap">
-      <div class="fix-carousel" id="betFixCarousel"></div>
-    </div>
-    <!-- Tabs -->
     <div class="bet-tabs">
       <button class="bet-tab active" id="tabMarkets" onclick="showTab('markets')">🪙 Matches</button>
       <button class="bet-tab" id="tabMyBets" onclick="showTab('mybets')">My Bets</button>
