@@ -603,59 +603,67 @@ function loadCustomMarkets(markets) {
 
 // ─── Two Up Tuesday ───────────────────────────────────────────────────────────
 
-const _tuMockData = [
-  {
-    id: 1,
-    date: '2025-06-10',
-    label: 'Tue 10 Jun',
-    flipTime: '2025-06-10T12:00:00Z',
-    hhTotal: 450,
-    ttTotal: 320,
-    houseStake: { amount: 100, outcome: 'HH' },
-    result: 'HH',
-    status: 'settled',
-  },
-  {
-    id: 2,
-    date: '2025-06-17',
-    label: 'Tue 17 Jun',
-    flipTime: '2025-06-17T12:00:00Z',
-    hhTotal: 200,
-    ttTotal: 400,
-    houseStake: { amount: 100, outcome: 'TT' },
-    result: 'HT',
-    status: 'settled',
-  },
-  {
-    id: 3,
-    date: '2026-06-23',
-    label: 'Tue 23 Jun',
-    flipTime: '2026-06-23T12:00:00Z',
-    hhTotal: 250,
-    ttTotal: 180,
-    houseStake: { amount: 100, outcome: 'HH' },
-    result: null,
-    status: 'pending',
-  },
-];
+function _tuAESTNow() {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-AU', {
+    timeZone: 'Australia/Sydney',
+    year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: 'numeric', minute: 'numeric', second: 'numeric',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const p = {};
+  for (const { type, value } of parts) p[type] = value;
+  const y = parseInt(p.year), mo = parseInt(p.month), d = parseInt(p.day);
+  return {
+    year: y, month: mo, day: d,
+    hour: parseInt(p.hour), minute: parseInt(p.minute), second: parseInt(p.second),
+    dow: new Date(Date.UTC(y, mo - 1, d)).getUTCDay(),
+  };
+}
+
+function _tuIsPlayOpen() {
+  const { dow, hour } = _tuAESTNow();
+  return dow === 2 && hour >= 9 && hour <= 22;
+}
+
+function _tuGetNextBettingOpen() {
+  const now = new Date();
+  const a = _tuAESTNow();
+  // Offset: how many ms AEST is ahead of UTC right now
+  const aestOffsetMs = new Date(Date.UTC(a.year, a.month - 1, a.day, a.hour, a.minute, a.second)).getTime() - now.getTime();
+  let daysUntil = (2 - a.dow + 7) % 7;
+  if (daysUntil === 0 && a.hour >= 9) daysUntil = 7; // Tuesday but 9am already passed
+  const targetMs = new Date(Date.UTC(a.year, a.month - 1, a.day + daysUntil, 9, 0, 0)).getTime();
+  return new Date(targetMs - aestOffsetMs);
+}
+
+// 13 hourly slots for Tue 23 Jun 2026 (AEST = UTC+10 in June, standard time)
+const _tuMockData = (() => {
+  const slots = [];
+  for (let h = 10; h <= 22; h++) {
+    const utcH = h - 10;
+    slots.push({
+      id: `2026-06-23-${h}`,
+      date: '2026-06-23',
+      label: `Tue 23 Jun · ${h}:00`,
+      flipTime: `2026-06-23T${String(utcH).padStart(2, '0')}:00:00Z`,
+      hhTotal: 0,
+      ttTotal: 0,
+      houseStake: { amount: 100, outcome: 'HH' },
+      result: null,
+      status: 'pending',
+    });
+  }
+  return slots;
+})();
 
 let _tuState = {
   tuesdays: _tuMockData,
-  currentIdx: 2,
+  currentIdx: 0,
   isSpinning: false,
   intervalId: null,
   selectedOutcome: 'HH',
 };
-
-function _tuGetNextNoon() {
-  const now = new Date();
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 0, 0));
-  const dow = d.getUTCDay();
-  let daysUntil = (2 - dow + 7) % 7;
-  if (daysUntil === 0 && now >= d) daysUntil = 7;
-  d.setUTCDate(d.getUTCDate() + daysUntil);
-  return d;
-}
 
 function _tuUpdateCountdown() {
   const daysEl  = document.getElementById('tuDays');
@@ -665,16 +673,20 @@ function _tuUpdateCountdown() {
   const labelEl = document.getElementById('tuCdLabel');
   if (!daysEl) return;
 
+  const playOpen = _tuIsPlayOpen();
   const tu = _tuState.tuesdays[_tuState.currentIdx];
-  const target = tu ? new Date(tu.flipTime) : _tuGetNextNoon();
+  const target = playOpen && tu ? new Date(tu.flipTime) : _tuGetNextBettingOpen();
+
+  if (labelEl && !playOpen) labelEl.textContent = 'betting opens in:';
+
   const diff = target - Date.now();
 
   if (diff <= 0) {
-    daysEl.textContent = '00';
+    daysEl.textContent  = '00';
     hoursEl.textContent = '00';
-    minsEl.textContent = '00';
-    secsEl.textContent = '00';
-    if (labelEl) labelEl.textContent = 'Flip time!';
+    minsEl.textContent  = '00';
+    secsEl.textContent  = '00';
+    if (labelEl && playOpen) labelEl.textContent = 'Flip time!';
     return;
   }
 
@@ -688,7 +700,7 @@ function _tuUpdateCountdown() {
   minsEl.textContent  = String(m).padStart(2, '0');
   secsEl.textContent  = String(s).padStart(2, '0');
 
-  if (diff < 60000 && labelEl) {
+  if (diff < 60000 && labelEl && playOpen) {
     labelEl.style.animation = 'none';
     requestAnimationFrame(() => { if (labelEl) labelEl.style.animation = 'tuPulse 1s ease-in-out infinite'; });
   }
@@ -697,7 +709,7 @@ function _tuUpdateCountdown() {
 function _tuRenderPot() {
   const tu = _tuState.tuesdays[_tuState.currentIdx];
   if (!tu) return;
-  const potEl = document.getElementById('tuPotRow');
+  const potEl   = document.getElementById('tuPotRow');
   const totalEl = document.getElementById('tuPotTotal');
   if (!potEl) return;
   const total = tu.hhTotal + tu.ttTotal + tu.houseStake.amount;
@@ -706,26 +718,22 @@ function _tuRenderPot() {
     <span class="tu-pot-divider">|</span>
     <span>TT <span class="tu-tails-val">🪙 ${tu.ttTotal}</span></span>
   `;
-  if (totalEl) {
-    totalEl.textContent = `Total pot: 🪙 ${total} · House: 🪙 ${tu.houseStake.amount} on ${tu.houseStake.outcome}`;
-  }
+  if (totalEl) totalEl.textContent = `Total pot: 🪙 ${total} · House: 🪙 ${tu.houseStake.amount} on ${tu.houseStake.outcome}`;
 }
 
 function _tuRenderResult() {
   const tu = _tuState.tuesdays[_tuState.currentIdx];
   if (!tu) return;
   const resultEl = document.getElementById('tuResultArea');
-  const coin1 = document.getElementById('tuCoin1');
-  const coin2 = document.getElementById('tuCoin2');
-  const chipEl = document.getElementById('tuChip');
-  if (!resultEl) return;
+  const coin1    = document.getElementById('tuCoin1');
+  const coin2    = document.getElementById('tuCoin2');
+  const chipEl   = document.getElementById('tuChip');
 
   if (!tu.result) {
     if (coin1) { coin1.textContent = '?'; coin1.className = 'tu-coin tu-coin-pending'; }
     if (coin2) { coin2.textContent = '?'; coin2.className = 'tu-coin tu-coin-pending'; }
-    resultEl.textContent = '';
-    resultEl.className = 'tu-result';
-    if (chipEl) { chipEl.className = 'market-chip open'; chipEl.textContent = 'Pending'; }
+    if (resultEl) { resultEl.textContent = ''; resultEl.className = 'tu-result'; }
+    if (chipEl) { chipEl.className = 'market-chip open'; chipEl.textContent = 'Open'; }
     return;
   }
 
@@ -733,20 +741,17 @@ function _tuRenderResult() {
   if (r === 'HH') {
     if (coin1) { coin1.textContent = 'H'; coin1.className = 'tu-coin tu-coin-hh'; }
     if (coin2) { coin2.textContent = 'H'; coin2.className = 'tu-coin tu-coin-hh'; }
-    resultEl.textContent = 'HEAD HEAD — HH WINS';
-    resultEl.className = 'tu-result tu-result--heads';
+    if (resultEl) { resultEl.textContent = 'HEAD HEAD — HH WINS'; resultEl.className = 'tu-result tu-result--heads'; }
     if (chipEl) { chipEl.className = 'market-chip settled'; chipEl.textContent = 'Settled'; }
   } else if (r === 'TT') {
     if (coin1) { coin1.textContent = 'T'; coin1.className = 'tu-coin tu-coin-tt'; }
     if (coin2) { coin2.textContent = 'T'; coin2.className = 'tu-coin tu-coin-tt'; }
-    resultEl.textContent = 'TAIL TAIL — TT WINS';
-    resultEl.className = 'tu-result tu-result--tails';
+    if (resultEl) { resultEl.textContent = 'TAIL TAIL — TT WINS'; resultEl.className = 'tu-result tu-result--tails'; }
     if (chipEl) { chipEl.className = 'market-chip settled'; chipEl.textContent = 'Settled'; }
   } else {
     if (coin1) { coin1.textContent = 'H'; coin1.className = 'tu-coin tu-coin-pending'; }
     if (coin2) { coin2.textContent = 'T'; coin2.className = 'tu-coin tu-coin-pending'; }
-    resultEl.textContent = 'ODD — ALL LOSE';
-    resultEl.className = 'tu-result tu-result--odd';
+    if (resultEl) { resultEl.textContent = 'ODD — ALL LOSE'; resultEl.className = 'tu-result tu-result--odd'; }
     if (chipEl) { chipEl.className = 'market-chip settled'; chipEl.textContent = 'Settled'; }
   }
 }
@@ -761,48 +766,95 @@ function _tuUpdateNav() {
   if (nextBtn) nextBtn.disabled = _tuState.currentIdx >= _tuState.tuesdays.length - 1;
 }
 
+function _tuRefreshPlayBody() {
+  const body      = document.querySelector('#twoUpCard .tu-hero-body');
+  const actionBtn = document.querySelector('#twoUpCard .tu-actions button');
+  if (!body) return;
+  const tu = _tuState.tuesdays[_tuState.currentIdx];
+  if (!tu) return;
+  const isFlipped     = tu.status !== 'pending';
+  const showCountdown = !isFlipped && new Date(tu.flipTime) > new Date();
+  body.innerHTML = showCountdown
+    ? `<div class="tu-cd-label-hero" id="tuCdLabel">flipping off in:</div>
+       <div class="tu-cd-blocks">
+         <div class="tu-cd-block"><div class="tu-cd-num" id="tuDays">00</div><div class="tu-cd-unit">days</div></div>
+         <div class="tu-cd-block"><div class="tu-cd-num" id="tuHours">00</div><div class="tu-cd-unit">hours</div></div>
+         <div class="tu-cd-block"><div class="tu-cd-num" id="tuMins">00</div><div class="tu-cd-unit">mins</div></div>
+         <div class="tu-cd-block"><div class="tu-cd-num" id="tuSecs">00</div><div class="tu-cd-unit">secs</div></div>
+       </div>`
+    : `<div class="tu-coin-area">
+         <div class="tu-coin tu-coin-pending" id="tuCoin1">?</div>
+         <div class="tu-coin tu-coin-pending" id="tuCoin2">?</div>
+       </div>
+       <div id="tuResultArea" class="tu-result"></div>`;
+  if (actionBtn) {
+    actionBtn.disabled    = isFlipped;
+    actionBtn.textContent = isFlipped ? 'Betting Closed' : 'Place Bet';
+  }
+}
+
 function twoUpNav(dir) {
   const next = _tuState.currentIdx + dir;
   if (next < 0 || next >= _tuState.tuesdays.length) return;
   _tuState.currentIdx = next;
+  _tuRefreshPlayBody();
   _tuRenderResult();
   _tuRenderPot();
   _tuUpdateNav();
+  _tuUpdateCountdown();
 }
 
 function renderTwoUpCard() {
-  const tu = _tuState.tuesdays[_tuState.currentIdx];
-  const isFlipped = tu && tu.status !== 'pending';
-  const flipTime = tu ? new Date(tu.flipTime) : null;
-  const showCountdown = tu && tu.status === 'pending' && flipTime && flipTime > new Date();
+  const playOpen = _tuIsPlayOpen();
+  const tu       = _tuState.tuesdays[_tuState.currentIdx];
+
+  if (!playOpen) {
+    return `<div class="tu-hero" id="twoUpCard">
+  <div class="tu-hero-head">
+    <div>
+      <div class="tu-hero-title">Two Up Tuesday</div>
+      <div class="tu-hero-sub">Hourly · 10am–10pm AEST · every Tuesday</div>
+    </div>
+    <span class="market-chip" id="tuChip">Closed</span>
+  </div>
+  <div class="tu-hero-body">
+    <div class="tu-cd-label-hero" id="tuCdLabel">betting opens in:</div>
+    <div class="tu-cd-blocks">
+      <div class="tu-cd-block"><div class="tu-cd-num" id="tuDays">00</div><div class="tu-cd-unit">days</div></div>
+      <div class="tu-cd-block"><div class="tu-cd-num" id="tuHours">00</div><div class="tu-cd-unit">hours</div></div>
+      <div class="tu-cd-block"><div class="tu-cd-num" id="tuMins">00</div><div class="tu-cd-unit">mins</div></div>
+      <div class="tu-cd-block"><div class="tu-cd-num" id="tuSecs">00</div><div class="tu-cd-unit">secs</div></div>
+    </div>
+    <div class="tu-cd-next">Next Tuesday · 9am AEST</div>
+  </div>
+  <div class="tu-how-to-play-foot">
+    <button class="tu-rules-link" onclick="openTwoUpRules()">? How to play</button>
+  </div>
+</div>`;
+  }
+
+  const isFlipped     = tu && tu.status !== 'pending';
+  const flipTime      = tu ? new Date(tu.flipTime) : null;
+  const showCountdown = tu && !isFlipped && flipTime && flipTime > new Date();
+
   return `<div class="tu-hero" id="twoUpCard">
   <div class="tu-hero-head">
     <div>
       <div class="tu-hero-title">Two Up Tuesday</div>
       <div class="tu-hero-sub">2 coins · bet HH or TT · odd = all lose</div>
     </div>
-    <span class="market-chip open" id="tuChip">Pending</span>
+    <span class="market-chip open" id="tuChip">Open</span>
   </div>
   <div class="tu-hero-body">
-    ${showCountdown ? `<div class="tu-cd-label-hero" id="tuCdLabel">flipping off in:</div>
+    ${showCountdown
+      ? `<div class="tu-cd-label-hero" id="tuCdLabel">flipping off in:</div>
     <div class="tu-cd-blocks">
-      <div class="tu-cd-block">
-        <div class="tu-cd-num" id="tuDays">00</div>
-        <div class="tu-cd-unit">days</div>
-      </div>
-      <div class="tu-cd-block">
-        <div class="tu-cd-num" id="tuHours">00</div>
-        <div class="tu-cd-unit">hours</div>
-      </div>
-      <div class="tu-cd-block">
-        <div class="tu-cd-num" id="tuMins">00</div>
-        <div class="tu-cd-unit">mins</div>
-      </div>
-      <div class="tu-cd-block">
-        <div class="tu-cd-num" id="tuSecs">00</div>
-        <div class="tu-cd-unit">secs</div>
-      </div>
-    </div>` : `<div class="tu-coin-area">
+      <div class="tu-cd-block"><div class="tu-cd-num" id="tuDays">00</div><div class="tu-cd-unit">days</div></div>
+      <div class="tu-cd-block"><div class="tu-cd-num" id="tuHours">00</div><div class="tu-cd-unit">hours</div></div>
+      <div class="tu-cd-block"><div class="tu-cd-num" id="tuMins">00</div><div class="tu-cd-unit">mins</div></div>
+      <div class="tu-cd-block"><div class="tu-cd-num" id="tuSecs">00</div><div class="tu-cd-unit">secs</div></div>
+    </div>`
+      : `<div class="tu-coin-area">
       <div class="tu-coin tu-coin-pending" id="tuCoin1">?</div>
       <div class="tu-coin tu-coin-pending" id="tuCoin2">?</div>
     </div>
@@ -869,6 +921,10 @@ function _tuInitPromoSync() {
 }
 
 function initTwoUp() {
+  if (_tuIsPlayOpen()) {
+    const firstPending = _tuState.tuesdays.findIndex(t => t.status === 'pending');
+    if (firstPending !== -1) _tuState.currentIdx = firstPending;
+  }
   _tuRenderResult();
   _tuRenderPot();
   _tuUpdateNav();
@@ -897,6 +953,9 @@ function openTwoUpBet() {
           <button class="tu-outcome-tab active-heads" id="tuTabHH" onclick="selectTwoUpOutcome('HH')">Head Head</button>
           <button class="tu-outcome-tab" id="tuTabTT" onclick="selectTwoUpOutcome('TT')">Tail Tail</button>
         </div>
+        <div class="tu-how-to-play-row">
+          <button class="tu-rules-link" onclick="openTwoUpRules()">? How to play</button>
+        </div>
         <div class="tu-bet-label">Bet Amount (min 🪙 50)</div>
         <div class="tu-bet-amount">
           <input type="number" id="tuBetAmount" class="adm-in" value="50" min="50" step="5" style="font-family:var(--font-mono);font-size:1rem">
@@ -912,8 +971,8 @@ function openTwoUpBet() {
   }
   document.getElementById('tuBetError').textContent = '';
   document.getElementById('tuBetAmount').value = 50;
-  document.getElementById('tuTabHeads').className = 'tu-outcome-tab active-heads';
-  document.getElementById('tuTabTails').className = 'tu-outcome-tab';
+  document.getElementById('tuTabHH').className = 'tu-outcome-tab active-heads';
+  document.getElementById('tuTabTT').className = 'tu-outcome-tab';
   overlay.classList.remove('hidden');
 }
 
@@ -953,6 +1012,39 @@ function confirmTwoUpBet() {
   closeTwoUpBet();
   _tuRenderPot();
   showToast(`✓ Bet placed: 🪙 ${amount} on ${_tuState.selectedOutcome}`);
+}
+
+function openTwoUpRules() {
+  let overlay = document.getElementById('twoUpRulesOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'twoUpRulesOverlay';
+    overlay.className = 'tu-bet-overlay hidden';
+    overlay.innerHTML = `
+      <div class="tu-bet-card tu-rules-card">
+        <div class="tu-bet-title">
+          <span>How to Play — Two Up</span>
+          <button class="close-slip-btn" onclick="closeTwoUpRules()">✕</button>
+        </div>
+        <ul class="tu-rules-list">
+          <li>Two coins are tossed each hour</li>
+          <li><b>HH</b> — both coins land heads → HH bets win</li>
+          <li><b>TT</b> — both coins land tails → TT bets win</li>
+          <li><b>Odd</b> — one head, one tail → all bets lose</li>
+          <li>Games run every hour, 10am–10pm AEST every Tuesday</li>
+          <li>Betting opens from 9am AEST</li>
+          <li>Minimum bet is 🪙 50</li>
+        </ul>
+        <button class="adm-btn" style="width:100%;margin-top:8px" onclick="closeTwoUpRules()">Got it</button>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+  overlay.classList.remove('hidden');
+}
+
+function closeTwoUpRules() {
+  const overlay = document.getElementById('twoUpRulesOverlay');
+  if (overlay) overlay.classList.add('hidden');
 }
 
 function reqOptionRow(label, _odds, removable) {
