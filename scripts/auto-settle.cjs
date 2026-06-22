@@ -4,8 +4,7 @@
 // Syncs ESPN/FBD match data, then settles any open/closed bet_markets
 // for matches finished ≥ 3 hours ago.
 
-const { fetchESPNMatches } = require('../api/_lib/espn.js');
-const { fetchFBDMatches }  = require('../api/_lib/fbd.js');
+const { syncMatchesToSupabase } = require('../api/_lib/sync-matches.js');
 const { makeRest, settleMarketRpc, propagateResult } = require('../api/_lib/settle-lib.js');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -14,22 +13,6 @@ const FBD_TOKEN    = process.env.FOOTBALL_API_TOKEN;
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 
-async function syncMatches(rest) {
-  let matches = [];
-  if (FBD_TOKEN) matches = await fetchFBDMatches(FBD_TOKEN);
-  if (matches.length === 0) matches = await fetchESPNMatches();
-  if (matches.length === 0) return 0;
-  const r = await rest('/wc_matches?on_conflict=home_tla,away_tla,utc_date', {
-    method: 'POST',
-    headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-    body: JSON.stringify(matches),
-  });
-  if (!r.ok) {
-    console.warn(`[auto-settle] wc_matches upsert warning ${r.status}: ${await r.text().catch(() => '')} — continuing with settlement`);
-    return 0;
-  }
-  return matches.length;
-}
 
 async function main() {
   if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -39,7 +22,10 @@ async function main() {
 
   const rest = makeRest(SUPABASE_URL, SUPABASE_KEY);
 
-  const synced = await syncMatches(rest);
+  const { synced } = await syncMatchesToSupabase(
+    { supaUrl: SUPABASE_URL, supaKey: SUPABASE_KEY },
+    FBD_TOKEN || null,
+  );
   console.log(`[auto-settle] synced ${synced} matches`);
 
   const now    = new Date().toISOString();

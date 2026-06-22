@@ -5,28 +5,21 @@
 // POSTs /api/markets on load to seed markets + refresh 1X2 odds; GitHub Pages
 // can't execute serverless functions, so that never runs and odds_json stays
 // null (every price renders "TBC"). This script does the same work on a daily
-// cron instead: it ensures a match_result + correct_score market exists for all
-// 104 fixtures of every tournament, and overlays fresh 1X2 odds from The Odds
-// API. Odds only need a daily refresh, which also fits the free-tier quota.
+// cron instead: it ensures a match_result + correct_score + double_chance market
+// exists for all 104 fixtures of every tournament, and overlays fresh 1X2 odds
+// from The Odds API. Odds only need a daily refresh, which also fits the free-tier
+// quota.
 //
 // Run by .github/workflows/refresh-odds.yml. Reuses the exact same fixture list
 // and odds-matching logic as the serverless handler so odds are identical.
 
-const { WC2026_FIXTURES, CODE_NAMES } = require('../api/_lib/fixtures.js');
-const { h2hOddsForFixture, codeForName } = require('../api/_lib/odds-match.js');
+const { buildMarketRows } = require('../api/_lib/market-builder.js');
 
 // The Odds API only serves "in-season" sports, under keys it controls (the
 // World Cup is NOT necessarily `soccer_fifa_world_cup_2026`). Rather than
 // hardcode a key that may 404 as "Unknown sport", we discover the live key at
 // runtime. An explicit ODDS_SPORT_KEY env var overrides discovery if ever needed.
 const SPORT_OVERRIDE = process.env.ODDS_SPORT_KEY || null;
-
-const teamName = code => CODE_NAMES[code] || code;
-function matchNameFor(fx) {
-  const h = fx.home.code ? teamName(fx.home.code) : fx.home.label;
-  const a = fx.away.code ? teamName(fx.away.code) : fx.away.label;
-  return `${h} vs ${a}`;
-}
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -98,67 +91,6 @@ async function fetchH2HEvents() {
   return events;
 }
 
-// The real kickoff time for a fixture, from the matched Odds API event's
-// commence_time (authoritative). The static fixture kickoff times can be wrong,
-// which makes the betting page auto-close a market before it has kicked off.
-function commenceTimeForFixture(events, fx) {
-  const fHome = fx && fx.home && fx.home.code;
-  const fAway = fx && fx.away && fx.away.code;
-  if (!fHome || !fAway || !Array.isArray(events)) return null;
-  for (const ev of events) {
-    const evHome = codeForName(ev.home_team);
-    const evAway = codeForName(ev.away_team);
-    if (!evHome || !evAway) continue;
-    if ((evHome === fHome && evAway === fAway) || (evHome === fAway && evAway === fHome)) {
-      return ev.commence_time || null;
-    }
-  }
-  return null;
-}
-
-// Mirror of /api/markets row-building, for one tournament.
-function buildRows(tournamentId, h2hEvents, fetchedAt) {
-  const groupRows = [];
-  const koRows = [];
-  let oddsMatched = 0;
-
-  for (const fx of WC2026_FIXTURES) {
-    const resolved = !!(fx.home.code && fx.away.code);
-    const base = {
-      tournament_id: tournamentId,
-      match_no: fx.match_no,
-      stage: fx.stage,
-      match_name: matchNameFor(fx),
-      kickoff_time: fx.kickoff_utc,
-      close_time: fx.kickoff_utc,
-      locked: !resolved,
-    };
-
-    if (resolved) {
-      base.home_code = fx.home.code;
-      base.away_code = fx.away.code;
-      // Correct kickoff/close from the live feed when we can match this fixture,
-      // so the page's auto-close fires at the real kickoff, not a stale time.
-      const commence = commenceTimeForFixture(h2hEvents, fx);
-      if (commence) { base.kickoff_time = commence; base.close_time = commence; }
-      const mr = { ...base, market_type: 'match_result' };
-      const odds = h2hOddsForFixture(h2hEvents, fx);
-      if (odds) {
-        mr.odds_json = odds;
-        mr.odds_fetched_at = fetchedAt;
-        oddsMatched++;
-      }
-      groupRows.push(mr);
-      groupRows.push({ ...base, market_type: 'correct_score' });
-    } else {
-      koRows.push({ ...base, market_type: 'match_result' });
-      koRows.push({ ...base, market_type: 'correct_score' });
-    }
-  }
-
-  return { groupRows, koRows, oddsMatched };
-}
-
 async function main() {
   const missing = [];
   if (!SUPABASE_URL) missing.push('SUPABASE_URL');
@@ -181,7 +113,7 @@ async function main() {
 
   let totalMatched = 0;
   for (const t of tournaments) {
-    const { groupRows, koRows, oddsMatched } = buildRows(t.id, h2hEvents, fetchedAt);
+    const { groupRows, koRows, oddsMatched } = buildMarketRows(t.id, h2hEvents, fetchedAt);
     // PostgREST bulk insert requires every object in an array to share the same
     // key set (error PGRST102), so split group rows by whether they carry odds.
     // Both batches merge (so odds refresh); rows without odds simply omit the

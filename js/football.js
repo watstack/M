@@ -204,7 +204,13 @@ function stopPolling() {
 async function _schedulePoll() {
   if (!_pollCallback) return;
   try {
-    _syncFired = false;          // allow a fresh sync each poll cycle
+    // Await sync (up to 3s) before reading Supabase so each poll cycle
+    // gets fresh data rather than data from the previous sync cycle.
+    _syncFired = true; // prevent getAllMatchData from firing a concurrent sync
+    await Promise.race([
+      fetch('/api/sync').catch(() => {}),
+      new Promise(r => setTimeout(r, 3000)),
+    ]);
     const data = await getAllMatchData();
     _pollCallback(data);
     _detectFinishedTransitions(data);

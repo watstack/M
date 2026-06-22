@@ -984,6 +984,7 @@
 <script src="js/flag-colors.js?v=17818741"></script>
 <script src="js/avatars.js?v=17818741"></script>
 <script src="js/wc2026-fixtures.js?v=17818741"></script>
+<script src="js/fixture-carousel.js?v=17818741"></script>
 <script src="js/football.js?v=17818741"></script>
 <script src="js/leaderboard.js?v=17818741"></script>
 <script src="js/betting.js?v=17818741"></script>
@@ -1085,7 +1086,7 @@ async function init() {
 
   // Wait for sync (up to 3s) then read fresh match data
   await Promise.race([_syncP, new Promise(r => setTimeout(r, 3000))]);
-  const matchesCarouselRes = await db.from('wc_matches').select('home_tla, away_tla, home_score, away_score, status');
+  const matchesCarouselRes = await db.from('wc_matches').select('home_tla, away_tla, home_score, away_score, status').order('synced_at', { ascending: false });
   _teamSet = new Set((allocRes.data || []).map(a => a.team_code));
   _pendingByMatchNo = {};
   for (const b of (pendingCarouselRes.data || [])) {
@@ -1095,17 +1096,19 @@ async function init() {
   _matchesByKey = {};
   for (const m of (matchesCarouselRes.data || [])) {
     const ht = m.home_tla, at = m.away_tla;
-    if (ht && at) _matchesByKey[`${ht}_${at}`] = {
-      home_score: m.home_score,
-      away_score: m.away_score,
-      status: m.status,
-    };
+    if (ht && at) {
+      const key = `${ht}_${at}`;
+      if (!_matchesByKey[key]) _matchesByKey[key] = { // most recent (synced_at DESC) wins
+        home_score: m.home_score,
+        away_score: m.away_score,
+        status: m.status,
+      };
+    }
   }
   renderBetCarousel();
 
   initBettingLeaderboard();
   startPolling(data => {
-    triggerSettlementForFinished(data.matches);
     _matchesByKey = {};
     for (const m of (data.matches || [])) {
       const ht = m.homeTeam?.tla, at = m.awayTeam?.tla;
@@ -1123,74 +1126,23 @@ async function init() {
 
 // ── Fixture carousel ──────────────────────────────────────────────────────────
 
-const _CAROUSEL_LIVE_MS = 130 * 60000;
-
 function renderBetCarousel() {
   const el = document.getElementById('betFixCarousel');
   if (!el) return;
-  const now = Date.now();
-  const all = (window.WC2026_FIXTURES || [])
-    .slice()
-    .sort((a, b) => new Date(a.kickoff_utc) - new Date(b.kickoff_utc));
-  if (!all.length) { el.innerHTML = ''; return; }
-
-  const flagOf = side =>
-    (side?.code && typeof teamFlagEmoji === 'function') ? teamFlagEmoji(side.code) : '🏳';
+  if (!(window.WC2026_FIXTURES || []).length) { el.innerHTML = ''; return; }
 
   const savedScroll = el.scrollLeft;
-  el.innerHTML = all.map(f => {
-    const ko       = new Date(f.kickoff_utc).getTime();
-    const matchKey = f.home.code && f.away.code ? `${f.home.code}_${f.away.code}` : null;
-    const matchData = matchKey ? _matchesByKey[matchKey] : null;
-    const dbStatus = matchData?.status;
-    const isPast = dbStatus === 'FINISHED' || (!dbStatus && ko <= now && (now - ko) >= _CAROUSEL_LIVE_MS);
-    const isLive = (dbStatus === 'IN_PLAY' || dbStatus === 'PAUSED') ||
-                   (!dbStatus && ko <= now && (now - ko) < _CAROUSEL_LIVE_MS);
-    const isMy   = (f.home.code && _teamSet.has(f.home.code)) || (f.away.code && _teamSet.has(f.away.code));
-    const hasBet = !!_pendingByMatchNo[f.match_no];
-    const classes = ['fix-card',
-      isPast ? 'past-card' : '',
-      isLive ? 'live-card' : '',
-      isMy   ? 'my-card'   : '',
-    ].filter(Boolean).join(' ');
-
-    const d = new Date(f.kickoff_utc);
-    const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
-    const tomMid = new Date(todayMid); tomMid.setDate(todayMid.getDate() + 1);
-    const dayAfterMid = new Date(tomMid); dayAfterMid.setDate(tomMid.getDate() + 1);
-    const timeStr = d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '');
-    let dateLabel;
-    if (d >= todayMid && d < tomMid) dateLabel = `Today ${timeStr}`;
-    else if (d >= tomMid && d < dayAfterMid) dateLabel = `Tomorrow ${timeStr}`;
-    else dateLabel = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-    let scoreHtml = '';
-    if (isLive) {
-      const mins = Math.floor((now - ko) / 60000);
-      const hs = matchData?.home_score ?? null;
-      const as = matchData?.away_score ?? null;
-      const scorePart = (hs !== null && as !== null) ? `${hs}-${as} ` : '';
-      scoreHtml = `<div class="fix-card-score live">${scorePart}${mins}'</div>`;
-    } else if (isPast && matchData) {
-      const hs = matchData.home_score ?? null;
-      const as = matchData.away_score ?? null;
-      if (hs !== null && as !== null) scoreHtml = `<div class="fix-card-score">${hs}-${as}</div>`;
-    }
-
-    return `<div class="${classes}">
-      <div class="fix-card-teams"><span>${flagOf(f.home)}</span><span>${flagOf(f.away)}</span></div>
-      ${scoreHtml}
-      <div class="fix-card-time">${dateLabel}</div>
-      ${hasBet ? `<div class="fix-card-bet">🪙</div>` : ''}
-    </div>`;
+  el.innerHTML = window.FixtureCarousel.buildCarouselCards({
+    matchesByKey: _matchesByKey,
+    teamSet: _teamSet,
+    pendingByMatchNo: _pendingByMatchNo,
   }).join('');
 
   if (!_carouselInitScrollDone) {
     _carouselInitScrollDone = true;
     const firstCurrent = el.querySelector('.fix-card:not(.past-card)');
     if (firstCurrent) {
-      requestAnimationFrame(() => {
-        el.scrollLeft = firstCurrent.offsetLeft;
-      });
+      requestAnimationFrame(() => { el.scrollLeft = firstCurrent.offsetLeft; });
     }
   } else {
     el.scrollLeft = savedScroll;
@@ -1312,22 +1264,6 @@ function setMatchSort(mode) {
 
 // ── Settlement trigger (betting concern — auto-fires when match data is polled) ──
 
-const _settledMatchCache = new Set();
-
-function triggerSettlementForFinished(matches) {
-  if (!_tournament) return;
-  for (const m of matches) {
-    if (m.status !== 'FINISHED') continue;
-    const key = String(m.id);
-    if (_settledMatchCache.has(key)) continue;
-    _settledMatchCache.add(key);
-    fetch('/api/settle', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ matchId: key, tournamentId: _tournament.id }),
-    }).catch(() => {});
-  }
-}
 
 // ── Leaderboard ────────────────────────────────────────────────────────────────
 

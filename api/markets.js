@@ -1,33 +1,18 @@
 // Server-side market creation + 24h odds refresh for a tournament.
 //
 // The browser POSTs /api/markets?code=XXX on load. This deterministically
-// ensures a match_result + correct_score market exists for every one of the 104
-// static WC2026 fixtures (keyed by match_no — no wc_matches, no fuzzy sync), and
-// refreshes 1X2 odds at most once per 24h.
+// ensures a match_result + correct_score + double_chance market exists for every
+// one of the 104 static WC2026 fixtures (keyed by match_no — no wc_matches, no
+// fuzzy sync), and refreshes 1X2 odds at most once per 24h.
 //
 // Knockout fixtures whose teams aren't resolved yet are created `locked` and get
 // no odds. Odds are fetched through this app's own /api/odds proxy so its 24h CDN
 // cache dedupes the upstream Odds API call across all tournaments.
 
-const { WC2026_FIXTURES, CODE_NAMES } = require('./_lib/fixtures');
-const { h2hOddsForFixture } = require('./_lib/odds-match');
+const { buildMarketRows } = require('./_lib/market-builder');
 
 const SPORT = 'soccer_fifa_world_cup_2026';
 const ODDS_TTL_MS = 24 * 60 * 60 * 1000; // 24h
-
-const teamName = code => CODE_NAMES[code] || code;
-
-function calcDcOdds({ home, draw, away }) {
-  const hp = 1 / home, dp = 1 / draw, ap = 1 / away;
-  const r = v => Math.round(v * 100) / 100;
-  return { '1x': r(1 / (hp + dp)), 'x2': r(1 / (dp + ap)), '12': r(1 / (hp + ap)) };
-}
-
-function matchNameFor(fx) {
-  const h = fx.home.code ? teamName(fx.home.code) : fx.home.label;
-  const a = fx.away.code ? teamName(fx.away.code) : fx.away.label;
-  return `${h} vs ${a}`;
-}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -82,62 +67,23 @@ module.exports = async function handler(req, res) {
       fetchedAt = new Date().toISOString();
     }
 
-    // 4. Build deterministic market rows from the static fixture list.
-    // Group rows (teams known) are merge-upserted so odds refresh; knockout rows
-    // are insert-once (ignore-duplicates) so a later resolution of their teams is
-    // never clobbered by a subsequent /api/markets call.
-    // status/result are omitted so existing settled markets are never touched.
-    let oddsMatched = 0;
-    const groupRows = [];
-    const koRows = [];
-    for (const fx of WC2026_FIXTURES) {
-      const resolved = !!(fx.home.code && fx.away.code);
-      const base = {
-        tournament_id: tournamentId,
-        match_no: fx.match_no,
-        stage: fx.stage,
-        match_name: matchNameFor(fx),
-        kickoff_time: fx.kickoff_utc,
-        close_time: fx.kickoff_utc,
-        locked: !resolved,
-      };
+    // 4. Build market rows from the static fixture list via shared builder.
+    const { groupRows, koRows, oddsMatched } = buildMarketRows(
+      tournamentId,
+      oddsStale ? h2hEvents : null,
+      fetchedAt,
+    );
 
-      if (resolved) {
-        base.home_code = fx.home.code;
-        base.away_code = fx.away.code;
-        const mr = { ...base, market_type: 'match_result' };
-        if (oddsStale && Array.isArray(h2hEvents)) {
-          const odds = h2hOddsForFixture(h2hEvents, fx);
-          if (odds) {
-            mr.odds_json = odds;
-            mr.odds_fetched_at = fetchedAt;
-            oddsMatched++;
-          }
-        }
-        const dc = { ...base, market_type: 'double_chance' };
-        if (oddsStale && Array.isArray(h2hEvents)) {
-          const odds = h2hOddsForFixture(h2hEvents, fx);
-          if (odds) {
-            dc.odds_json = calcDcOdds(odds);
-            dc.odds_fetched_at = fetchedAt;
-          }
-        }
-        groupRows.push(mr);
-        groupRows.push({ ...base, market_type: 'correct_score' });
-        groupRows.push(dc);
-      } else {
-        koRows.push({ ...base, market_type: 'match_result' });
-        koRows.push({ ...base, market_type: 'correct_score' });
-        koRows.push({ ...base, market_type: 'double_chance' });
-      }
-    }
-
-    if (groupRows.length) await upsert(rest, groupRows, 'merge-duplicates');
-    if (koRows.length)    await upsert(rest, koRows, 'ignore-duplicates');
+    // Split for PostgREST uniform-key requirement.
+    const withOdds = groupRows.filter(r => 'odds_json' in r);
+    const noOdds   = groupRows.filter(r => !('odds_json' in r));
+    if (withOdds.length) await upsert(rest, withOdds, 'merge-duplicates');
+    if (noOdds.length)   await upsert(rest, noOdds,   'merge-duplicates');
+    if (koRows.length)   await upsert(rest, koRows,    'ignore-duplicates');
 
     return res.status(200).json({
       ok: true,
-      fixtures: WC2026_FIXTURES.length,
+      fixtures: groupRows.length / 3 + koRows.length / 3,
       markets: groupRows.length + koRows.length,
       oddsRefreshed: oddsStale,
       oddsMatched,
