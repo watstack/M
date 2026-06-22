@@ -928,7 +928,7 @@
 
   <!-- My bets -->
   <div id="panelMyBets" style="display:none">
-    <div id="myBetsFilter" class="bet-filter"></div>
+    <div id="myBetsFilter" class="match-sort-bar"></div>
     <div id="myBetsList" class="my-bets-list"></div>
   </div>
 
@@ -1251,17 +1251,17 @@ async function loadMyBetsView() {
 function renderMyBetsFilter() {
   const el = document.getElementById('myBetsFilter');
   const pills = [
-    `<button class="filter-pill active" onclick="filterMyBets(null, this)">All</button>`,
-    `<button class="filter-pill" onclick="filterMyBets('pending', this)">Pending</button>`,
-    `<button class="filter-pill" onclick="filterMyBets('won', this)">Won</button>`,
-    `<button class="filter-pill" onclick="filterMyBets('lost', this)">Lost</button>`,
+    `<button class="sort-opt active" onclick="filterMyBets(null, this)">All</button>`,
+    `<button class="sort-opt" onclick="filterMyBets('pending', this)">Pending</button>`,
+    `<button class="sort-opt" onclick="filterMyBets('won', this)">Won</button>`,
+    `<button class="sort-opt" onclick="filterMyBets('lost', this)">Lost</button>`,
   ];
   el.innerHTML = pills.join('');
 }
 
 function filterMyBets(status, btn) {
   _myBetsFilterStatus = status;
-  document.querySelectorAll('#myBetsFilter .filter-pill').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#myBetsFilter .sort-opt').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   renderMyBetsList();
 }
