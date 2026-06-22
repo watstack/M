@@ -807,7 +807,7 @@
       margin-bottom: 10px;
     }
     .payout-label { color: var(--muted); }
-    .payout-amount { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: var(--gold); }
+    .payout-amount { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 900; color: var(--gold); letter-spacing: -0.01em; }
     .place-btn {
       width: 100%;
       padding: 11px;
@@ -1779,8 +1779,11 @@ function selectBet(btn) {
   if (_parlayLegs.length === 0) {
     closeBetSlip();
   } else {
+    const slip = document.getElementById('betSlip');
+    const wasHidden = slip.classList.contains('hidden');
     renderBetSlip();
-    document.getElementById('betSlip').classList.remove('hidden', 'collapsed');
+    slip.classList.remove('hidden');
+    if (wasHidden) slip.classList.remove('collapsed');
   }
 }
 
