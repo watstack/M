@@ -307,7 +307,7 @@
         db.from('bets').select('selection, stake, potential_payout, odds, bet_markets(match_no)').eq('participant_id', myParticipantId).eq('tournament_id', tid).eq('status', 'pending'),
         db.from('bets').select('status, stake, potential_payout').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('placed_at', { ascending: false }),
         db.from('parlay_bets').select('status, stake, potential_payout').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('placed_at', { ascending: false }),
-        db.from('wc_matches').select('home_tla, away_tla, home_score, away_score, status'),
+        db.from('wc_matches').select('home_tla, away_tla, home_score, away_score, status').order('synced_at', { ascending: false }),
       ]);
 
       const myP         = myPRes.data;
@@ -353,7 +353,8 @@
       // ── Fixture carousel ──
       const matchesByKey = {};
       for (const m of (matchesRes.data || [])) {
-        matchesByKey[`${m.home_tla}_${m.away_tla}`] = m;
+        const key = `${m.home_tla}_${m.away_tla}`;
+        if (!matchesByKey[key]) matchesByKey[key] = m; // most recent (synced_at DESC) wins
       }
       _heroCtx = { teamSet, pendingByMatchNo, matchesByKey };
       renderFixtureCarousel(teamSet, pendingByMatchNo, matchesByKey);
@@ -386,75 +387,18 @@
       row('Lost',    'lost',    lostBets.length,     `-🪙 ${lostStake}`);
   }
 
-  const LIVE_WINDOW_MS = 130 * 60000;
-
   // Horizontal fixture carousel — all 104 fixtures, auto-scrolled to current position.
   function renderFixtureCarousel(teamSet, pendingByMatchNo, matchesByKey) {
     const el = document.getElementById('ovFixCarousel');
     if (!el) return;
-    const now = Date.now();
-    const all = (window.WC2026_FIXTURES || [])
-      .slice()
-      .sort((a, b) => new Date(a.kickoff_utc) - new Date(b.kickoff_utc));
+    if (!(window.WC2026_FIXTURES || []).length) { el.innerHTML = ''; return; }
 
-    if (!all.length) { el.innerHTML = ''; return; }
-
-    el.innerHTML = all.map(f => {
-      const ko       = new Date(f.kickoff_utc).getTime();
-      const matchKey = f.home.code && f.away.code ? `${f.home.code}_${f.away.code}` : null;
-      const matchData = matchKey ? (matchesByKey || {})[matchKey] : null;
-      const dbStatus = matchData?.status;
-      const isPast = dbStatus === 'FINISHED' || (!dbStatus && ko <= now && (now - ko) >= LIVE_WINDOW_MS);
-      const isLive = (dbStatus === 'IN_PLAY' || dbStatus === 'PAUSED') ||
-                     (!dbStatus && ko <= now && (now - ko) < LIVE_WINDOW_MS);
-      const isMy   = (f.home.code && teamSet.has(f.home.code)) || (f.away.code && teamSet.has(f.away.code));
-      const hasBet = !!pendingByMatchNo[f.match_no];
-      const classes = ['fix-card',
-        isPast ? 'past-card' : '',
-        isLive ? 'live-card' : '',
-        isMy   ? 'my-card'   : '',
-      ].filter(Boolean).join(' ');
-
-      // Date label — always shown
-      const d = new Date(f.kickoff_utc);
-      const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
-      const tomMid = new Date(todayMid); tomMid.setDate(todayMid.getDate() + 1);
-      const dayAfterMid = new Date(tomMid); dayAfterMid.setDate(tomMid.getDate() + 1);
-      const timeStr = d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true }).replace(':00', '');
-      let dateLabel;
-      if (d >= todayMid && d < tomMid) dateLabel = `Today ${timeStr}`;
-      else if (d >= tomMid && d < dayAfterMid) dateLabel = `Tomorrow ${timeStr}`;
-      else dateLabel = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-      const dateHtml = `<div class="fix-card-time">${dateLabel}</div>`;
-
-      // Score / status area
-      let scoreHtml = '';
-      if (isLive) {
-        const mins = Math.floor((now - ko) / 60000);
-        const hs = matchData?.home_score ?? null;
-        const as = matchData?.away_score ?? null;
-        const scorePart = (hs !== null && as !== null) ? `${hs}-${as} ` : '';
-        scoreHtml = `<div class="fix-card-score live">${scorePart}${mins}'</div>`;
-      } else if (isPast && matchData) {
-        const hs = matchData.home_score ?? null;
-        const as = matchData.away_score ?? null;
-        if (hs !== null && as !== null) {
-          scoreHtml = `<div class="fix-card-score">${hs}-${as}</div>`;
-        }
-      }
-
-      return `<div class="${classes}">
-        <div class="fix-card-teams">
-          <span>${sideFlag(f.home)}</span>
-          <span>${sideFlag(f.away)}</span>
-        </div>
-        ${scoreHtml}
-        ${dateHtml}
-        ${hasBet ? `<div class="fix-card-bet">🪙</div>` : ''}
-      </div>`;
+    el.innerHTML = window.FixtureCarousel.buildCarouselCards({
+      matchesByKey,
+      teamSet,
+      pendingByMatchNo,
     }).join('');
 
-    // Auto-scroll to first live or upcoming card
     const firstCurrent = el.querySelector('.fix-card:not(.past-card)');
     if (firstCurrent) {
       requestAnimationFrame(() => {

@@ -3,8 +3,7 @@
 // enabling near-real-time settlement without waiting for the hourly cron.
 // Settlement is idempotent — already-settled markets are skipped by the DB RPC.
 
-const { fetchESPNMatches } = require('./_lib/espn');
-const { fetchFBDMatches }  = require('./_lib/fbd');
+const { syncMatchesToSupabase } = require('./_lib/sync-matches');
 const { makeRest, settleMarketRpc, propagateResult } = require('./_lib/settle-lib');
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
@@ -25,22 +24,7 @@ module.exports = async function handler(req, res) {
 
   try {
     // Sync latest match data first.
-    let matches = [];
-    const token = process.env.FOOTBALL_API_TOKEN;
-    if (token) matches = await fetchFBDMatches(token);
-    if (matches.length === 0) matches = await fetchESPNMatches();
-
-    if (matches.length > 0) {
-      const r = await rest('/wc_matches?on_conflict=home_tla,away_tla,utc_date', {
-        method: 'POST',
-        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-        body: JSON.stringify(matches),
-      });
-      if (!r.ok) {
-        const body = await r.text().catch(() => '');
-        console.error('[auto-settle] wc_matches upsert failed:', r.status, body);
-      }
-    }
+    await syncMatchesToSupabase({ supaUrl, supaKey }, process.env.FOOTBALL_API_TOKEN || null);
 
     const now    = new Date().toISOString();
     const cutoff = new Date(Date.now() - TWO_HOURS_MS).toISOString();
