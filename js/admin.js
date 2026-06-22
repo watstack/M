@@ -179,8 +179,10 @@ window.AdminPanel = (function () {
         </div>`;
     }
 
+    const now = Date.now();
     const matchOptions = (typeof WC2026_FIXTURES !== 'undefined' ? WC2026_FIXTURES : [])
       .slice().sort((a, b) => a.match_no - b.match_no)
+      .filter(fx => new Date(fx.kickoff_utc).getTime() > now)
       .map(fx => {
         const h = sideDisplay(fx.home), aw = sideDisplay(fx.away);
         const label = `#${fx.match_no} ${h.name} v ${aw.name}`;
