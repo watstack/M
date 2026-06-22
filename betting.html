@@ -809,7 +809,7 @@
       margin-bottom: 10px;
     }
     .payout-label { color: var(--muted); }
-    .payout-amount { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 900; color: var(--gold); letter-spacing: -0.01em; }
+    .payout-amount { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; color: var(--gold); }
     .place-btn {
       width: 100%;
       padding: 11px;
@@ -923,6 +923,51 @@
       font-size: 0.7rem;
     }
     .bet-slip.collapsed .slip-chevron { transform: rotate(180deg); }
+
+    /* ── Betslip collapsed peek panel ── */
+    .slip-peek {
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height .3s cubic-bezier(0.4, 0, 0.2, 1), opacity .2s ease;
+    }
+    .bet-slip.collapsed .slip-peek { max-height: 120px; opacity: 1; }
+    .slip-peek-inner {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0 8px;
+    }
+    .slip-peek-return {
+      font-family: var(--font-mono);
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--gold);
+      letter-spacing: -0.02em;
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .slip-peek-stake-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .slip-peek-label { font-size: 0.78rem; color: var(--muted); }
+    .slip-peek-stake {
+      width: 72px;
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      padding: 5px 8px;
+    }
+    .slip-peek-stake:focus { border-color: var(--green); outline: none; }
 
     /* ── Spin the Wheel Promo ── */
     .spin-promo-overlay {
@@ -1169,13 +1214,21 @@
   <div class="bet-slip-title">
     <div class="bet-slip-title-left">
       <span id="slipTitle">Bet Slip</span>
-      <span id="slipCollapsedSummary" class="slip-collapsed-summary"></span>
     </div>
     <div class="bet-slip-title-right">
       <button class="slip-collapse-btn" onclick="toggleBetSlipCollapse()" aria-label="Toggle betslip">
         <span class="slip-chevron">▼</span>
       </button>
       <button class="close-slip-btn" onclick="closeBetSlip()">✕</button>
+    </div>
+  </div>
+  <div class="slip-peek">
+    <div class="slip-peek-inner">
+      <span id="slipPeekReturn" class="slip-peek-return">—</span>
+      <div class="slip-peek-stake-wrap">
+        <span class="slip-peek-label">Stake</span>
+        <input type="number" id="stakeInputPeek" class="slip-peek-stake" min="1" value="100" oninput="syncPeekStake(this.value)">
+      </div>
     </div>
   </div>
   <div id="slipBody" class="slip-body">
@@ -1847,11 +1900,8 @@ function updateSlipSummary() {
   let totalOdds = calcTotalOdds();
   if (_boostState.active && n === 1) totalOdds = applyBoostCalc(totalOdds);
   const payout = stake ? Math.round(stake * totalOdds) : 0;
-  const oddsStr = totalOdds.toFixed(2) + 'x';
-  const text = n === 1
-    ? `${_parlayLegs[0].label.split('—')[0].trim()} · ${oddsStr} · ${payout ? payout.toLocaleString() + ' 🪙' : '—'}`
-    : `${n} legs · ${oddsStr} · ${payout ? payout.toLocaleString() + ' 🪙' : '—'}`;
-  document.getElementById('slipCollapsedSummary').textContent = text;
+  document.getElementById('slipPeekReturn').textContent = payout ? `${payout.toLocaleString()} 🪙` : '—';
+  document.getElementById('stakeInputPeek').value = stake || '';
 }
 
 function updatePayout() {
@@ -1867,6 +1917,11 @@ function updatePayout() {
 
 function setStake(amount) {
   document.getElementById('stakeInput').value = amount;
+  updatePayout();
+}
+
+function syncPeekStake(val) {
+  document.getElementById('stakeInput').value = val;
   updatePayout();
 }
 
