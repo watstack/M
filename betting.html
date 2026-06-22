@@ -156,6 +156,16 @@
       gap: 8px;
       flex-wrap: wrap;
     }
+    .market-top-bet {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.72rem;
+      padding-top: 2px;
+    }
+    .market-top-nick { font-weight: 700; color: var(--text); }
+    .market-top-payout { font-family: var(--font-mono); color: var(--gold); }
+
     .kickoff-time {
       font-family: var(--font-mono);
       font-size: 0.78rem;
@@ -1222,6 +1232,13 @@ async function loadMarketsView() {
     } catch (e) {
       console.warn('[markets] custom bet stats failed:', e.message);
     }
+  }
+
+  try {
+    const topBets = await loadTopBetsByMarket(_tournament.id);
+    markets = markets.map(m => ({ ...m, _topBet: topBets[m.id] || null }));
+  } catch (e) {
+    console.warn('[markets] top bets load failed:', e.message);
   }
 
   renderMarketsView(markets);
