@@ -928,6 +928,7 @@
 
   <!-- My bets -->
   <div id="panelMyBets" style="display:none">
+    <div id="myBetsFilter" class="bet-filter"></div>
     <div id="myBetsList" class="my-bets-list"></div>
   </div>
 
@@ -1003,6 +1004,8 @@ let _customMarkets = [];
 let _allBets = [];
 let _allBetsFilterPid = null;
 let _allBetsParticipants = [];
+let _myBets = [];
+let _myBetsFilterStatus = null;
 let _teamSet = new Set();
 let _pendingByMatchNo = {};
 let _matchesByKey = {};
@@ -1231,16 +1234,48 @@ function renderMarketsView(markets) {
 async function loadMyBetsView() {
   if (!_participant) return;
   const { singleBets, parlayBets } = await loadMyBets(_tournament.id, _participant.id);
-  const el = document.getElementById('myBetsList');
   if (!singleBets.length && !parlayBets.length) {
-    el.innerHTML = '<p class="my-bets-empty">No bets placed yet</p>';
+    document.getElementById('myBetsList').innerHTML = '<p class="my-bets-empty">No bets placed yet</p>';
+    document.getElementById('myBetsFilter').innerHTML = '';
     return;
   }
-  const allItems = [
+  _myBets = [
     ...singleBets.map(b => ({ type: 'single', placed_at: b.placed_at, data: b })),
     ...parlayBets.map(p => ({ type: 'parlay', placed_at: p.placed_at, data: p })),
   ].sort((a, b) => (b.placed_at || '') > (a.placed_at || '') ? 1 : -1);
-  el.innerHTML = allItems.map(item =>
+  _myBetsFilterStatus = null;
+  renderMyBetsFilter();
+  renderMyBetsList();
+}
+
+function renderMyBetsFilter() {
+  const el = document.getElementById('myBetsFilter');
+  const pills = [
+    `<button class="filter-pill active" onclick="filterMyBets(null, this)">All</button>`,
+    `<button class="filter-pill" onclick="filterMyBets('pending', this)">Pending</button>`,
+    `<button class="filter-pill" onclick="filterMyBets('won', this)">Won</button>`,
+    `<button class="filter-pill" onclick="filterMyBets('lost', this)">Lost</button>`,
+  ];
+  el.innerHTML = pills.join('');
+}
+
+function filterMyBets(status, btn) {
+  _myBetsFilterStatus = status;
+  document.querySelectorAll('#myBetsFilter .filter-pill').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderMyBetsList();
+}
+
+function renderMyBetsList() {
+  const el = document.getElementById('myBetsList');
+  const filtered = _myBetsFilterStatus
+    ? _myBets.filter(item => item.data.status === _myBetsFilterStatus)
+    : _myBets;
+  if (!filtered.length) {
+    el.innerHTML = '<p class="my-bets-empty">No bets found</p>';
+    return;
+  }
+  el.innerHTML = filtered.map(item =>
     item.type === 'parlay' ? renderParlayBetRow(item.data) : renderMyBetRow(item.data)
   ).join('');
 }
@@ -1305,6 +1340,7 @@ function showTab(tab) {
   document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'leaderboard');
   // Toggle contextual filter/sort bar in sticky zone
   document.getElementById('betSortBar').style.display    = tab === 'markets' ? '' : 'none';
+  document.getElementById('myBetsFilter').style.display  = tab === 'mybets' ? '' : 'none';
   document.getElementById('allBetsFilter').style.display = tab === 'allbets' ? '' : 'none';
   document.getElementById('betFilterRow').style.display  = (tab === 'markets' || tab === 'allbets') ? '' : 'none';
   if (tab === 'mybets')      loadMyBetsView();
