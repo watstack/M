@@ -19,7 +19,6 @@
       gap: 12px;
       padding: 16px 0 12px;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
       flex-wrap: wrap;
     }
     .bet-back {
@@ -65,7 +64,9 @@
       position: sticky;
       top: 0;
       z-index: 50;
-      background: var(--bg);
+      background: var(--dark);
+      padding-bottom: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,.7);
     }
     .fix-carousel-wrap {
       margin: 0 -16px;
@@ -1091,17 +1092,16 @@
 
 <div class="bet-page">
 
-  <div class="bet-header">
-    <a id="backLink" href="#" class="bet-back">← Bracket</a>
-    <span class="bet-title">Betting</span>
-    <div class="bet-balance">🪙 <span class="bet-balance-num" id="balanceAmt">—</span></div>
-    <div class="bet-participant">
-      <span id="avatarImg"></span>
-      <span id="nicknameTxt"></span>
-    </div>
-  </div>
-
   <div class="bet-sticky">
+    <div class="bet-header">
+      <a id="backLink" href="#" class="bet-back">← Bracket</a>
+      <span class="bet-title">Betting</span>
+      <div class="bet-balance">🪙 <span class="bet-balance-num" id="balanceAmt">—</span></div>
+      <div class="bet-participant">
+        <span id="avatarImg"></span>
+        <span id="nicknameTxt"></span>
+      </div>
+    </div>
     <!-- Fixture carousel -->
     <div class="fix-carousel-wrap">
       <div class="fix-carousel" id="betFixCarousel"></div>
