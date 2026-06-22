@@ -362,7 +362,7 @@
     .share-bet-actions button { flex: 1; }
 
     /* ── Parlay betslip legs ── */
-    .slip-legs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+    .slip-legs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 6px; }
     .slip-leg {
       display: flex; align-items: center; justify-content: space-between; gap: 8px;
       padding: 8px 10px; background: var(--panel);
@@ -732,7 +732,7 @@
       background: var(--mid);
       border-top: 2px solid var(--border);
       box-shadow: 0 -4px 24px rgba(0,0,0,.6);
-      padding: 16px;
+      padding: 12px 16px 14px;
       z-index: 200;
       max-width: 780px;
       margin: 0 auto;
@@ -767,7 +767,7 @@
       cursor: pointer;
       line-height: 1;
     }
-    .stake-presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .stake-presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
     .preset-btn {
       background: var(--panel);
       border: 2px solid var(--border);
@@ -784,7 +784,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
     .stake-label { font-size: 0.85rem; color: var(--muted); white-space: nowrap; }
     .stake-input {
@@ -804,13 +804,13 @@
       align-items: center;
       justify-content: space-between;
       font-size: 0.9rem;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
     .payout-label { color: var(--muted); }
     .payout-amount { font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: var(--gold); }
     .place-btn {
       width: 100%;
-      padding: 14px;
+      padding: 11px;
       background: var(--green);
       border: none;
       border-radius: var(--radius);
@@ -887,6 +887,32 @@
       margin-top: 6px;
     }
     .boost-hint.hidden { display: none; }
+
+    /* ── Betslip accordion collapse ── */
+    .bet-slip.collapsed .slip-body { display: none; }
+    .bet-slip-title-left { display: flex; align-items: center; flex: 1; min-width: 0; gap: 6px; }
+    .bet-slip-title-right { display: flex; align-items: center; gap: 8px; }
+    .slip-collapsed-summary {
+      display: none;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .bet-slip.collapsed .slip-collapsed-summary { display: block; }
+    .slip-collapse-btn {
+      background: none; border: none;
+      color: var(--muted); cursor: pointer; padding: 4px; line-height: 1;
+    }
+    .slip-collapse-btn:hover { color: var(--text); }
+    .slip-chevron {
+      display: inline-block;
+      transition: transform .18s;
+      font-size: 0.7rem;
+    }
+    .bet-slip.collapsed .slip-chevron { transform: rotate(180deg); }
 
     /* ── Spin the Wheel Promo ── */
     .spin-promo-overlay {
@@ -1130,34 +1156,44 @@
 <!-- Bet slip drawer -->
 <div id="betSlip" class="bet-slip hidden">
   <div class="bet-slip-title">
-    <span id="slipTitle">Bet Slip</span>
-    <button class="close-slip-btn" onclick="closeBetSlip()">✕</button>
-  </div>
-  <div id="slipLegs" class="slip-legs"></div>
-  <div id="slipTotalOdds" class="slip-total-odds" style="display:none"></div>
-  <div class="stake-presets">
-    <button class="preset-btn" onclick="setStake(50)">50</button>
-    <button class="preset-btn" onclick="setStake(100)">100</button>
-    <button class="preset-btn" onclick="setStake(250)">250</button>
-    <button class="preset-btn" onclick="setStake(500)">500</button>
-    <button class="preset-btn" onclick="setStakeAllIn()">All in</button>
-  </div>
-  <div class="stake-row">
-    <span class="stake-label">Stake</span>
-    <input type="number" id="stakeInput" class="stake-input" min="1" value="100" oninput="updatePayout()">
-    <span style="color:var(--muted);font-size:0.82rem">🪙</span>
-  </div>
-  <div class="payout-row">
-    <span class="payout-label">Potential payout</span>
-    <span class="payout-amount" id="payoutAmt">—</span>
-  </div>
-  <div id="boostToggle" class="boost-toggle" style="display:none">
-    <div class="boost-toggle-row">
-      <button id="boostBtn" class="boost-btn" onclick="toggleBoost()">⚡ Boost Odds (+25%)</button>
-      <span id="boostBadge" class="boost-badge"></span>
+    <div class="bet-slip-title-left">
+      <span id="slipTitle">Bet Slip</span>
+      <span id="slipCollapsedSummary" class="slip-collapsed-summary"></span>
     </div>
-    <div id="boostOddsDisplay" class="boost-odds-display" style="display:none"></div>
-    <div id="boostHint" class="boost-hint hidden"></div>
+    <div class="bet-slip-title-right">
+      <button class="slip-collapse-btn" onclick="toggleBetSlipCollapse()" aria-label="Toggle betslip">
+        <span class="slip-chevron">▼</span>
+      </button>
+      <button class="close-slip-btn" onclick="closeBetSlip()">✕</button>
+    </div>
+  </div>
+  <div id="slipBody" class="slip-body">
+    <div id="slipLegs" class="slip-legs"></div>
+    <div id="slipTotalOdds" class="slip-total-odds" style="display:none"></div>
+    <div class="stake-presets">
+      <button class="preset-btn" onclick="setStake(50)">50</button>
+      <button class="preset-btn" onclick="setStake(100)">100</button>
+      <button class="preset-btn" onclick="setStake(250)">250</button>
+      <button class="preset-btn" onclick="setStake(500)">500</button>
+      <button class="preset-btn" onclick="setStakeAllIn()">All in</button>
+    </div>
+    <div class="stake-row">
+      <span class="stake-label">Stake</span>
+      <input type="number" id="stakeInput" class="stake-input" min="1" value="100" oninput="updatePayout()">
+      <span style="color:var(--muted);font-size:0.82rem">🪙</span>
+    </div>
+    <div class="payout-row">
+      <span class="payout-label">Potential payout</span>
+      <span class="payout-amount" id="payoutAmt">—</span>
+    </div>
+    <div id="boostToggle" class="boost-toggle" style="display:none">
+      <div class="boost-toggle-row">
+        <button id="boostBtn" class="boost-btn" onclick="toggleBoost()">⚡ Boost Odds (+25%)</button>
+        <span id="boostBadge" class="boost-badge"></span>
+      </div>
+      <div id="boostOddsDisplay" class="boost-odds-display" style="display:none"></div>
+      <div id="boostHint" class="boost-hint hidden"></div>
+    </div>
   </div>
   <button class="place-btn" id="placeBetBtn" onclick="confirmBet()">Place Bet</button>
 </div>
@@ -1682,6 +1718,7 @@ function renderBetSlip() {
   if (_parlayLegs.length !== 1) _boostState.active = false;
   updateBoostUI();
   updatePayout();
+  updateSlipSummary();
 }
 
 function selectBet(btn) {
@@ -1735,7 +1772,7 @@ function selectBet(btn) {
     closeBetSlip();
   } else {
     renderBetSlip();
-    document.getElementById('betSlip').classList.remove('hidden');
+    document.getElementById('betSlip').classList.remove('hidden', 'collapsed');
   }
 }
 
@@ -1769,7 +1806,9 @@ function labelForSelection(sel, matchName) {
 }
 
 function closeBetSlip() {
-  document.getElementById('betSlip').classList.add('hidden');
+  const slip = document.getElementById('betSlip');
+  slip.classList.add('hidden');
+  slip.classList.remove('collapsed');
   _parlayLegs.forEach(leg => {
     document.querySelectorAll(
       `.odds-btn[data-market-id="${leg.marketId}"][data-selection="${leg.selection}"],` +
@@ -1777,6 +1816,28 @@ function closeBetSlip() {
     ).forEach(b => b.classList.remove('selected'));
   });
   _parlayLegs = [];
+}
+
+function toggleBetSlipCollapse() {
+  document.getElementById('betSlip').classList.toggle('collapsed');
+}
+
+function collapseBetSlip() {
+  document.getElementById('betSlip').classList.add('collapsed');
+}
+
+function updateSlipSummary() {
+  const n = _parlayLegs.length;
+  if (!n) return;
+  const stake = parseInt(document.getElementById('stakeInput').value, 10) || 0;
+  let totalOdds = calcTotalOdds();
+  if (_boostState.active && n === 1) totalOdds = applyBoostCalc(totalOdds);
+  const payout = stake ? Math.round(stake * totalOdds) : 0;
+  const oddsStr = totalOdds.toFixed(2) + 'x';
+  const text = n === 1
+    ? `${_parlayLegs[0].label.split('—')[0].trim()} · ${oddsStr} · ${payout ? payout.toLocaleString() + ' 🪙' : '—'}`
+    : `${n} legs · ${oddsStr} · ${payout ? payout.toLocaleString() + ' 🪙' : '—'}`;
+  document.getElementById('slipCollapsedSummary').textContent = text;
 }
 
 function updatePayout() {
@@ -1787,6 +1848,7 @@ function updatePayout() {
   }
   const payout = totalOdds ? Math.round(stake * totalOdds) : 0;
   document.getElementById('payoutAmt').textContent = payout ? `${payout.toLocaleString()} 🪙` : '—';
+  updateSlipSummary();
 }
 
 function setStake(amount) {
@@ -2032,6 +2094,12 @@ function closeSpinPromo() {
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
 init();
+
+window.addEventListener('scroll', () => {
+  if (_currentTab !== 'markets') return;
+  const slip = document.getElementById('betSlip');
+  if (slip && !slip.classList.contains('hidden')) collapseBetSlip();
+}, { passive: true });
 </script>
 <script src="js/analytics.js?v=17818741"></script>
 <script src="js/pwa.js?v=17818741"></script>
