@@ -179,6 +179,16 @@ window.AdminPanel = (function () {
         </div>`;
     }
 
+    const now = Date.now();
+    const matchOptions = (typeof WC2026_FIXTURES !== 'undefined' ? WC2026_FIXTURES : [])
+      .slice().sort((a, b) => a.match_no - b.match_no)
+      .filter(fx => new Date(fx.kickoff_utc).getTime() > now)
+      .map(fx => {
+        const h = sideDisplay(fx.home), aw = sideDisplay(fx.away);
+        const label = `#${fx.match_no} ${h.name} v ${aw.name}`;
+        return `<option value="${escapeHtml(fx.kickoff_utc)}">${escapeHtml(label)}</option>`;
+      }).join('');
+
     return `<div class="admin-row req-row" id="adm-req-row-${id}">
       <div class="admin-meta">
         <span class="adm-no" style="font-size:0.55rem;word-break:break-all">${nick}</span>
@@ -187,6 +197,22 @@ window.AdminPanel = (function () {
       <div class="admin-name" style="font-size:0.75rem">"${text}"</div>
       <div class="admin-ctrls" style="flex-direction:column;align-items:flex-start">
         <div id="adm-req-opts-${id}" style="margin-bottom:4px">${optionInputs}</div>
+        <div style="margin-bottom:6px">
+          <div style="font-size:0.6rem;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em">Close time</div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <label style="display:flex;align-items:center;gap:5px;font-size:0.7rem;cursor:pointer">
+              <input type="radio" name="adm-close-mode-${id}" value="none" checked onchange="AdminPanel.onCloseMode('${id}')"> None (manual)
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:0.7rem;cursor:pointer">
+              <input type="radio" name="adm-close-mode-${id}" value="match" onchange="AdminPanel.onCloseMode('${id}')"> Match kickoff
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:0.7rem;cursor:pointer">
+              <input type="radio" name="adm-close-mode-${id}" value="custom" onchange="AdminPanel.onCloseMode('${id}')"> Custom time
+            </label>
+          </div>
+          <select class="adm-in" id="adm-req-match-${id}" style="display:none;margin-top:4px;font-size:0.65rem;max-width:180px">${matchOptions}</select>
+          <input type="datetime-local" class="adm-in" id="adm-req-dt-${id}" style="display:none;margin-top:4px;font-size:0.65rem">
+        </div>
         <div style="display:flex;gap:4px">
           <button class="adm-btn" onclick="AdminPanel.approveBetRequest('${id}')">Approve</button>
           <button class="btn-ghost" style="font-size:0.55rem;padding:5px 8px" onclick="AdminPanel.rejectBetRequest('${id}')">Reject</button>
@@ -499,10 +525,20 @@ window.AdminPanel = (function () {
       showToast('Need at least 2 options with odds');
       return;
     }
+    const closeMode = document.querySelector(`input[name="adm-close-mode-${requestId}"]:checked`)?.value || 'none';
+    let closeTime = null;
+    if (closeMode === 'match') {
+      closeTime = document.getElementById(`adm-req-match-${requestId}`)?.value || null;
+    } else if (closeMode === 'custom') {
+      const dtVal = document.getElementById(`adm-req-dt-${requestId}`)?.value;
+      if (dtVal) closeTime = new Date(dtVal).toISOString();
+    }
+
     try {
       const rpcArgs = { p_code: _code, p_request_id: requestId, p_odds_json: oddsJson };
       if (_adminToken) rpcArgs.p_admin_token    = _adminToken;
       else             rpcArgs.p_participant_id = _participantId;
+      if (closeTime) rpcArgs.p_close_time = closeTime;
       const { error } = await _db.rpc('approve_bet_request', rpcArgs);
       if (error) {
         if (error.message.includes('request_not_found')) throw new Error('Request not found or already handled');
@@ -719,6 +755,14 @@ window.AdminPanel = (function () {
     refresh();
   }
 
+  function onCloseMode(requestId) {
+    const mode = document.querySelector(`input[name="adm-close-mode-${requestId}"]:checked`)?.value || 'none';
+    const matchSel = document.getElementById(`adm-req-match-${requestId}`);
+    const dtInput  = document.getElementById(`adm-req-dt-${requestId}`);
+    if (matchSel) matchSel.style.display = mode === 'match'  ? '' : 'none';
+    if (dtInput)  dtInput.style.display  = mode === 'custom' ? '' : 'none';
+  }
+
   return {
     init,
     refresh,
@@ -728,6 +772,7 @@ window.AdminPanel = (function () {
     closeCustomMarket:   id  => closeCustomMarket(id),
     approveBetRequest:   id  => approveBetRequest(id),
     rejectBetRequest:    id  => rejectBetRequest(id),
+    onCloseMode:         id  => onCloseMode(id),
     saveParticipant:     id  => saveParticipant(id),
     removeParticipant:   id  => removeParticipant(id),
     setAdmin:            (id, v) => setAdmin(id, v),
