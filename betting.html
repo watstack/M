@@ -556,13 +556,52 @@
     }
     .promo-arrow:hover { color: var(--text); }
 
-    /* ── Two Up card ── */
-    .two-up-card { border-color: rgba(104,136,200,.4); margin-bottom: 0; }
-    .tu-countdown { padding: 10px 16px 8px; border-top: 1px solid var(--border); text-align: center; }
-    .tu-cd-label { font-family: var(--font-body); font-size: 0.7rem; color: var(--muted); display: block; margin-bottom: 4px; }
-    .tu-cd-timer { font-family: var(--font-mono); font-size: 1.5rem; color: var(--text); letter-spacing: .04em; }
-    .tu-cd-seg { font-weight: 700; font-variant-numeric: tabular-nums; }
-    .tu-cd-sep { color: var(--muted); margin: 0 1px; font-size: 1rem; }
+    /* ── Two Up hero slide ── */
+    #twoUpSlide { height: calc(100svh - 140px); padding: 0 16px; }
+
+    /* ── Two Up hero card ── */
+    .tu-hero {
+      height: 100%;
+      display: flex; flex-direction: column;
+      background: var(--panel);
+      border: 2px solid rgba(104,136,200,.4);
+      border-radius: var(--radius);
+      box-shadow: 3px 3px 0 rgba(0,0,0,.5);
+      overflow: hidden;
+    }
+    .tu-hero-head {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+      padding: 14px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .tu-hero-title {
+      font-family: var(--font-pixel); font-size: 0.68rem;
+      color: var(--pixel-sky); letter-spacing: .06em; line-height: 1.5;
+    }
+    .tu-hero-sub { font-family: var(--font-body); font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
+    .tu-hero-body {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 16px; gap: 14px; overflow: hidden;
+    }
+    .tu-cd-label-hero { font-family: var(--font-body); font-size: 0.88rem; color: var(--muted); }
+    .tu-cd-blocks { display: flex; gap: 8px; align-items: flex-start; justify-content: center; }
+    .tu-cd-block { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .tu-cd-num {
+      font-family: var(--font-mono); font-weight: 700;
+      font-size: clamp(2rem, 9vw, 3.5rem);
+      color: var(--text); background: var(--mid);
+      border: 2px solid var(--border); border-radius: var(--radius);
+      padding: 10px 8px; min-width: clamp(56px, 17vw, 80px);
+      text-align: center; line-height: 1; font-variant-numeric: tabular-nums;
+      box-shadow: 2px 2px 0 rgba(0,0,0,.5);
+    }
+    .tu-cd-unit {
+      font-family: var(--font-body); font-size: 0.55rem;
+      color: var(--muted); text-transform: uppercase; letter-spacing: .12em;
+    }
+    .tu-hero-foot {
+      flex-shrink: 0; padding: 10px 16px 14px; border-top: 1px solid var(--border);
+    }
     .tu-coin-area { display: flex; justify-content: center; align-items: center; gap: 20px; padding: 12px 0 8px; }
     .tu-coin {
       width: 60px; height: 60px; border-radius: 50%;
