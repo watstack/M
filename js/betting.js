@@ -320,6 +320,14 @@ function renderMatchCard(fixture, pair) {
     return oddsTbc(label);
   };
 
+  const topBet = mr && mr._topBet;
+  const topBetLine = topBet
+    ? `<div class="market-top-bet">
+        <span class="market-top-nick">${escapeHtml(topBet.nickname || '?')}</span>
+        <span class="market-top-payout">${Number(topBet.potential_payout).toLocaleString()} 🪙 to win</span>
+      </div>`
+    : '';
+
   const dc = pair.double_chance;
   const showOtherAccordion = (!locked && !isClosed) && ((cs && cs.id) || (dc && dc.id));
   const otherAccordion = showOtherAccordion
@@ -350,6 +358,7 @@ function renderMatchCard(fixture, pair) {
         ${venue}
         ${statusChip}
       </div>
+      ${topBetLine}
     </div>
     <span class="match-name" hidden>${escapeHtml(matchName)}</span>
     <div class="match-odds-row">
@@ -775,6 +784,27 @@ async function loadCustomMarketBetStats(tournamentId, marketIds) {
     stats[row.market_id].totalStake += row.stake || 0;
   }
   return stats;
+}
+
+async function loadTopBetsByMarket(tournamentId) {
+  const { data, error } = await db
+    .from('bets')
+    .select('market_id, potential_payout, participants(nickname, avatar_type)')
+    .eq('tournament_id', tournamentId)
+    .neq('status', 'void')
+    .order('potential_payout', { ascending: false });
+  if (error) throw error;
+  const top = {};
+  for (const row of (data || [])) {
+    if (!top[row.market_id]) {
+      top[row.market_id] = {
+        potential_payout: row.potential_payout,
+        nickname: row.participants?.nickname,
+        avatar_type: row.participants?.avatar_type,
+      };
+    }
+  }
+  return top;
 }
 
 async function loadBetRequests(tournamentId) {
