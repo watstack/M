@@ -314,6 +314,45 @@
     .bet-status.void    { background: rgba(128,112,96,.15); border: 1px solid rgba(128,112,96,.4); color: var(--muted); }
     .my-bet-payout { font-family: var(--font-mono); font-size: 0.85rem; }
     .my-bets-empty { color: var(--muted); text-align: center; padding: 40px 0; font-size: 0.9rem; }
+    .my-bet-share-btn {
+      margin-left: auto; background: none; border: 1px solid var(--border);
+      color: var(--muted); font-size: 0.72rem; padding: 3px 9px;
+      border-radius: var(--radius); cursor: pointer; flex-shrink: 0;
+      box-shadow: none; transform: none;
+    }
+    .my-bet-share-btn:hover { color: var(--text); border-color: var(--gold); transform: none; box-shadow: none; filter: none; }
+
+    /* ── Share bet modal ── */
+    .share-bet-overlay {
+      position: fixed; inset: 0; z-index: 900;
+      background: rgba(0,0,0,.75);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .share-bet-overlay.hidden { display: none; }
+    .share-bet-card {
+      background: var(--panel); border: 2px solid var(--border);
+      border-radius: 16px; padding: 24px 20px 20px;
+      max-width: 340px; width: 92vw;
+      box-shadow: 0 8px 40px rgba(0,0,0,.6);
+    }
+    .share-bet-title { font-family: var(--font-pixel); font-size: 0.55rem; margin-bottom: 14px; color: var(--text); }
+    .share-bet-summary {
+      font-size: 0.82rem; color: var(--muted); margin-bottom: 14px;
+      background: var(--mid); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 8px 10px; line-height: 1.4;
+    }
+    .share-bet-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; }
+    .share-bet-msg {
+      width: 100%; box-sizing: border-box;
+      background: var(--mid); border: 2px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      font-family: var(--font-body); font-size: 0.85rem;
+      padding: 8px 10px; resize: none; min-height: 72px;
+      margin-bottom: 16px;
+    }
+    .share-bet-msg:focus { outline: none; border-color: var(--gold); }
+    .share-bet-actions { display: flex; gap: 8px; }
+    .share-bet-actions button { flex: 1; }
 
     /* ── Parlay betslip legs ── */
     .slip-legs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
@@ -819,6 +858,20 @@
     <button id="spinBtn" class="spin-btn" onclick="doSpin()">SPIN</button>
     <div id="spinResult" class="spin-result hidden"></div>
     <button id="spinCloseBtn" class="spin-close hidden" onclick="closeSpinPromo()">Close</button>
+  </div>
+</div>
+
+<!-- Share bet modal -->
+<div id="shareBetOverlay" class="share-bet-overlay hidden" onclick="if(event.target===this)closeShareBet()">
+  <div class="share-bet-card">
+    <div class="share-bet-title">Share your bet</div>
+    <div class="share-bet-summary" id="shareBetSummary"></div>
+    <div class="share-bet-label">Add a message (optional)</div>
+    <textarea id="shareBetMsg" class="share-bet-msg" placeholder="e.g. calling it early 👀" maxlength="200" rows="3"></textarea>
+    <div class="share-bet-actions">
+      <button class="btn-ghost" onclick="closeShareBet()">Cancel</button>
+      <button class="btn-gold" onclick="doShareBet()">Share</button>
+    </div>
   </div>
 </div>
 

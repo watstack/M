@@ -436,7 +436,10 @@ function renderAllBetRow(bet) {
   </div>`;
 }
 
+const _shareBetData = {};
+
 function renderMyBetRow(bet) {
+  _shareBetData[`single-${bet.id}`] = bet;
   const statusClass = { won: 'won', lost: 'lost', void: 'void', pending: 'pending' }[bet.status] || 'pending';
   const payout = bet.status === 'won' ? `+${bet.potential_payout} 🪙` : bet.status === 'lost' ? `-${bet.stake} 🪙` : `${bet.potential_payout} 🪙 if wins`;
   const mkt = bet.bet_markets || {};
@@ -450,11 +453,13 @@ function renderMyBetRow(bet) {
     <div class="my-bet-result">
       <span class="bet-status ${statusClass}">${bet.status}</span>
       <span class="my-bet-payout">${payout}</span>
+      <button class="my-bet-share-btn" onclick="openShareBet('single-${bet.id}')">↗ Share</button>
     </div>
   </div>`;
 }
 
 function renderParlayBetRow(parlay) {
+  _shareBetData[`parlay-${parlay.id}`] = parlay;
   const legs = parlay.parlay_bet_legs || [];
   const statusClass = { won: 'won', lost: 'lost', void: 'void', pending: 'pending' }[parlay.status] || 'pending';
   const payout = parlay.status === 'won'
@@ -486,8 +491,71 @@ function renderParlayBetRow(parlay) {
     <div class="my-bet-result">
       <span class="bet-status ${statusClass}">${parlay.status}</span>
       <span class="my-bet-payout">${payout}</span>
+      <button class="my-bet-share-btn" onclick="openShareBet('parlay-${parlay.id}')">↗ Share</button>
     </div>
   </div>`;
+}
+
+// ─── Share bet ────────────────────────────────────────────────────────────────
+
+function openShareBet(key) {
+  const bet = _shareBetData[key];
+  if (!bet) return;
+  let summary;
+  if (key.startsWith('single-')) {
+    const mkt = bet.bet_markets || {};
+    summary = `${mkt.match_name || 'Match'} — ${bet.selection} at ${bet.odds}x\n${bet.stake} 🪙 staked → ${bet.potential_payout} 🪙 potential`;
+  } else {
+    const legs = bet.parlay_bet_legs || [];
+    summary = `Multi (${legs.length} legs) at ${Number(bet.total_odds).toFixed(2)}x\n${bet.stake} 🪙 staked → ${bet.potential_payout} 🪙 potential`;
+  }
+  document.getElementById('shareBetSummary').textContent = summary;
+  document.getElementById('shareBetMsg').value = '';
+  document.getElementById('shareBetOverlay').dataset.key = key;
+  document.getElementById('shareBetOverlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('shareBetMsg').focus(), 50);
+}
+
+function closeShareBet() {
+  document.getElementById('shareBetOverlay').classList.add('hidden');
+}
+
+async function doShareBet() {
+  const key = document.getElementById('shareBetOverlay').dataset.key;
+  const bet = _shareBetData[key];
+  if (!bet) return;
+
+  const userMsg = document.getElementById('shareBetMsg').value.trim();
+
+  let betLines;
+  if (key.startsWith('single-')) {
+    const mkt = bet.bet_markets || {};
+    betLines = `${mkt.match_name || 'Match'}: ${bet.selection} @ ${bet.odds}x\nStake: ${bet.stake} 🪙  →  Payout: ${bet.potential_payout} 🪙`;
+  } else {
+    const legs = bet.parlay_bet_legs || [];
+    const legLines = legs.map(l => `  • ${(l.bet_markets || {}).match_name || ''}: ${l.selection} (${l.odds}x)`).join('\n');
+    betLines = `Multi bet — ${legs.length} legs @ ${Number(bet.total_odds).toFixed(2)}x\n${legLines}\nStake: ${bet.stake} 🪙  →  Payout: ${bet.potential_payout} 🪙`;
+  }
+
+  const shareText = userMsg ? `${userMsg}\n\n${betLines}` : betLines;
+  const shareUrl = window.location.href;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ text: shareText, url: shareUrl });
+      closeShareBet();
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
+    showToast('Copied to clipboard!');
+    closeShareBet();
+  } catch {
+    showToast('Could not share');
+  }
 }
 
 // ─── Custom markets / Bet requests ───────────────────────────────────────────
