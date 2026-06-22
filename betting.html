@@ -889,19 +889,27 @@
     .boost-hint.hidden { display: none; }
 
     /* ── Betslip accordion collapse ── */
-    .bet-slip.collapsed .slip-body { display: none; }
+    .slip-body {
+      overflow: hidden;
+      max-height: 600px;
+      opacity: 1;
+      transition: max-height .3s cubic-bezier(0.4, 0, 0.2, 1),
+                  opacity .25s ease;
+    }
+    .bet-slip.collapsed .slip-body { max-height: 0; opacity: 0; }
     .bet-slip-title-left { display: flex; align-items: center; flex: 1; min-width: 0; gap: 6px; }
     .bet-slip-title-right { display: flex; align-items: center; gap: 8px; }
     .slip-collapsed-summary {
-      display: none;
       font-family: var(--font-mono);
       font-size: 0.72rem;
       color: var(--muted);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      opacity: 0;
+      transition: opacity .2s ease .05s;
     }
-    .bet-slip.collapsed .slip-collapsed-summary { display: block; }
+    .bet-slip.collapsed .slip-collapsed-summary { opacity: 1; }
     .slip-collapse-btn {
       background: none; border: none;
       color: var(--muted); cursor: pointer; padding: 4px; line-height: 1;
@@ -909,7 +917,7 @@
     .slip-collapse-btn:hover { color: var(--text); }
     .slip-chevron {
       display: inline-block;
-      transition: transform .18s;
+      transition: transform .28s cubic-bezier(0.4, 0, 0.2, 1);
       font-size: 0.7rem;
     }
     .bet-slip.collapsed .slip-chevron { transform: rotate(180deg); }
