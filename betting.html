@@ -336,18 +336,14 @@
       box-shadow: 0 8px 40px rgba(0,0,0,.6);
     }
     .share-bet-title { font-family: var(--font-pixel); font-size: 0.55rem; margin-bottom: 14px; color: var(--text); }
-    .share-bet-summary {
-      font-size: 0.82rem; color: var(--muted); margin-bottom: 14px;
-      background: var(--mid); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 8px 10px; line-height: 1.4;
-    }
+    .share-bet-preview { border-radius: 8px; overflow: hidden; margin-bottom: 14px; }
     .share-bet-label { font-size: 0.78rem; color: var(--muted); margin-bottom: 6px; }
     .share-bet-msg {
       width: 100%; box-sizing: border-box;
       background: var(--mid); border: 2px solid var(--border);
       border-radius: var(--radius); color: var(--text);
       font-family: var(--font-body); font-size: 0.85rem;
-      padding: 8px 10px; resize: none; min-height: 72px;
+      padding: 8px 10px; resize: none; min-height: 56px;
       margin-bottom: 16px;
     }
     .share-bet-msg:focus { outline: none; border-color: var(--gold); }
@@ -865,12 +861,12 @@
 <div id="shareBetOverlay" class="share-bet-overlay hidden" onclick="if(event.target===this)closeShareBet()">
   <div class="share-bet-card">
     <div class="share-bet-title">Share your bet</div>
-    <div class="share-bet-summary" id="shareBetSummary"></div>
+    <div class="share-bet-preview" id="shareBetPreview"></div>
     <div class="share-bet-label">Add a message (optional)</div>
-    <textarea id="shareBetMsg" class="share-bet-msg" placeholder="e.g. calling it early 👀" maxlength="200" rows="3"></textarea>
+    <textarea id="shareBetMsg" class="share-bet-msg" placeholder="e.g. calling it early 👀" maxlength="200" rows="2"></textarea>
     <div class="share-bet-actions">
       <button class="btn-ghost" onclick="closeShareBet()">Cancel</button>
-      <button class="btn-gold" onclick="doShareBet()">Share</button>
+      <button class="btn-gold" id="shareBetBtn" onclick="doShareBet()">Share</button>
     </div>
   </div>
 </div>
@@ -1854,5 +1850,6 @@ init();
 </script>
 <script src="js/analytics.js?v=17818741"></script>
 <script src="js/pwa.js?v=17818741"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </body>
 </html>

@@ -498,18 +498,50 @@ function renderParlayBetRow(parlay) {
 
 // ─── Share bet ────────────────────────────────────────────────────────────────
 
+function _buildBetCardHtml(key, bet) {
+  const statusColor = { won: '#3cb04a', lost: '#ff3b5c', pending: '#ff9ad0', void: '#b58aa0' }[bet.status] || '#ff9ad0';
+  const statusLabel = (bet.status || 'pending').toUpperCase();
+
+  let bodyHtml;
+  if (key.startsWith('single-')) {
+    const mkt = bet.bet_markets || {};
+    bodyHtml = `
+      <div style="font-size:15px;font-weight:700;margin-bottom:10px;line-height:1.35;color:#f6ead8">${escapeHtml(mkt.match_name || '')}</div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
+        <span style="background:rgba(255,154,208,0.15);border:1px solid rgba(255,154,208,0.5);border-radius:4px;padding:3px 10px;font-size:13px;color:#ff9ad0">${escapeHtml(bet.selection)}</span>
+        <span style="font-size:13px;color:#b58aa0">${bet.odds}x</span>
+      </div>
+      <div style="font-size:12px;color:#b58aa0">${bet.stake} 🪙 staked &nbsp;·&nbsp; <span style="color:#ff9ad0">${bet.potential_payout} 🪙 to win</span></div>`;
+  } else {
+    const legs = bet.parlay_bet_legs || [];
+    const legRows = legs.map(l => {
+      const mkt = l.bet_markets || {};
+      return `<div style="padding:4px 0;font-size:12px;border-bottom:1px solid #3a1f3a;display:flex;justify-content:space-between;gap:8px">
+        <span style="color:#f6ead8">${escapeHtml(mkt.match_name || '')} — ${escapeHtml(l.selection)}</span>
+        <span style="color:#ff9ad0;white-space:nowrap;flex-shrink:0">${l.odds}x</span>
+      </div>`;
+    }).join('');
+    bodyHtml = `
+      <div style="font-size:12px;font-weight:700;color:#ff9ad0;letter-spacing:0.06em;margin-bottom:8px">MULTI · ${Number(bet.total_odds).toFixed(2)}x</div>
+      <div style="margin-bottom:10px">${legRows}</div>
+      <div style="font-size:12px;color:#b58aa0">${bet.stake} 🪙 staked &nbsp;·&nbsp; <span style="color:#ff9ad0">${bet.potential_payout} 🪙 to win</span></div>`;
+  }
+
+  return `<div style="
+    background:#190d1f;border:2px solid #3a1f3a;border-radius:12px;padding:18px 16px;
+    font-family:system-ui,-apple-system,sans-serif;color:#f6ead8;width:100%;box-sizing:border-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-size:11px;color:#b58aa0;letter-spacing:0.1em">⚽ KICKOFF</span>
+      <span style="background:${statusColor}28;border:1px solid ${statusColor};border-radius:4px;padding:2px 9px;font-size:10px;color:${statusColor};letter-spacing:0.08em">${statusLabel}</span>
+    </div>
+    ${bodyHtml}
+  </div>`;
+}
+
 function openShareBet(key) {
   const bet = _shareBetData[key];
   if (!bet) return;
-  let summary;
-  if (key.startsWith('single-')) {
-    const mkt = bet.bet_markets || {};
-    summary = `${mkt.match_name || 'Match'} — ${bet.selection} at ${bet.odds}x\n${bet.stake} 🪙 staked → ${bet.potential_payout} 🪙 potential`;
-  } else {
-    const legs = bet.parlay_bet_legs || [];
-    summary = `Multi (${legs.length} legs) at ${Number(bet.total_odds).toFixed(2)}x\n${bet.stake} 🪙 staked → ${bet.potential_payout} 🪙 potential`;
-  }
-  document.getElementById('shareBetSummary').textContent = summary;
+  document.getElementById('shareBetPreview').innerHTML = _buildBetCardHtml(key, bet);
   document.getElementById('shareBetMsg').value = '';
   document.getElementById('shareBetOverlay').dataset.key = key;
   document.getElementById('shareBetOverlay').classList.remove('hidden');
@@ -522,39 +554,35 @@ function closeShareBet() {
 
 async function doShareBet() {
   const key = document.getElementById('shareBetOverlay').dataset.key;
-  const bet = _shareBetData[key];
-  if (!bet) return;
+  if (!_shareBetData[key]) return;
 
   const userMsg = document.getElementById('shareBetMsg').value.trim();
-
-  let betLines;
-  if (key.startsWith('single-')) {
-    const mkt = bet.bet_markets || {};
-    betLines = `${mkt.match_name || 'Match'}: ${bet.selection} @ ${bet.odds}x\nStake: ${bet.stake} 🪙  →  Payout: ${bet.potential_payout} 🪙`;
-  } else {
-    const legs = bet.parlay_bet_legs || [];
-    const legLines = legs.map(l => `  • ${(l.bet_markets || {}).match_name || ''}: ${l.selection} (${l.odds}x)`).join('\n');
-    betLines = `Multi bet — ${legs.length} legs @ ${Number(bet.total_odds).toFixed(2)}x\n${legLines}\nStake: ${bet.stake} 🪙  →  Payout: ${bet.potential_payout} 🪙`;
-  }
-
-  const shareText = userMsg ? `${userMsg}\n\n${betLines}` : betLines;
   const shareUrl = window.location.href;
+  const btn = document.getElementById('shareBetBtn');
+  btn.disabled = true;
+  btn.textContent = '…';
 
-  if (navigator.share) {
-    try {
-      await navigator.share({ text: shareText, url: shareUrl });
-      closeShareBet();
-      return;
-    } catch (e) {
-      if (e.name === 'AbortError') return;
-    }
-  }
   try {
-    await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-    showToast('Copied to clipboard!');
+    const previewEl = document.getElementById('shareBetPreview').firstElementChild;
+    const canvas = await html2canvas(previewEl, { backgroundColor: null, scale: 2, useCORS: true, logging: false });
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    const file = new File([blob], 'bet.png', { type: 'image/png' });
+    const shareText = userMsg;
+
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], text: shareText, url: shareUrl });
+    } else if (navigator.share) {
+      await navigator.share({ text: shareText, url: shareUrl });
+    } else {
+      await navigator.clipboard.writeText(shareText ? `${shareText}\n${shareUrl}` : shareUrl);
+      showToast('Link copied!');
+    }
     closeShareBet();
-  } catch {
-    showToast('Could not share');
+  } catch (e) {
+    if (e.name !== 'AbortError') showToast('Could not share');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Share';
   }
 }
 
