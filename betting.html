@@ -535,6 +535,7 @@
       overflow-x: auto;
       scroll-snap-type: x mandatory;
       scrollbar-width: none;
+      align-items: stretch;
     }
     .promo-track::-webkit-scrollbar { display: none; }
     .promo-slide {
@@ -543,6 +544,8 @@
       scroll-snap-align: start;
       padding: 0 16px;
       box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
     }
     .promo-nav {
       display: flex; align-items: center; justify-content: center;
@@ -556,12 +559,9 @@
     }
     .promo-arrow:hover { color: var(--text); }
 
-    /* ── Two Up hero slide ── */
-    #twoUpSlide { height: calc(100svh - 140px); padding: 0 16px; }
-
     /* ── Two Up hero card ── */
     .tu-hero {
-      height: 100%;
+      flex: 1;
       display: flex; flex-direction: column;
       background: var(--panel);
       border: 2px solid rgba(104,136,200,.4);

@@ -628,9 +628,9 @@ const _tuMockData = [
   },
   {
     id: 3,
-    date: '2025-06-24',
-    label: 'Tue 24 Jun',
-    flipTime: '2025-06-24T12:00:00Z',
+    date: '2026-06-23',
+    label: 'Tue 23 Jun',
+    flipTime: '2026-06-23T12:00:00Z',
     hhTotal: 250,
     ttTotal: 180,
     houseStake: { amount: 100, outcome: 'HH' },
@@ -773,6 +773,8 @@ function twoUpNav(dir) {
 function renderTwoUpCard() {
   const tu = _tuState.tuesdays[_tuState.currentIdx];
   const isFlipped = tu && tu.status !== 'pending';
+  const flipTime = tu ? new Date(tu.flipTime) : null;
+  const showCountdown = tu && tu.status === 'pending' && flipTime && flipTime > new Date();
   return `<div class="tu-hero" id="twoUpCard">
   <div class="tu-hero-head">
     <div>
@@ -782,7 +784,7 @@ function renderTwoUpCard() {
     <span class="market-chip open" id="tuChip">Pending</span>
   </div>
   <div class="tu-hero-body">
-    <div class="tu-cd-label-hero" id="tuCdLabel">flipping off in:</div>
+    ${showCountdown ? `<div class="tu-cd-label-hero" id="tuCdLabel">flipping off in:</div>
     <div class="tu-cd-blocks">
       <div class="tu-cd-block">
         <div class="tu-cd-num" id="tuDays">00</div>
@@ -800,12 +802,11 @@ function renderTwoUpCard() {
         <div class="tu-cd-num" id="tuSecs">00</div>
         <div class="tu-cd-unit">secs</div>
       </div>
-    </div>
-    <div class="tu-coin-area">
+    </div>` : `<div class="tu-coin-area">
       <div class="tu-coin tu-coin-pending" id="tuCoin1">?</div>
       <div class="tu-coin tu-coin-pending" id="tuCoin2">?</div>
     </div>
-    <div id="tuResultArea" class="tu-result"></div>
+    <div id="tuResultArea" class="tu-result"></div>`}
   </div>
   <div class="tu-hero-foot">
     <div class="tu-pot-row" id="tuPotRow">
