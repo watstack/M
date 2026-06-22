@@ -633,6 +633,7 @@ function renderCustomMarketCard(market) {
   const isSettled = status === 'settled';
   const isClosed  = status !== 'open';
   const canBet    = !isClosed;
+  const s         = market._betStats;
 
   const statusChip = isSettled
     ? `<span class="market-chip settled">Settled</span>`
@@ -646,15 +647,38 @@ function renderCustomMarketCard(market) {
       : oddsTbc(key)
   ).join('');
 
+  const statsLine = s
+    ? `<span style="font-size:0.7rem;color:var(--muted)">${s.count} bet${s.count === 1 ? '' : 's'} · 🪙 ${s.totalStake.toLocaleString()} staked</span>`
+    : '';
+
   return `<div class="market-card" id="mc-${market.id}" data-kickoff="">
     <div class="market-card-header">
       <div class="match-teams" style="flex-direction:column;align-items:flex-start;gap:2px">
         <span class="match-name" style="display:block;font-size:0.75rem">${escapeHtml(market.match_name)}</span>
+        ${statsLine}
       </div>
       <div class="match-meta">${statusChip}</div>
     </div>
     <div class="match-odds-row">${optionBtns}</div>
   </div>`;
+}
+
+async function loadCustomMarketBetStats(tournamentId, marketIds) {
+  if (!marketIds.length) return {};
+  const { data, error } = await db
+    .from('bets')
+    .select('market_id, stake')
+    .eq('tournament_id', tournamentId)
+    .in('market_id', marketIds)
+    .neq('status', 'void');
+  if (error) throw error;
+  const stats = {};
+  for (const row of (data || [])) {
+    if (!stats[row.market_id]) stats[row.market_id] = { count: 0, totalStake: 0 };
+    stats[row.market_id].count++;
+    stats[row.market_id].totalStake += row.stake || 0;
+  }
+  return stats;
 }
 
 async function loadBetRequests(tournamentId) {
