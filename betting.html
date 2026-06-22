@@ -207,7 +207,7 @@
     }
     .sort-opt.active { background: var(--green); border-color: var(--green); color: #0a0805; }
     .sort-opt:hover:not(.active) { color: var(--text); }
-    #myBetsFilter { gap: 16px; margin-top: 16px; margin-bottom: 40px; }
+    #myBetsFilter { gap: 16px; margin-top: 16px; }
 
     /* ── Team header ── */
     .match-teams {
@@ -1094,6 +1094,7 @@
         <button class="sort-opt" id="sortByGroup" onclick="setMatchSort('group')">By Group</button>
         <button class="sort-opt" id="sortCustom" onclick="setMatchSort('custom')">Custom Bets</button>
       </div>
+      <div id="myBetsFilter" class="match-sort-bar" style="display:none"></div>
       <div id="allBetsFilter" class="all-bets-filter" style="display:none"></div>
     </div>
   </div>
@@ -1110,7 +1111,6 @@
 
   <!-- My bets -->
   <div id="panelMyBets" style="display:none">
-    <div id="myBetsFilter" class="match-sort-bar"></div>
     <div id="myBetsList" class="my-bets-list"></div>
   </div>
 
@@ -1522,7 +1522,7 @@ function showTab(tab) {
   document.getElementById('betSortBar').style.display    = tab === 'markets' ? '' : 'none';
   document.getElementById('myBetsFilter').style.display  = tab === 'mybets' ? '' : 'none';
   document.getElementById('allBetsFilter').style.display = tab === 'allbets' ? '' : 'none';
-  document.getElementById('betFilterRow').style.display  = (tab === 'markets' || tab === 'allbets') ? '' : 'none';
+  document.getElementById('betFilterRow').style.display  = (tab === 'markets' || tab === 'allbets' || tab === 'mybets') ? '' : 'none';
   if (tab === 'mybets')      loadMyBetsView();
   if (tab === 'allbets')     loadAllBetsView();
   if (tab === 'leaderboard') refreshLeaderboard(_tournament.id, _participant?.id, document.getElementById('lbBetContent'));
