@@ -683,6 +683,32 @@
     .tu-bet-actions { display: flex; gap: 8px; margin-top: 4px; }
     .tu-bet-actions button { flex: 1; }
 
+    /* ── Two Up how-to-play & rules ── */
+    .tu-how-to-play-foot {
+      padding: 10px 16px 14px; text-align: center; border-top: 1px solid var(--border);
+    }
+    .tu-how-to-play-row { text-align: right; margin-bottom: 12px; margin-top: -6px; }
+    .tu-rules-link {
+      background: none; border: none; cursor: pointer;
+      font-family: var(--font-mono); font-size: 0.72rem;
+      color: var(--muted); text-decoration: underline dotted; padding: 0;
+    }
+    .tu-rules-link:hover { color: var(--text); }
+    .tu-cd-next {
+      font-family: var(--font-body); font-size: 0.72rem; color: var(--muted); text-align: center;
+    }
+    .tu-rules-card { max-width: 360px; }
+    .tu-rules-list {
+      list-style: none; padding: 0; margin: 0 0 4px;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .tu-rules-list li {
+      font-family: var(--font-body); font-size: 0.85rem; color: var(--text);
+      padding: 6px 10px; background: var(--mid); border-radius: var(--radius);
+      border-left: 3px solid var(--border);
+    }
+    .tu-rules-list li b { color: var(--pixel-sky); }
+
     /* ── Request-a-Bet card ── */
     .req-bet-card { border-color: rgba(255,106,31,.35); }
     .req-bet-collapsed { padding: 0 16px 14px; }
