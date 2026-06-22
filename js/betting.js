@@ -773,30 +773,41 @@ function twoUpNav(dir) {
 function renderTwoUpCard() {
   const tu = _tuState.tuesdays[_tuState.currentIdx];
   const isFlipped = tu && tu.status !== 'pending';
-  const cdLabel = isFlipped ? 'Next flip in' : 'Flip in';
-  return `<div class="market-card two-up-card" id="twoUpCard" data-kickoff="">
-  <div class="market-card-header">
-    <div class="match-teams" style="flex-direction:column;align-items:flex-start;gap:2px">
-      <span style="font-family:var(--font-pixel);font-size:0.75rem;color:var(--pixel-sky)">Two Up Tuesday</span>
-      <span style="font-family:var(--font-body);font-size:0.7rem;color:var(--muted)">2 coins · Bet HH or TT · Odd = all lose · Every Tue 12PM UTC</span>
+  return `<div class="tu-hero" id="twoUpCard">
+  <div class="tu-hero-head">
+    <div>
+      <div class="tu-hero-title">Two Up Tuesday</div>
+      <div class="tu-hero-sub">2 coins · bet HH or TT · odd = all lose</div>
     </div>
-    <div class="match-meta"><span class="market-chip open" id="tuChip">Pending</span></div>
+    <span class="market-chip open" id="tuChip">Pending</span>
   </div>
-  <div class="tu-countdown" id="tuCountdown">
-    <span class="tu-cd-label" id="tuCdLabel">${cdLabel}</span>
-    <div class="tu-cd-timer">
-      <span class="tu-cd-seg" id="tuDays">00</span><span class="tu-cd-sep">d</span>
-      <span class="tu-cd-seg" id="tuHours">00</span><span class="tu-cd-sep">h</span>
-      <span class="tu-cd-seg" id="tuMins">00</span><span class="tu-cd-sep">m</span>
-      <span class="tu-cd-seg" id="tuSecs">00</span><span class="tu-cd-sep">s</span>
+  <div class="tu-hero-body">
+    <div class="tu-cd-label-hero" id="tuCdLabel">flipping off in:</div>
+    <div class="tu-cd-blocks">
+      <div class="tu-cd-block">
+        <div class="tu-cd-num" id="tuDays">00</div>
+        <div class="tu-cd-unit">days</div>
+      </div>
+      <div class="tu-cd-block">
+        <div class="tu-cd-num" id="tuHours">00</div>
+        <div class="tu-cd-unit">hours</div>
+      </div>
+      <div class="tu-cd-block">
+        <div class="tu-cd-num" id="tuMins">00</div>
+        <div class="tu-cd-unit">mins</div>
+      </div>
+      <div class="tu-cd-block">
+        <div class="tu-cd-num" id="tuSecs">00</div>
+        <div class="tu-cd-unit">secs</div>
+      </div>
     </div>
+    <div class="tu-coin-area">
+      <div class="tu-coin tu-coin-pending" id="tuCoin1">?</div>
+      <div class="tu-coin tu-coin-pending" id="tuCoin2">?</div>
+    </div>
+    <div id="tuResultArea" class="tu-result"></div>
   </div>
-  <div class="tu-coin-area">
-    <div class="tu-coin tu-coin-pending" id="tuCoin1">?</div>
-    <div class="tu-coin tu-coin-pending" id="tuCoin2">?</div>
-  </div>
-  <div id="tuResultArea" class="tu-result"></div>
-  <div class="tu-pot" id="tuPot">
+  <div class="tu-hero-foot">
     <div class="tu-pot-row" id="tuPotRow">
       <span>HH <span class="tu-heads-val">🪙 —</span></span>
       <span class="tu-pot-divider">|</span>
