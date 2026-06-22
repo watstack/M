@@ -1214,6 +1214,20 @@ async function loadMarketsView() {
   } catch (e) {
     console.warn('[markets] read failed, showing static scaffold only:', e.message);
   }
+
+  // Attach bet count + total stake to each custom market
+  const customIds = markets.filter(m => m.market_type === 'custom').map(m => m.id);
+  if (customIds.length) {
+    try {
+      const stats = await loadCustomMarketBetStats(_tournament.id, customIds);
+      markets = markets.map(m =>
+        m.market_type === 'custom' ? { ...m, _betStats: stats[m.id] || null } : m
+      );
+    } catch (e) {
+      console.warn('[markets] custom bet stats failed:', e.message);
+    }
+  }
+
   renderMarketsView(markets);
 }
 
