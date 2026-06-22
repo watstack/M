@@ -123,18 +123,23 @@ window.AdminPanel = (function () {
     const markets = (customMarkets || []).filter(m => m.status !== 'settled');
     if (!markets.length) return '';
     const rows = markets.map(m => {
-      const text = escapeHtml(m.match_name || '');
-      const mid  = m.id;
+      const text     = escapeHtml(m.match_name || '');
+      const mid      = m.id;
+      const isClosed = m.status === 'closed';
       return `<div class="admin-row">
         <div class="admin-meta">
           <span class="adm-no" style="font-size:0.5rem">Custom</span>
-          <span class="adm-stage">custom</span>
+          <span class="adm-stage">${isClosed ? 'closed' : 'custom'}</span>
         </div>
         <div class="admin-name" style="font-size:0.75rem">"${text}"</div>
         <div class="admin-ctrls">
           <select class="adm-in adm-win" id="adm-custom-result-${mid}">
             ${Object.keys(m.odds_json || {}).map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)} wins</option>`).join('')}
           </select>
+          ${isClosed
+            ? ''
+            : `<button class="btn-ghost" style="font-size:0.55rem;padding:5px 8px" onclick="AdminPanel.closeCustomMarket('${mid}')">Close Betting</button>`
+          }
           <button class="adm-btn" onclick="AdminPanel.settleCustomMarket('${mid}')">Settle</button>
         </div>
       </div>`;
@@ -466,6 +471,18 @@ window.AdminPanel = (function () {
     } catch (e) { showToast(e.message || 'Settle failed'); }
   }
 
+  async function closeCustomMarket(marketId) {
+    try {
+      const { error } = await _db
+        .from('bet_markets')
+        .update({ status: 'closed' })
+        .eq('id', marketId);
+      if (error) throw error;
+      showToast('Betting closed — no new bets accepted.');
+      await refresh();
+    } catch (e) { showToast(e.message || 'Close failed'); }
+  }
+
   async function approveBetRequest(requestId) {
     const optInputs = document.querySelectorAll(`#adm-req-opts-${requestId} .req-opt-adm`);
     const oddsJson  = {};
@@ -708,6 +725,7 @@ window.AdminPanel = (function () {
     settle:              n   => adminSettle(n),
     resolve:             n   => adminResolve(n),
     settleCustomMarket:  id  => adminSettleCustomMarket(id),
+    closeCustomMarket:   id  => closeCustomMarket(id),
     approveBetRequest:   id  => approveBetRequest(id),
     rejectBetRequest:    id  => rejectBetRequest(id),
     saveParticipant:     id  => saveParticipant(id),
