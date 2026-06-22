@@ -59,7 +59,8 @@ CREATE OR REPLACE FUNCTION approve_bet_request(
   p_request_id     UUID,
   p_odds_json      JSONB,
   p_admin_token    TEXT DEFAULT NULL,
-  p_participant_id UUID DEFAULT NULL
+  p_participant_id UUID DEFAULT NULL,
+  p_close_time     TIMESTAMPTZ DEFAULT NULL
 ) RETURNS bet_markets LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
   v_tournament_id UUID;
@@ -88,8 +89,8 @@ BEGIN
     RAISE EXCEPTION 'odds_too_low';
   END IF;
 
-  INSERT INTO bet_markets(tournament_id, market_type, match_name, status, odds_json)
-  VALUES (v_tournament_id, 'custom', v_req.outcome_text, 'open', p_odds_json)
+  INSERT INTO bet_markets(tournament_id, market_type, match_name, status, odds_json, close_time)
+  VALUES (v_tournament_id, 'custom', v_req.outcome_text, 'open', p_odds_json, p_close_time)
   RETURNING * INTO v_market;
 
   UPDATE bet_requests SET status = 'approved', market_id = v_market.id
