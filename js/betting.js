@@ -657,15 +657,17 @@ const _tuMockData = (() => {
       ttTotal: pre.ttTotal || 0,
       houseStake: { amount: 100, outcome: 'HH' },
       rolledOver: 0,
+      userBet: null,
       result: pre.result || null,
       status: pre.status || 'pending',
     });
   }
-  // Propagate ODD pot into next slot's rolledOver
+  // ODD pot folds into next slot's house stake (and is recorded in rolledOver for display)
   for (let i = 0; i < slots.length - 1; i++) {
     if (slots[i].result === 'ODD') {
       const pot = slots[i].hhTotal + slots[i].ttTotal + slots[i].houseStake.amount + slots[i].rolledOver;
-      slots[i + 1].rolledOver += pot;
+      slots[i + 1].houseStake.amount += pot;
+      slots[i + 1].rolledOver = pot;
     }
   }
   return slots;
@@ -727,13 +729,13 @@ function _tuRenderPot() {
   const totalEl = document.getElementById('tuPotTotal');
   if (!potEl) return;
   const rolledOver = tu.rolledOver || 0;
-  const total = tu.hhTotal + tu.ttTotal + tu.houseStake.amount + rolledOver;
+  const total = tu.hhTotal + tu.ttTotal + tu.houseStake.amount;
   potEl.innerHTML = `
     <span>HH <span class="tu-heads-val">🪙 ${tu.hhTotal}</span></span>
     <span class="tu-pot-divider">|</span>
     <span>TT <span class="tu-tails-val">🪙 ${tu.ttTotal}</span></span>
   `;
-  const rolloverBadge = rolledOver > 0 ? `<span class="tu-rollover-badge">+🪙 ${rolledOver} rolled over</span>` : '';
+  const rolloverBadge = rolledOver > 0 ? `<span class="tu-rollover-badge">+🪙 ${rolledOver} rolled in</span>` : '';
   if (totalEl) totalEl.innerHTML = `Total pot: 🪙 ${total} · House: 🪙 ${tu.houseStake.amount} on ${tu.houseStake.outcome}${rolloverBadge}`;
 }
 
@@ -754,7 +756,7 @@ function _tuRenderResult() {
   }
 
   const r = tu.result;
-  const totalPot = tu.hhTotal + tu.ttTotal + tu.houseStake.amount + (tu.rolledOver || 0);
+  const totalPot = tu.hhTotal + tu.ttTotal + tu.houseStake.amount;
   if (r === 'HH') {
     if (coin1) { coin1.textContent = 'H'; coin1.className = 'tu-coin tu-coin-hh'; }
     if (coin2) { coin2.textContent = 'H'; coin2.className = 'tu-coin tu-coin-hh'; }
@@ -783,6 +785,37 @@ function _tuRenderResult() {
       resultEl.innerHTML = `ODD — ALL LOSE<div class="tu-result-sub">Pot 🪙 ${totalPot} rolls → ${nextLabel} house bet</div>`;
     }
     if (chipEl) { chipEl.className = 'market-chip settled'; chipEl.textContent = 'Settled'; }
+  }
+  _tuSettleUserBet(_tuState.currentIdx);
+}
+
+async function _tuSettleUserBet(idx) {
+  const tu = _tuState.tuesdays[idx];
+  if (!tu || !tu.userBet || tu.userBet.settled || !tu.result) return;
+  if (typeof _participant === 'undefined' || !_participant) return;
+  tu.userBet.settled = true;
+
+  const totalPot = tu.hhTotal + tu.ttTotal + tu.houseStake.amount;
+
+  if (tu.result === tu.userBet.outcome) {
+    const winnerPool = tu.result === 'HH' ? tu.hhTotal : tu.ttTotal;
+    const payout = winnerPool > 0 ? Math.round(tu.userBet.amount * totalPot / winnerPool) : 0;
+    const { data: updated } = await db
+      .from('participants')
+      .update({ coin_balance: _participant.coin_balance + payout })
+      .eq('id', _participant.id)
+      .select('coin_balance')
+      .single();
+    if (updated) {
+      _participant.coin_balance = updated.coin_balance;
+      const balEl = document.getElementById('balanceAmt');
+      if (balEl) balEl.textContent = updated.coin_balance.toLocaleString();
+      showToast(`🎉 Won 🪙 ${payout} on ${tu.label}!`);
+    }
+  } else if (tu.result === 'ODD') {
+    showToast(`Odd — 🪙 ${totalPot} pot rolled to next game`);
+  } else {
+    showToast(`Bet lost on ${tu.label}`);
   }
 }
 
@@ -962,6 +995,8 @@ function initTwoUp() {
   _tuInitPromoSync();
   if (_tuState.intervalId) clearInterval(_tuState.intervalId);
   _tuState.intervalId = setInterval(_tuUpdateCountdown, 1000);
+  // Settle any bets the user had on already-settled slots (e.g. page reload after a flip)
+  _tuState.tuesdays.forEach((_, i) => _tuSettleUserBet(i));
 }
 
 function openTwoUpBet() {
@@ -1068,6 +1103,14 @@ async function confirmTwoUpBet() {
       tu.hhTotal += amount;
     } else {
       tu.ttTotal += amount;
+    }
+
+    if (!tu.userBet) {
+      tu.userBet = { outcome: _tuState.selectedOutcome, amount, settled: false };
+    } else if (tu.userBet.outcome === _tuState.selectedOutcome) {
+      tu.userBet.amount += amount;
+    } else {
+      tu.userBet = { outcome: _tuState.selectedOutcome, amount, settled: false };
     }
 
     closeTwoUpBet();
