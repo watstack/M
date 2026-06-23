@@ -639,20 +639,34 @@ function _tuGetNextBettingOpen() {
 
 // 13 hourly slots for Tue 23 Jun 2026 (AEST = UTC+10 in June, standard time)
 const _tuMockData = (() => {
+  const preResults = [
+    { hhTotal: 200, ttTotal: 150, result: 'HH',  status: 'settled' }, // 10:00
+    { hhTotal: 300, ttTotal: 100, result: 'ODD',  status: 'settled' }, // 11:00
+    { hhTotal: 150, ttTotal: 280, result: 'TT',   status: 'settled' }, // 12:00
+  ];
   const slots = [];
   for (let h = 10; h <= 22; h++) {
     const utcH = h - 10;
+    const pre = preResults[h - 10] || {};
     slots.push({
       id: `2026-06-23-${h}`,
       date: '2026-06-23',
       label: `Tue 23 Jun · ${h}:00`,
       flipTime: `2026-06-23T${String(utcH).padStart(2, '0')}:00:00Z`,
-      hhTotal: 0,
-      ttTotal: 0,
+      hhTotal: pre.hhTotal || 0,
+      ttTotal: pre.ttTotal || 0,
       houseStake: { amount: 100, outcome: 'HH' },
-      result: null,
-      status: 'pending',
+      rolledOver: 0,
+      result: pre.result || null,
+      status: pre.status || 'pending',
     });
+  }
+  // Propagate ODD pot into next slot's rolledOver
+  for (let i = 0; i < slots.length - 1; i++) {
+    if (slots[i].result === 'ODD') {
+      const pot = slots[i].hhTotal + slots[i].ttTotal + slots[i].houseStake.amount + slots[i].rolledOver;
+      slots[i + 1].rolledOver += pot;
+    }
   }
   return slots;
 })();
@@ -712,13 +726,15 @@ function _tuRenderPot() {
   const potEl   = document.getElementById('tuPotRow');
   const totalEl = document.getElementById('tuPotTotal');
   if (!potEl) return;
-  const total = tu.hhTotal + tu.ttTotal + tu.houseStake.amount;
+  const rolledOver = tu.rolledOver || 0;
+  const total = tu.hhTotal + tu.ttTotal + tu.houseStake.amount + rolledOver;
   potEl.innerHTML = `
     <span>HH <span class="tu-heads-val">🪙 ${tu.hhTotal}</span></span>
     <span class="tu-pot-divider">|</span>
     <span>TT <span class="tu-tails-val">🪙 ${tu.ttTotal}</span></span>
   `;
-  if (totalEl) totalEl.textContent = `Total pot: 🪙 ${total} · House: 🪙 ${tu.houseStake.amount} on ${tu.houseStake.outcome}`;
+  const rolloverBadge = rolledOver > 0 ? `<span class="tu-rollover-badge">+🪙 ${rolledOver} rolled over</span>` : '';
+  if (totalEl) totalEl.innerHTML = `Total pot: 🪙 ${total} · House: 🪙 ${tu.houseStake.amount} on ${tu.houseStake.outcome}${rolloverBadge}`;
 }
 
 function _tuRenderResult() {
@@ -738,20 +754,34 @@ function _tuRenderResult() {
   }
 
   const r = tu.result;
+  const totalPot = tu.hhTotal + tu.ttTotal + tu.houseStake.amount + (tu.rolledOver || 0);
   if (r === 'HH') {
     if (coin1) { coin1.textContent = 'H'; coin1.className = 'tu-coin tu-coin-hh'; }
     if (coin2) { coin2.textContent = 'H'; coin2.className = 'tu-coin tu-coin-hh'; }
-    if (resultEl) { resultEl.textContent = 'HEAD HEAD — HH WINS'; resultEl.className = 'tu-result tu-result--heads'; }
+    if (resultEl) {
+      const mult = tu.hhTotal > 0 ? (totalPot / tu.hhTotal).toFixed(2) : '—';
+      resultEl.className = 'tu-result tu-result--heads';
+      resultEl.innerHTML = `HEAD HEAD — HH WINS<div class="tu-result-sub">Pot 🪙 ${totalPot} · ${mult}× return for HH bettors</div>`;
+    }
     if (chipEl) { chipEl.className = 'market-chip settled'; chipEl.textContent = 'Settled'; }
   } else if (r === 'TT') {
     if (coin1) { coin1.textContent = 'T'; coin1.className = 'tu-coin tu-coin-tt'; }
     if (coin2) { coin2.textContent = 'T'; coin2.className = 'tu-coin tu-coin-tt'; }
-    if (resultEl) { resultEl.textContent = 'TAIL TAIL — TT WINS'; resultEl.className = 'tu-result tu-result--tails'; }
+    if (resultEl) {
+      const mult = tu.ttTotal > 0 ? (totalPot / tu.ttTotal).toFixed(2) : '—';
+      resultEl.className = 'tu-result tu-result--tails';
+      resultEl.innerHTML = `TAIL TAIL — TT WINS<div class="tu-result-sub">Pot 🪙 ${totalPot} · ${mult}× return for TT bettors</div>`;
+    }
     if (chipEl) { chipEl.className = 'market-chip settled'; chipEl.textContent = 'Settled'; }
   } else {
     if (coin1) { coin1.textContent = 'H'; coin1.className = 'tu-coin tu-coin-pending'; }
     if (coin2) { coin2.textContent = 'T'; coin2.className = 'tu-coin tu-coin-pending'; }
-    if (resultEl) { resultEl.textContent = 'ODD — ALL LOSE'; resultEl.className = 'tu-result tu-result--odd'; }
+    if (resultEl) {
+      const nextSlot = _tuState.tuesdays[_tuState.currentIdx + 1];
+      const nextLabel = nextSlot ? nextSlot.label.split('·')[1].trim() : 'next game';
+      resultEl.className = 'tu-result tu-result--odd';
+      resultEl.innerHTML = `ODD — ALL LOSE<div class="tu-result-sub">Pot 🪙 ${totalPot} rolls → ${nextLabel} house bet</div>`;
+    }
     if (chipEl) { chipEl.className = 'market-chip settled'; chipEl.textContent = 'Settled'; }
   }
 }
@@ -772,7 +802,7 @@ function _tuRefreshPlayBody() {
   if (!body) return;
   const tu = _tuState.tuesdays[_tuState.currentIdx];
   if (!tu) return;
-  const isFlipped     = tu.status !== 'pending';
+  const isFlipped     = tu.status !== 'pending' || new Date(tu.flipTime) <= new Date();
   const showCountdown = !isFlipped && new Date(tu.flipTime) > new Date();
   body.innerHTML = showCountdown
     ? `<div class="tu-cd-label-hero" id="tuCdLabel">flipping off in:</div>
@@ -833,7 +863,7 @@ function renderTwoUpCard() {
 </div>`;
   }
 
-  const isFlipped     = tu && tu.status !== 'pending';
+  const isFlipped     = tu && (tu.status !== 'pending' || new Date(tu.flipTime) <= new Date());
   const flipTime      = tu ? new Date(tu.flipTime) : null;
   const showCountdown = tu && !isFlipped && flipTime && flipTime > new Date();
 
@@ -936,7 +966,7 @@ function initTwoUp() {
 
 function openTwoUpBet() {
   const tu = _tuState.tuesdays[_tuState.currentIdx];
-  if (!tu || tu.status !== 'pending') { showToast('Betting is closed for this round'); return; }
+  if (!tu || tu.status !== 'pending' || new Date(tu.flipTime) <= new Date()) { showToast('Betting is closed for this round'); return; }
   _tuState.selectedOutcome = 'HH';
   let overlay = document.getElementById('twoUpBetOverlay');
   if (!overlay) {
@@ -1030,7 +1060,7 @@ function openTwoUpRules() {
           <li>Two coins are tossed each hour</li>
           <li><b>HH</b> — both coins land heads → HH bets win</li>
           <li><b>TT</b> — both coins land tails → TT bets win</li>
-          <li><b>Odd</b> — one head, one tail → all bets lose</li>
+          <li><b>Odd</b> — one head, one tail → all bets lose, pot rolls to next hour's house bet</li>
           <li>Games run every hour, 10am–10pm AEST every Tuesday</li>
           <li>Betting opens from 9am AEST</li>
           <li>Minimum bet is 🪙 50</li>
