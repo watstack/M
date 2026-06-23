@@ -986,6 +986,7 @@ function openTwoUpBet() {
         <div class="tu-how-to-play-row">
           <button class="tu-rules-link" onclick="openTwoUpRules()">? How to play</button>
         </div>
+        <div class="tu-bet-label" style="margin-bottom:10px">Balance: <span id="tuBetBalance" style="font-family:var(--font-mono);color:var(--text)">🪙 —</span></div>
         <div class="tu-bet-label">Bet Amount (min 🪙 50)</div>
         <div class="tu-bet-amount">
           <input type="number" id="tuBetAmount" class="adm-in" value="50" min="50" step="5" style="font-family:var(--font-mono);font-size:1rem">
@@ -1004,6 +1005,8 @@ function openTwoUpBet() {
   document.getElementById('tuTabHH').className = 'tu-outcome-tab active-heads';
   document.getElementById('tuTabTT').className = 'tu-outcome-tab';
   overlay.classList.remove('hidden');
+  const tuBalEl = document.getElementById('tuBetBalance');
+  if (tuBalEl) tuBalEl.textContent = (typeof _participant !== 'undefined' && _participant) ? `🪙 ${_participant.coin_balance.toLocaleString()}` : '🪙 —';
 }
 
 function closeTwoUpBet() {
@@ -1020,28 +1023,59 @@ function selectTwoUpOutcome(outcome) {
   ttTab.className = outcome === 'TT' ? 'tu-outcome-tab active-tails' : 'tu-outcome-tab';
 }
 
-function confirmTwoUpBet() {
-  const amountEl = document.getElementById('tuBetAmount');
-  const errorEl  = document.getElementById('tuBetError');
-  const amount   = parseFloat(amountEl ? amountEl.value : 0);
+async function confirmTwoUpBet() {
+  const amountEl  = document.getElementById('tuBetAmount');
+  const errorEl   = document.getElementById('tuBetError');
+  const confirmBtn = document.querySelector('#twoUpBetOverlay .adm-btn');
+  const amount    = parseInt(amountEl ? amountEl.value : 0, 10);
 
   if (!amountEl || isNaN(amount) || amount < 50) {
     if (errorEl) errorEl.textContent = 'Minimum bet is 🪙 50';
     return;
   }
+  if (typeof _participant === 'undefined' || !_participant) {
+    if (errorEl) errorEl.textContent = 'Join the tournament first';
+    return;
+  }
+  if (amount > _participant.coin_balance) {
+    if (errorEl) errorEl.textContent = 'Not enough coins';
+    return;
+  }
   if (errorEl) errorEl.textContent = '';
 
-  const tu = _tuState.tuesdays[_tuState.currentIdx];
-  if (!tu) return;
-  if (_tuState.selectedOutcome === 'HH') {
-    tu.hhTotal += amount;
-  } else {
-    tu.ttTotal += amount;
-  }
+  if (confirmBtn) confirmBtn.disabled = true;
+  try {
+    const { data: updated, error } = await db
+      .from('participants')
+      .update({ coin_balance: _participant.coin_balance - amount })
+      .eq('id', _participant.id)
+      .gte('coin_balance', amount)
+      .select('coin_balance')
+      .single();
 
-  closeTwoUpBet();
-  _tuRenderPot();
-  showToast(`✓ Bet placed: 🪙 ${amount} on ${_tuState.selectedOutcome}`);
+    if (error || !updated) {
+      if (errorEl) errorEl.textContent = 'Not enough coins';
+      return;
+    }
+
+    _participant.coin_balance = updated.coin_balance;
+    const balEl = document.getElementById('balanceAmt');
+    if (balEl) balEl.textContent = updated.coin_balance.toLocaleString();
+
+    const tu = _tuState.tuesdays[_tuState.currentIdx];
+    if (!tu) return;
+    if (_tuState.selectedOutcome === 'HH') {
+      tu.hhTotal += amount;
+    } else {
+      tu.ttTotal += amount;
+    }
+
+    closeTwoUpBet();
+    _tuRenderPot();
+    showToast(`✓ Bet placed: 🪙 ${amount} on ${_tuState.selectedOutcome}`);
+  } finally {
+    if (confirmBtn) confirmBtn.disabled = false;
+  }
 }
 
 function openTwoUpRules() {
