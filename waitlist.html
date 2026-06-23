@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>M — One Pass. Every Sport in Melbourne.</title>
-  <meta name="description" content="One membership. Watch AFL, netball, A-League football, NRL rugby and NBL basketball in Melbourne on one pass. No lock-in. Join the waitlist for early access.">
+  <meta name="description" content="Watch AFL, netball, football, rugby and basketball on one membership. Melbourne's sport pass. Join the waitlist.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
@@ -13,594 +13,294 @@
     html { scroll-behavior: smooth; }
 
     :root {
-      --cyan:    #00D4FF;
-      --mag:     #FF2D78;
-      --ink:     #030309;
-      --dark:    #07070F;
-      --surface: #0C0C18;
-      --line:    rgba(255,255,255,0.09);
-      --line-c:  rgba(0,212,255,0.30);
-      --white:   #FFFFFF;
-      --muted:   rgba(255,255,255,0.42);
-      --dim:     rgba(255,255,255,0.22);
+      --cyan:   #0085A5;
+      --cyan-d: #005F78;
+      --mag:    #C8003A;
+      --ink:    #09090F;
+      --bg:     #EEECE5;
+      --surface:#FFFFFF;
+      --line:   rgba(9,9,15,0.09);
+      --line-c: rgba(0,133,165,0.26);
+      --muted:  rgba(9,9,15,0.46);
+      --dim:    rgba(9,9,15,0.26);
     }
 
     body {
       font-family: 'Space Grotesk', sans-serif;
-      background: var(--ink);
-      color: var(--white);
+      background: var(--bg);
+      color: var(--ink);
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
     }
     a { color: inherit; text-decoration: none; }
-
-    /* ── Grid ───────────────────────────────── */
     .container { width: 100%; max-width: 680px; margin: 0 auto; padding: 0 24px; }
 
-    /* ── Eyebrow / section label ─────────────── */
     .eyebrow {
       display: inline-flex; align-items: center; gap: 12px;
-      font-size: 0.66rem; font-weight: 700;
+      font-size: 0.63rem; font-weight: 700;
       letter-spacing: 0.20em; text-transform: uppercase; color: var(--cyan);
     }
-    .eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--cyan); flex-shrink: 0; }
+    .eyebrow::before { content: ''; width: 20px; height: 1px; background: var(--cyan); flex-shrink: 0; }
 
-    /* ── Grad text ───────────────────────────── */
     .grad {
-      background: linear-gradient(90deg, var(--cyan) 0%, #7B2FFF 55%, var(--mag) 100%);
+      background: linear-gradient(90deg, var(--ink) 0%, var(--cyan-d) 50%, var(--mag) 100%);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
 
-    /* ════════════════════════════════════════════
+    /* ════════════════════════════════════════
        HERO
-    ════════════════════════════════════════════ */
+    ════════════════════════════════════════ */
     #hero {
-      min-height: 100svh;
-      display: flex; flex-direction: column;
-      position: relative; overflow: hidden;
-      background: var(--ink);
+      min-height: 100svh; display: flex; flex-direction: column;
+      position: relative; overflow: hidden; background: var(--bg);
     }
 
-    /* diagonal beams */
-    .hero-beams {
-      position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
-    }
-    .beam {
-      position: absolute;
-      width: 1px;
-      background: linear-gradient(to bottom, transparent 0%, rgba(0,212,255,0.35) 40%, rgba(0,212,255,0.10) 70%, transparent 100%);
-      top: -20%; height: 90%;
-    }
-    .beam:nth-child(1) { left: 18%; transform: rotate(12deg); opacity: 0.7; }
-    .beam:nth-child(2) { left: 55%; transform: rotate(12deg); opacity: 0.4; }
-    .beam:nth-child(3) { left: 80%; transform: rotate(12deg); opacity: 0.25; height: 60%; top: 20%; background: linear-gradient(to bottom, transparent, rgba(255,45,120,0.3), transparent); }
-
-    /* grid overlay */
+    /* fine technical grid */
     #hero::before {
-      content: ''; position: absolute; inset: 0; z-index: 0;
+      content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
       background-image:
-        repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(0,212,255,0.025) 60px, rgba(0,212,255,0.025) 61px),
-        repeating-linear-gradient(90deg, transparent, transparent 60px, rgba(0,212,255,0.025) 60px, rgba(0,212,255,0.025) 61px);
-      pointer-events: none;
+        repeating-linear-gradient(0deg, transparent, transparent 48px, rgba(0,133,165,0.045) 48px, rgba(0,133,165,0.045) 49px),
+        repeating-linear-gradient(90deg, transparent, transparent 48px, rgba(0,133,165,0.045) 48px, rgba(0,133,165,0.045) 49px);
     }
 
-    /* brand bar */
     .hero-brand {
       position: relative; z-index: 2;
-      padding: 22px 24px;
+      padding: 20px 24px;
       display: flex; align-items: center; justify-content: space-between;
       border-bottom: 1px solid var(--line);
     }
-    .brand-mark {
-      font-size: 1.7rem; font-weight: 800; font-style: italic; letter-spacing: -0.06em;
-    }
+    .brand-mark { font-size: 1.6rem; font-weight: 800; font-style: italic; letter-spacing: -0.06em; }
     .brand-mark span { color: var(--cyan); }
 
     .pre-launch-flag {
-      font-size: 0.62rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
-      color: var(--mag); border: 1px solid rgba(255,45,120,0.35);
-      padding: 5px 10px;
+      font-size: 0.59rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--mag); border: 1px solid rgba(200,0,58,0.28); padding: 4px 9px;
     }
 
-    /* hero body */
     .hero-body {
-      position: relative; z-index: 2;
-      flex: 1; display: flex; flex-direction: column;
-      align-items: flex-start; text-align: left;
-      padding: 56px 24px 0; gap: 28px;
+      position: relative; z-index: 2; flex: 1;
+      display: flex; flex-direction: column; align-items: flex-start;
+      padding: 52px 24px 0; gap: 26px;
       max-width: 680px; margin: 0 auto; width: 100%;
     }
 
-    /* live counter */
     .live-row {
       display: flex; align-items: center; gap: 10px;
-      font-size: 0.80rem; font-weight: 600; color: var(--muted);
+      font-size: 0.77rem; font-weight: 600; color: var(--muted);
     }
     .live-dot {
       width: 7px; height: 7px; background: var(--mag); border-radius: 50%;
-      box-shadow: 0 0 8px var(--mag); flex-shrink: 0;
-      animation: dot-p 1.8s ease infinite;
+      flex-shrink: 0; animation: dot-p 1.8s ease infinite;
     }
-    @keyframes dot-p { 0%,100%{opacity:1} 50%{opacity:0.25} }
-    .live-row strong { color: var(--white); font-weight: 700; }
+    @keyframes dot-p { 0%,100%{opacity:1} 50%{opacity:0.2} }
+    .live-row strong { color: var(--ink); font-weight: 700; }
 
-    /* headline */
     .hero-headline {
       font-size: clamp(3rem, 11vw, 5.5rem);
       font-weight: 800; font-style: italic;
-      line-height: 0.96; letter-spacing: -0.05em;
+      line-height: 0.95; letter-spacing: -0.05em;
     }
-    .hero-headline .line-2 { display: block; }
 
-    /* subhead */
     .hero-subhead {
-      font-size: clamp(0.92rem, 2.5vw, 1.05rem);
-      color: var(--muted); max-width: 440px; line-height: 1.70;
-      border-left: 2px solid var(--cyan); padding-left: 16px;
+      font-size: clamp(0.88rem, 2.3vw, 1.0rem);
+      color: var(--muted); max-width: 400px; line-height: 1.74;
+      border-left: 2px solid var(--cyan); padding-left: 14px;
     }
-    .hero-subhead strong { color: var(--white); }
+    .hero-subhead strong { color: var(--ink); }
 
     /* form */
-    #signup-form-wrap { width: 100%; max-width: 500px; }
+    #signup-form-wrap { width: 100%; max-width: 480px; }
     #signup-state-default { display: flex; flex-direction: column; gap: 8px; }
     #signup-state-confirmed { display: none; }
 
     .email-row {
-      display: flex; gap: 0;
-      border: 1px solid var(--line-c);
-      background: var(--surface);
-      transition: border-color 0.2s;
+      display: flex; border: 1px solid var(--line-c);
+      background: var(--surface); transition: border-color 0.2s;
     }
     .email-row:focus-within { border-color: var(--cyan); }
     .email-row input {
       flex: 1; min-width: 0; background: transparent;
-      border: none; outline: none; padding: 14px 18px;
-      font-family: inherit; font-size: 0.95rem; color: var(--white);
+      border: none; outline: none; padding: 13px 16px;
+      font-family: inherit; font-size: 0.90rem; color: var(--ink);
     }
-    .email-row input::placeholder { color: rgba(255,255,255,0.25); }
+    .email-row input::placeholder { color: rgba(9,9,15,0.26); }
 
     .btn-cta {
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      font-family: inherit; font-size: 0.88rem; font-weight: 800;
-      letter-spacing: 0.02em; border: none; padding: 14px 22px;
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: inherit; font-size: 0.84rem; font-weight: 800;
+      letter-spacing: 0.02em; border: none; padding: 13px 20px;
       cursor: pointer; white-space: nowrap;
-      background: var(--white); color: var(--ink);
-      transition: background 0.15s, color 0.15s;
+      background: var(--ink); color: #fff;
+      transition: background 0.15s;
     }
-    .btn-cta:hover { background: var(--cyan); color: var(--ink); }
-
-    .form-note { font-size: 0.72rem; color: var(--dim); padding-left: 2px; }
+    .btn-cta:hover { background: var(--cyan); }
+    .form-note { font-size: 0.69rem; color: var(--dim); }
 
     /* confirmed */
-    #signup-state-confirmed { flex-direction: column; gap: 0; text-align: left; }
+    #signup-state-confirmed { flex-direction: column; }
     .confirmed-card {
-      border: 1px solid var(--line-c);
-      background: var(--surface);
-      padding: 24px;
-      display: flex; flex-direction: column; gap: 16px;
+      border: 1px solid var(--line-c); background: var(--surface);
+      padding: 22px; display: flex; flex-direction: column; gap: 14px;
     }
     .confirmed-top { display: flex; align-items: stretch; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-    .queue-block {}
-    .queue-badge { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--cyan); margin-bottom: 4px; }
-    .queue-pos { font-size: 2.6rem; font-weight: 800; font-style: italic; letter-spacing: -0.05em; line-height: 1; }
-    .entries-block {
-      border-left: 1px solid var(--line-c);
-      padding-left: 20px;
-      display: flex; flex-direction: column; justify-content: center; gap: 2px;
-    }
-    .entries-block strong { color: var(--cyan); font-size: 1.8rem; font-weight: 800; font-style: italic; display: block; line-height: 1; }
-    .entries-block span { font-size: 0.72rem; color: var(--muted); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
-    .ref-label { font-size: 0.70rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
-    .ref-row { display: flex; gap: 0; }
+    .queue-badge { font-size: 0.59rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--cyan); margin-bottom: 4px; }
+    .queue-pos { font-size: 2.3rem; font-weight: 800; font-style: italic; letter-spacing: -0.05em; line-height: 1; }
+    .entries-block { border-left: 1px solid var(--line-c); padding-left: 18px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+    .entries-block strong { color: var(--cyan); font-size: 1.7rem; font-weight: 800; font-style: italic; display: block; line-height: 1; }
+    .entries-block span { font-size: 0.66rem; color: var(--muted); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+    .ref-label { font-size: 0.66rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 6px; }
+    .ref-row { display: flex; }
     .ref-link-box {
-      flex: 1; min-width: 0; background: rgba(255,255,255,0.04);
+      flex: 1; min-width: 0; background: rgba(0,133,165,0.04);
       border: 1px solid var(--line); border-right: none;
-      padding: 10px 14px; font-size: 0.78rem; color: var(--muted);
+      padding: 9px 12px; font-size: 0.75rem; color: var(--muted);
       font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .btn-copy {
-      background: var(--surface); border: 1px solid var(--line-c);
-      color: var(--cyan); padding: 10px 16px; font-size: 0.78rem; font-weight: 700;
+      background: var(--ink); border: none; color: #fff;
+      padding: 9px 14px; font-size: 0.75rem; font-weight: 700;
       cursor: pointer; font-family: inherit; letter-spacing: 0.06em; text-transform: uppercase;
-      transition: background 0.15s; white-space: nowrap;
+      transition: background 0.15s;
     }
-    .btn-copy:hover, .btn-copy.copied { background: rgba(0,212,255,0.10); }
-    .confirmed-nudge { font-size: 0.80rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+    .btn-copy:hover { background: var(--cyan); }
+    .confirmed-nudge { font-size: 0.78rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
 
-    /* ── Access Card (ticket) ───────────────── */
-    .ticket-wrap { width: 100%; max-width: 480px; padding-bottom: 48px; }
+    /* etching SVG graphic */
+    .hero-graphic { width: 100%; max-width: 520px; padding-bottom: 52px; }
+    .hero-graphic svg { width: 100%; height: auto; display: block; }
 
-    .access-card {
-      position: relative; width: 100%;
-      background: var(--surface);
-      border: 1px solid rgba(0,212,255,0.28);
-      display: grid; grid-template-columns: 4px 1fr auto;
-      overflow: hidden;
-      animation: card-float 5s ease-in-out infinite;
-      transform: rotate(-1.5deg);
-    }
-    @keyframes card-float {
-      0%,100%{transform:rotate(-1.5deg)translateY(0)}
-      50%    {transform:rotate(-1.5deg)translateY(-8px)}
-    }
-
-    /* holo stripe */
-    .card-stripe {
-      background: linear-gradient(to bottom, var(--cyan), #7B2FFF, var(--mag), var(--cyan));
-      animation: holo-s 4s linear infinite;
-    }
-    @keyframes holo-s { 0%{background-position:0 0} 100%{background-position:0 100%} }
-
-    .card-body { padding: 22px 20px; display: flex; flex-direction: column; gap: 4px; }
-    .card-stub {
-      padding: 22px 24px 22px 16px;
-      border-left: 1px dashed rgba(0,212,255,0.18);
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-    }
-
-    .card-eyebrow { font-size: 0.54rem; font-weight: 700; letter-spacing: 0.20em; text-transform: uppercase; color: var(--cyan); opacity: 0.7; }
-    .card-title   { font-size: 1.3rem; font-weight: 800; font-style: italic; letter-spacing: -0.04em; color: var(--white); line-height: 1.1; }
-    .card-sub     { font-size: 0.64rem; font-weight: 600; color: var(--muted); margin-top: 2px; }
-    .card-barcode {
-      display: flex; gap: 2px; margin-top: 14px; align-items: flex-end;
-    }
-    .bar {
-      background: rgba(255,255,255,0.15);
-      width: 2px;
-    }
-    .card-serial  { font-size: 0.50rem; font-family: monospace; color: rgba(0,212,255,0.35); letter-spacing: 0.08em; margin-top: 6px; }
-    .stub-logo    { font-size: 1.8rem; font-weight: 800; font-style: italic; color: var(--cyan); letter-spacing: -0.06em; }
-    .stub-city    { font-size: 0.56rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
-    .stub-val-label { font-size: 0.50rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.10em; color: var(--cyan); opacity: 0.5; margin-top: 8px; }
-    .stub-val     { font-size: 1rem; font-weight: 800; color: var(--white); letter-spacing: -0.02em; line-height: 1.1; }
-
-    /* notch cutouts */
-    .card-notch {
-      position: absolute; width: 22px; height: 22px;
-      background: var(--ink); border-radius: 50%;
-      top: 50%; transform: translateY(-50%);
-    }
-    .card-notch.left  { left: -11px; border: 1px solid rgba(0,212,255,0.2); }
-    .card-notch.right { right: -11px; border: 1px solid rgba(0,212,255,0.2); }
-
-    /* glow behind card */
-    .card-glow {
-      position: absolute; inset: -20px; z-index: -1;
-      background: radial-gradient(ellipse 80% 50% at 50% 50%, rgba(0,212,255,0.12) 0%, transparent 70%);
-    }
-
-    /* ════════════════════════════════════════════
+    /* ════════════════════════════════════════
        TICKER
-    ════════════════════════════════════════════ */
+    ════════════════════════════════════════ */
     .ticker-section {
-      background: var(--dark);
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      overflow: hidden; padding: 12px 0;
+      background: var(--surface);
+      border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+      overflow: hidden; padding: 11px 0;
     }
-    .ticker-track {
-      display: inline-flex; align-items: center;
-      animation: run-t 35s linear infinite; white-space: nowrap;
-    }
+    .ticker-track { display: inline-flex; align-items: center; animation: run-t 35s linear infinite; white-space: nowrap; }
     .ticker-section:hover .ticker-track { animation-play-state: paused; }
     @keyframes run-t { from{transform:translateX(0)} to{transform:translateX(-50%)} }
     .ticker-item {
       display: inline-flex; align-items: center; gap: 8px;
-      padding: 0 22px;
-      font-size: 0.70rem; font-weight: 700;
-      letter-spacing: 0.14em; text-transform: uppercase;
-      color: rgba(255,255,255,0.32);
+      padding: 0 20px; font-size: 0.67rem; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase; color: rgba(9,9,15,0.32);
     }
-    .ticker-sep { color: rgba(0,212,255,0.35); font-size: 0.7rem; }
+    .ticker-sep { color: rgba(0,133,165,0.38); }
 
-    /* ════════════════════════════════════════════
+    /* ════════════════════════════════════════
        SECTIONS
-    ════════════════════════════════════════════ */
-    .section { padding: 88px 0; border-top: 1px solid var(--line); }
-
-    .section-header { margin-bottom: 52px; display: flex; flex-direction: column; gap: 16px; }
-    .section-header.centered { align-items: center; text-align: center; }
-
+    ════════════════════════════════════════ */
+    .section { padding: 80px 0; border-top: 1px solid var(--line); }
+    .section-header { margin-bottom: 44px; display: flex; flex-direction: column; gap: 14px; }
     .section-title {
-      font-size: clamp(2rem, 6.5vw, 3.2rem);
+      font-size: clamp(2rem, 6vw, 3rem);
       font-weight: 800; font-style: italic;
       letter-spacing: -0.05em; line-height: 1.0;
     }
-    .section-sub { font-size: 0.98rem; color: var(--muted); max-width: 400px; line-height: 1.7; }
 
-    /* ════════════════════════════════════════════
-       PRIZE
-    ════════════════════════════════════════════ */
-    #prize { background: var(--dark); }
-
-    .prize-featured {
-      border: 1px solid var(--line-c);
-      background: var(--surface);
-      padding: 32px;
-      margin-bottom: 2px;
-      display: flex; flex-direction: column; gap: 12px;
-    }
-    .prize-featured-top {
-      display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
-    }
-    .prize-headline { font-size: 1.1rem; font-weight: 700; }
-    .prize-amount {
-      font-size: clamp(3rem, 10vw, 5rem);
-      font-weight: 800; font-style: italic; letter-spacing: -0.06em; line-height: 1;
-    }
-    .prize-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.65; max-width: 480px; }
-
-    .prize-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 2px; }
-    .prize-card {
-      background: var(--surface); border: 1px solid var(--line);
-      padding: 24px; display: flex; flex-direction: column; gap: 8px;
-      transition: border-color 0.15s;
-    }
-    .prize-card:hover { border-color: var(--line-c); }
-    .prize-card-icon { font-size: 1.6rem; line-height: 1; }
-    .prize-card-title { font-size: 0.92rem; font-weight: 700; }
-    .prize-card-desc  { font-size: 0.80rem; color: var(--muted); line-height: 1.6; }
-
-    .entries-table { border: 1px solid var(--line); overflow: hidden; margin-top: 2px; }
-    .entries-table-head {
-      padding: 12px 22px;
-      background: rgba(0,212,255,0.05);
-      border-bottom: 1px solid var(--line-c);
-      font-size: 0.64rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--cyan);
-    }
-    .entries-row {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      padding: 14px 22px;
-    }
-    .entries-row + .entries-row { border-top: 1px solid var(--line); }
-    .entries-action { font-size: 0.88rem; font-weight: 500; }
-    .entries-badge {
-      font-size: 0.72rem; font-weight: 800; color: var(--cyan);
-      border: 1px solid rgba(0,212,255,0.35);
-      padding: 3px 10px; white-space: nowrap; letter-spacing: 0.05em;
-    }
-    .entries-footer {
-      padding: 12px 22px; background: rgba(255,255,255,0.02);
-      border-top: 1px solid var(--line); font-size: 0.76rem; color: var(--muted);
-    }
-
-    /* ════════════════════════════════════════════
-       HOW IT WORKS
-    ════════════════════════════════════════════ */
-    #how { background: var(--ink); }
-
-    .steps { display: flex; flex-direction: column; gap: 0; }
-    .step {
-      display: grid; grid-template-columns: 48px 1fr;
-      align-items: start; gap: 20px;
-      padding: 28px 0;
-      border-bottom: 1px solid var(--line);
-      transition: background 0.15s;
-    }
-    .step:first-child { border-top: 1px solid var(--line); }
-    .step:hover { background: rgba(0,212,255,0.02); }
-
-    .step-num {
-      font-size: 0.68rem; font-weight: 800; font-style: italic;
-      color: var(--cyan); letter-spacing: 0.1em;
-      padding-top: 4px;
-    }
-    .step-title { font-size: 1rem; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.01em; }
-    .step-desc  { font-size: 0.86rem; color: var(--muted); line-height: 1.65; }
-    .step-desc strong { color: var(--white); }
-
-    /* ════════════════════════════════════════════
+    /* ════════════════════════════════════════
        SPORTS
-    ════════════════════════════════════════════ */
-    #sports { background: var(--dark); }
+    ════════════════════════════════════════ */
+    #sports { background: var(--surface); }
 
     .sports-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--line); }
 
     .sport-tile {
-      background: var(--surface);
-      padding: 22px 12px; text-align: center;
-      display: flex; flex-direction: column; align-items: center; gap: 8px;
-      cursor: default;
-      opacity: 0; transform: translateY(10px);
-      transition: opacity 0.4s ease, transform 0.4s ease, background 0.18s;
-    }
-    .sport-tile.visible { opacity: 1; transform: translateY(0); }
-    .sport-tile:hover { background: rgba(0,212,255,0.07); }
-    .sport-tile-icon { font-size: 1.9rem; line-height: 1; }
-    .sport-tile-name { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-    .sport-tile-type {
-      font-size: 0.56rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
-      padding: 2px 6px; border: 1px solid;
-    }
-    .sport-tile-type.play  { color: var(--cyan); border-color: rgba(0,212,255,0.3); }
-    .sport-tile-type.watch { color: var(--mag);  border-color: rgba(255,45,120,0.3); }
-
-    .sports-more { margin-top: 16px; font-size: 0.80rem; color: var(--muted); font-style: italic; }
-
-    .pass-features { margin-top: 2px; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); }
-    .feature-chip {
-      display: flex; align-items: center; gap: 12px;
-      background: var(--surface); padding: 16px 18px;
-      font-size: 0.82rem; font-weight: 600;
-    }
-    .feature-chip .icon { font-size: 1rem; flex-shrink: 0; }
-
-    /* ════════════════════════════════════════════
-       PROOF
-    ════════════════════════════════════════════ */
-    #proof { background: var(--ink); }
-
-    .proof-split {
-      display: grid; grid-template-columns: 1fr auto;
-      align-items: center; gap: 32px;
-      padding: 48px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
-      margin-bottom: 32px;
-    }
-    .proof-eyebrow { font-size: 0.64rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cyan); margin-bottom: 8px; }
-    .proof-number {
-      font-size: clamp(4.5rem, 16vw, 8rem);
-      font-weight: 800; font-style: italic;
-      letter-spacing: -0.06em; line-height: 1;
-    }
-    .proof-label { font-size: 0.88rem; color: var(--muted); margin-top: 8px; }
-    .proof-right { text-align: right; }
-    .proof-spots-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); margin-bottom: 6px; }
-    .spots-bar { width: 120px; height: 3px; background: rgba(255,255,255,0.08); margin-left: auto; margin-bottom: 6px; }
-    .spots-bar-fill { height: 100%; background: var(--cyan); width: 0; transition: width 1.6s cubic-bezier(0.16,1,0.3,1); }
-    .spots-pct { font-size: 1.5rem; font-weight: 800; font-style: italic; letter-spacing: -0.04em; color: var(--cyan); }
-    .spots-of  { font-size: 0.70rem; color: var(--muted); }
-
-    .founding-block {
-      border: 1px solid var(--line-c);
-      background: var(--surface);
-      display: grid; grid-template-columns: 1fr 1fr; overflow: hidden;
-    }
-    .founding-left  { padding: 32px; border-right: 1px solid var(--line); }
-    .founding-right { padding: 32px; }
-    .founding-eyebrow { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cyan); margin-bottom: 12px; }
-    .founding-title { font-size: 1.5rem; font-weight: 800; font-style: italic; letter-spacing: -0.04em; line-height: 1.15; margin-bottom: 20px; }
-    .perks { display: flex; flex-direction: column; gap: 10px; }
-    .perk { display: flex; align-items: flex-start; gap: 10px; font-size: 0.83rem; color: var(--muted); }
-    .perk-mark { color: var(--cyan); flex-shrink: 0; font-size: 0.7rem; margin-top: 3px; }
-
-    .venue-label { font-size: 0.62rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); margin-bottom: 12px; }
-    .venue-logos { display: grid; grid-template-columns: repeat(2,1fr); gap: 1px; background: var(--line); }
-    .venue-ph {
-      background: var(--surface); height: 52px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.58rem; font-weight: 700; letter-spacing: 0.10em;
-      text-transform: uppercase; color: rgba(255,255,255,0.14);
-    }
-
-    @media (max-width:520px) {
-      .founding-block { grid-template-columns: 1fr; }
-      .founding-left { border-right: none; border-bottom: 1px solid var(--line); }
-    }
-
-    /* ════════════════════════════════════════════
-       REFERRAL
-    ════════════════════════════════════════════ */
-    #refer { background: var(--dark); }
-
-    .refer-wrap {
-      border: 1px solid var(--line-c);
-      background: var(--surface);
-      padding: 48px 36px;
-      display: flex; flex-direction: column; align-items: flex-start; gap: 24px;
+      background: var(--surface); padding: 22px 10px; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 7px;
+      opacity: 0; transform: translateY(8px);
+      transition: opacity 0.35s ease, transform 0.35s ease, background 0.18s;
       position: relative; overflow: hidden;
     }
-    /* accent stripe */
-    .refer-wrap::before {
-      content: ''; position: absolute; top: 0; bottom: 0; left: 0;
-      width: 3px;
-      background: linear-gradient(to bottom, var(--cyan), #7B2FFF, var(--mag));
+    .sport-tile::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none;
+      background-image: repeating-linear-gradient(40deg, transparent, transparent 4px, rgba(0,133,165,0.06) 4px, rgba(0,133,165,0.06) 5px);
+      opacity: 0; transition: opacity 0.2s;
     }
+    .sport-tile:hover::before { opacity: 1; }
+    .sport-tile:hover { background: rgba(0,133,165,0.03); }
+    .sport-tile.visible { opacity: 1; transform: translateY(0); }
+    .sport-tile-icon { font-size: 1.8rem; line-height: 1; }
+    .sport-tile-name { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
 
-    .refer-title {
-      font-size: clamp(1.9rem, 7vw, 3rem);
-      font-weight: 800; font-style: italic;
-      letter-spacing: -0.05em; line-height: 1.0;
+    /* ════════════════════════════════════════
+       STEPS
+    ════════════════════════════════════════ */
+    #how { background: var(--bg); }
+
+    .steps { display: flex; flex-direction: column; }
+    .step {
+      display: grid; grid-template-columns: 44px 1fr; align-items: start; gap: 18px;
+      padding: 26px 0; border-bottom: 1px solid var(--line);
     }
-    .refer-sub { font-size: 0.92rem; color: var(--muted); max-width: 380px; line-height: 1.7; }
+    .step:first-child { border-top: 1px solid var(--line); }
+    .step-num { font-size: 0.63rem; font-weight: 800; font-style: italic; color: var(--cyan); letter-spacing: 0.10em; padding-top: 3px; }
+    .step-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 5px; letter-spacing: -0.01em; }
+    .step-desc  { font-size: 0.82rem; color: var(--muted); line-height: 1.65; }
+    .step-desc strong { color: var(--ink); }
 
-    .refer-form { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 8px; }
-
-    .share-buttons { display: flex; gap: 2px; flex-wrap: wrap; width: 100%; }
-    .share-btn {
-      flex: 1; min-width: 100px;
-      background: var(--ink); border: 1px solid var(--line);
-      color: var(--white); padding: 14px 16px;
-      font-size: 0.82rem; font-weight: 700; letter-spacing: 0.04em;
-      cursor: pointer; font-family: inherit;
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      transition: border-color 0.15s, color 0.15s;
-    }
-    .share-btn:hover { border-color: var(--cyan); color: var(--cyan); }
-
-    /* ════════════════════════════════════════════
+    /* ════════════════════════════════════════
        FAQ
-    ════════════════════════════════════════════ */
-    #faq { background: var(--ink); }
+    ════════════════════════════════════════ */
+    #faq { background: var(--surface); }
 
     .faq-list { display: flex; flex-direction: column; }
     .faq-item { border-bottom: 1px solid var(--line); }
     .faq-item:first-child { border-top: 1px solid var(--line); }
     .faq-q {
       display: flex; align-items: center; justify-content: space-between; gap: 16px;
-      padding: 20px 0; font-size: 0.92rem; font-weight: 600;
+      padding: 18px 0; font-size: 0.90rem; font-weight: 600;
       cursor: pointer; user-select: none; transition: color 0.15s;
     }
     .faq-q:hover { color: var(--cyan); }
     .faq-item.open .faq-q { color: var(--cyan); }
 
     .faq-toggle {
-      width: 20px; height: 20px; flex-shrink: 0;
+      width: 18px; height: 18px; flex-shrink: 0;
       border: 1px solid var(--line); position: relative;
       display: flex; align-items: center; justify-content: center;
       transition: border-color 0.2s;
     }
-    .faq-toggle::before,
-    .faq-toggle::after {
-      content: ''; position: absolute;
-      background: currentColor; transition: transform 0.25s, opacity 0.25s;
+    .faq-toggle::before, .faq-toggle::after {
+      content: ''; position: absolute; background: currentColor;
+      transition: transform 0.25s, opacity 0.25s;
     }
-    .faq-toggle::before { width: 10px; height: 1px; }
-    .faq-toggle::after  { width: 1px; height: 10px; }
+    .faq-toggle::before { width: 9px; height: 1px; }
+    .faq-toggle::after  { width: 1px; height: 9px; }
     .faq-item.open .faq-toggle { border-color: var(--cyan); color: var(--cyan); }
     .faq-item.open .faq-toggle::after { transform: rotate(90deg); opacity: 0; }
 
     .faq-a {
       max-height: 0; overflow: hidden;
       transition: max-height 0.35s ease, padding 0.25s ease;
-      font-size: 0.86rem; color: var(--muted); line-height: 1.75;
+      font-size: 0.83rem; color: var(--muted); line-height: 1.75;
     }
-    .faq-item.open .faq-a { max-height: 300px; padding-bottom: 20px; }
+    .faq-item.open .faq-a { max-height: 240px; padding-bottom: 18px; }
 
-    /* ════════════════════════════════════════════
+    /* ════════════════════════════════════════
        FOOTER
-    ════════════════════════════════════════════ */
-    footer { border-top: 1px solid var(--line); padding: 32px 0; background: var(--ink); }
-    .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-    .footer-brand { font-size: 1.4rem; font-weight: 800; font-style: italic; letter-spacing: -0.05em; }
+    ════════════════════════════════════════ */
+    footer { border-top: 1px solid var(--line); padding: 28px 0; background: var(--bg); }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+    .footer-brand { font-size: 1.3rem; font-weight: 800; font-style: italic; letter-spacing: -0.05em; }
     .footer-brand span { color: var(--cyan); }
-    .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
-    .footer-links a { font-size: 0.76rem; color: var(--muted); letter-spacing: 0.04em; transition: color 0.15s; }
-    .footer-links a:hover { color: var(--white); }
-    .footer-copy { font-size: 0.70rem; color: var(--dim); width: 100%; }
+    .footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .footer-links a { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.04em; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--ink); }
+    .footer-copy { font-size: 0.67rem; color: var(--dim); width: 100%; }
 
-    /* ════════════════════════════════════════════
-       ANIMATIONS
-    ════════════════════════════════════════════ */
-    .fade-up {
-      opacity: 0; transform: translateY(20px);
-      transition: opacity 0.55s ease, transform 0.55s ease;
-    }
+    .fade-up { opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease, transform 0.5s ease; }
     .fade-up.visible { opacity: 1; transform: translateY(0); }
 
-    /* ════════════════════════════════════════════
-       RESPONSIVE
-    ════════════════════════════════════════════ */
     @media (min-width: 520px) { .sports-grid { grid-template-columns: repeat(4,1fr); } }
-    @media (max-width: 440px) {
-      .pass-features { grid-template-columns: 1fr; }
-      .prize-pair { grid-template-columns: 1fr; }
-      .proof-split { grid-template-columns: 1fr; }
-      .proof-right { text-align: left; }
-      .spots-bar { margin-left: 0; }
-    }
+    @media (max-width: 400px) { .hero-headline { font-size: 2.8rem; } }
   </style>
 </head>
 <body>
 
-<!-- ══════════════ HERO ══════════════ -->
+<!-- ══ HERO ══════════════════════════════ -->
 <section id="hero">
-  <div class="hero-beams" aria-hidden="true">
-    <div class="beam"></div>
-    <div class="beam"></div>
-    <div class="beam"></div>
-  </div>
-
   <div class="hero-brand">
     <div class="brand-mark">M<span>.</span></div>
     <div class="pre-launch-flag">Pre-launch</div>
@@ -620,14 +320,14 @@
     </h1>
 
     <p class="hero-subhead">
-      Watch AFL, netball, A-League football, NRL and NBL basketball — all on one membership. Melbourne is the world capital of sport. No lock-in. Join the waitlist and enter the draw for <strong>a free year of live sport</strong>.
+      Watch AFL, netball, A-League, NRL and NBL — all on one membership. The world's capital of sport deserves one pass. Join the waitlist and enter the draw for <strong>a free year of live sport</strong>.
     </p>
 
     <div id="signup-form-wrap">
       <div id="signup-state-default">
         <form class="email-row" id="hero-form" onsubmit="handleSignup(event)">
           <input type="email" id="email-input" placeholder="your@email.com" autocomplete="email" required>
-          <button type="submit" class="btn-cta">Claim your Golden Ticket →</button>
+          <button type="submit" class="btn-cta">Claim your spot →</button>
         </form>
         <p class="form-note">Free to join · No card required · Unsubscribe anytime</p>
       </div>
@@ -635,7 +335,7 @@
       <div id="signup-state-confirmed">
         <div class="confirmed-card">
           <div class="confirmed-top">
-            <div class="queue-block">
+            <div>
               <div class="queue-badge">Your position</div>
               <div class="queue-pos" id="queue-pos">#1,285</div>
             </div>
@@ -644,119 +344,172 @@
               <span>Draw entry</span>
             </div>
           </div>
-          <p style="font-size:0.84rem;color:var(--muted)">You're in the draw. Each friend who joins via your link = <strong style="color:var(--white)">+1 entry</strong> + moves you up the queue.</p>
+          <p style="font-size:0.81rem;color:var(--muted)">You're in the draw for a free year. Each friend who joins via your link = <strong style="color:var(--ink)">+1 entry</strong>.</p>
           <div>
-            <div class="ref-label" style="margin-bottom:8px">Your referral link</div>
+            <div class="ref-label">Your referral link</div>
             <div class="ref-row">
               <div class="ref-link-box" id="referral-link-display">join.m.sport/r/abc123</div>
               <button class="btn-copy" id="copy-btn" onclick="copyReferral()">Copy</button>
             </div>
           </div>
-          <p class="confirmed-nudge">Only <strong style="color:var(--white)">500 founding spots</strong> in Melbourne. One winner gets a full year free.</p>
+          <p class="confirmed-nudge">Only <strong style="color:var(--ink)">500 founding spots</strong>. One winner gets a full year free.</p>
         </div>
       </div>
     </div>
 
-    <!-- Access Card -->
-    <div class="ticket-wrap fade-up">
-      <div class="card-glow" aria-hidden="true"></div>
-      <div class="access-card">
-        <div class="card-stripe"></div>
-        <div class="card-body">
-          <div class="card-eyebrow">Golden Ticket</div>
-          <div class="card-title">Free Sport<br>for a Year</div>
-          <div class="card-sub">M Sport Pass · Melbourne</div>
-          <div class="card-barcode" aria-hidden="true" id="barcode"></div>
-          <div class="card-serial">ADMIT ONE · #GT-2024-XXXX · VIC-AU</div>
-        </div>
-        <div class="card-stub">
-          <div class="stub-logo">M.</div>
-          <div class="stub-city">Melbourne</div>
-          <div class="stub-val-label">Prize value</div>
-          <div class="stub-val">A$699<br><span style="font-size:0.56rem;color:var(--muted);font-weight:600">/year</span></div>
-        </div>
-        <div class="card-notch left" aria-hidden="true"></div>
-        <div class="card-notch right" aria-hidden="true"></div>
-      </div>
+    <!-- AFL oval etching graphic -->
+    <div class="hero-graphic fade-up" aria-hidden="true">
+      <svg viewBox="0 0 560 340" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="h1" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">
+            <line x1="0" y1="0" x2="0" y2="8" stroke="#0085A5" stroke-width="0.45" opacity="0.55"/>
+          </pattern>
+          <pattern id="h2" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">
+            <line x1="0" y1="0" x2="0" y2="4" stroke="#0085A5" stroke-width="0.45" opacity="0.7"/>
+          </pattern>
+          <clipPath id="oc">
+            <ellipse cx="280" cy="170" rx="255" ry="153"/>
+          </clipPath>
+        </defs>
+
+        <!-- hatch fill inside oval -->
+        <ellipse cx="280" cy="170" rx="255" ry="153" fill="url(#h1)"/>
+
+        <!-- denser hatch in goal zones -->
+        <rect x="248" y="17" width="64" height="54" fill="url(#h2)" clip-path="url(#oc)"/>
+        <rect x="248" y="269" width="64" height="54" fill="url(#h2)" clip-path="url(#oc)"/>
+
+        <!-- boundary line -->
+        <ellipse cx="280" cy="170" rx="255" ry="153" stroke="#0085A5" stroke-width="1.6"/>
+
+        <!-- inner oval -->
+        <ellipse cx="280" cy="170" rx="207" ry="118" stroke="#0085A5" stroke-width="0.55" opacity="0.45"/>
+
+        <!-- 50m arc -->
+        <ellipse cx="280" cy="170" rx="128" ry="88" stroke="#0085A5" stroke-width="0.55" opacity="0.42"/>
+
+        <!-- centre circle -->
+        <ellipse cx="280" cy="170" rx="30" ry="30" stroke="#0085A5" stroke-width="0.9"/>
+
+        <!-- centre dot -->
+        <circle cx="280" cy="170" r="4" fill="#0085A5" opacity="0.55"/>
+
+        <!-- centre square -->
+        <rect x="246" y="149" width="68" height="42" stroke="#0085A5" stroke-width="0.75" fill="none" opacity="0.65"/>
+
+        <!-- halfway line -->
+        <line x1="25" y1="170" x2="535" y2="170" stroke="#0085A5" stroke-width="0.5" opacity="0.30"/>
+
+        <!-- tick marks at boundary cardinal points -->
+        <line x1="280" y1="17" x2="280" y2="25" stroke="#0085A5" stroke-width="0.7" opacity="0.5"/>
+        <line x1="280" y1="315" x2="280" y2="323" stroke="#0085A5" stroke-width="0.7" opacity="0.5"/>
+        <line x1="25" y1="170" x2="33" y2="170" stroke="#0085A5" stroke-width="0.7" opacity="0.5"/>
+        <line x1="527" y1="170" x2="535" y2="170" stroke="#0085A5" stroke-width="0.7" opacity="0.5"/>
+
+        <!-- lateral zone lines -->
+        <line x1="25" y1="128" x2="116" y2="128" stroke="#0085A5" stroke-width="0.4" opacity="0.28"/>
+        <line x1="444" y1="128" x2="535" y2="128" stroke="#0085A5" stroke-width="0.4" opacity="0.28"/>
+        <line x1="25" y1="212" x2="116" y2="212" stroke="#0085A5" stroke-width="0.4" opacity="0.28"/>
+        <line x1="444" y1="212" x2="535" y2="212" stroke="#0085A5" stroke-width="0.4" opacity="0.28"/>
+
+        <!-- GOAL POSTS — top, magenta -->
+        <line x1="258" y1="14" x2="258" y2="46" stroke="#C8003A" stroke-width="2.0"/>
+        <line x1="269" y1="14" x2="269" y2="42" stroke="#C8003A" stroke-width="1.2"/>
+        <line x1="291" y1="14" x2="291" y2="42" stroke="#C8003A" stroke-width="1.2"/>
+        <line x1="302" y1="14" x2="302" y2="46" stroke="#C8003A" stroke-width="2.0"/>
+        <line x1="258" y1="46" x2="302" y2="46" stroke="#C8003A" stroke-width="0.7" opacity="0.45"/>
+
+        <!-- GOAL POSTS — bottom, magenta -->
+        <line x1="258" y1="326" x2="258" y2="294" stroke="#C8003A" stroke-width="2.0"/>
+        <line x1="269" y1="326" x2="269" y2="298" stroke="#C8003A" stroke-width="1.2"/>
+        <line x1="291" y1="326" x2="291" y2="298" stroke="#C8003A" stroke-width="1.2"/>
+        <line x1="302" y1="326" x2="302" y2="294" stroke="#C8003A" stroke-width="2.0"/>
+        <line x1="258" y1="294" x2="302" y2="294" stroke="#C8003A" stroke-width="0.7" opacity="0.45"/>
+
+        <!-- registration / corner marks -->
+        <line x1="0" y1="0" x2="16" y2="0" stroke="#0085A5" stroke-width="0.9" opacity="0.38"/>
+        <line x1="0" y1="0" x2="0" y2="16" stroke="#0085A5" stroke-width="0.9" opacity="0.38"/>
+        <line x1="560" y1="0" x2="544" y2="0" stroke="#0085A5" stroke-width="0.9" opacity="0.38"/>
+        <line x1="560" y1="0" x2="560" y2="16" stroke="#0085A5" stroke-width="0.9" opacity="0.38"/>
+        <line x1="0" y1="340" x2="16" y2="340" stroke="#0085A5" stroke-width="0.9" opacity="0.38"/>
+        <line x1="0" y1="340" x2="0" y2="324" stroke="#0085A5" stroke-width="0.9" opacity="0.38"/>
+        <line x1="560" y1="340" x2="544" y2="340" stroke="#0085A5" stroke-width="0.9" opacity="0.38"/>
+        <line x1="560" y1="340" x2="560" y2="324" stroke="#0085A5" stroke-width="0.9" opacity="0.38"/>
+
+        <!-- label -->
+        <text x="280" y="175" text-anchor="middle"
+          font-family="Space Grotesk, sans-serif" font-size="6.5" font-weight="700"
+          letter-spacing="2.5" fill="#0085A5" opacity="0.55">AFL · MELBOURNE</text>
+
+        <!-- dimension annotations -->
+        <line x1="8" y1="17" x2="8" y2="323" stroke="#0085A5" stroke-width="0.5" opacity="0.22"/>
+        <line x1="4" y1="17" x2="12" y2="17" stroke="#0085A5" stroke-width="0.5" opacity="0.22"/>
+        <line x1="4" y1="323" x2="12" y2="323" stroke="#0085A5" stroke-width="0.5" opacity="0.22"/>
+      </svg>
     </div>
 
   </div>
 </section>
 
 
-<!-- ══════════════ TICKER ══════════════ -->
+<!-- ══ TICKER ═════════════════════════════ -->
 <div class="ticker-section" aria-hidden="true">
   <div class="ticker-track" id="ticker-track"></div>
 </div>
 
 
-<!-- ══════════════ PRIZE ══════════════ -->
-<section id="prize" class="section">
+<!-- ══ SPORTS ════════════════════════════ -->
+<section id="sports" class="section">
   <div class="container">
     <div class="section-header fade-up">
-      <div class="eyebrow">The prize</div>
-      <h2 class="section-title">Win a free year of<br><span class="grad">every sport in the city</span></h2>
+      <div class="eyebrow">Every code</div>
+      <h2 class="section-title">All the sport.<br><span class="grad">One pass.</span></h2>
     </div>
-
-    <div class="prize-featured fade-up">
-      <div class="prize-featured-top">
-        <span class="prize-headline">🎟 The Golden Ticket — 1 winner</span>
-      </div>
-      <div class="prize-amount grad">A$699</div>
-      <div class="prize-desc">A full M membership for 12 months. Every game across every sport in Melbourne — AFL, netball, football, rugby, basketball and more. No limits, no top-ups — completely free for the winner.</div>
-    </div>
-
-    <div class="prize-pair fade-up">
-      <div class="prize-card">
-        <div class="prize-card-icon">⭐</div>
-        <div class="prize-card-title">Founding Member</div>
-        <div class="prize-card-desc">Top of the queue get founding pricing — locked in below launch rate, for life.</div>
-      </div>
-      <div class="prize-card">
-        <div class="prize-card-icon">🚀</div>
-        <div class="prize-card-title">Early Access</div>
-        <div class="prize-card-desc">Founding members get the app first and first pick of every session at launch.</div>
-      </div>
-    </div>
-
-    <div class="entries-table fade-up">
-      <div class="entries-table-head">How to earn draw entries</div>
-      <div class="entries-row"><div class="entries-action">✅  Join the waitlist</div><div class="entries-badge">+1 ENTRY</div></div>
-      <div class="entries-row"><div class="entries-action">👥  Each friend who joins via your link</div><div class="entries-badge">+1 ENTRY</div></div>
-      <div class="entries-row"><div class="entries-action">📣  Share on Instagram, Twitter or WhatsApp</div><div class="entries-badge">+1 ENTRY</div></div>
-      <div class="entries-footer">No cap on entries — draw is open until launch day.</div>
+    <div class="sports-grid" id="sports-grid">
+      <div class="sport-tile"><div class="sport-tile-icon">🏉</div><div class="sport-tile-name">AFL</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">⚽</div><div class="sport-tile-name">Football</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏀</div><div class="sport-tile-name">Basketball</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏐</div><div class="sport-tile-name">Netball</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏈</div><div class="sport-tile-name">Rugby / NRL</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏏</div><div class="sport-tile-name">Cricket</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🎾</div><div class="sport-tile-name">Tennis</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏇</div><div class="sport-tile-name">Racing</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🥊</div><div class="sport-tile-name">Boxing</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏊</div><div class="sport-tile-name">Swimming</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏃</div><div class="sport-tile-name">Athletics</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏟️</div><div class="sport-tile-name">+ More</div></div>
     </div>
   </div>
 </section>
 
 
-<!-- ══════════════ HOW ══════════════ -->
+<!-- ══ HOW IT WORKS ══════════════════════ -->
 <section id="how" class="section">
   <div class="container">
     <div class="section-header fade-up">
       <div class="eyebrow">How it works</div>
-      <h2 class="section-title">Three steps to<br><span class="grad">the front of the queue</span></h2>
+      <h2 class="section-title">Three steps.</h2>
     </div>
     <div class="steps fade-up">
       <div class="step">
         <div class="step-num">01 —</div>
         <div>
           <div class="step-title">Join the waitlist</div>
-          <div class="step-desc">Drop your email above. Instantly in the draw for a free year and locked into your queue position. Takes 10 seconds.</div>
+          <div class="step-desc">Drop your email. Instantly in the draw for a free year and locked into your queue position.</div>
         </div>
       </div>
       <div class="step">
         <div class="step-num">02 —</div>
         <div>
-          <div class="step-title">Refer friends — climb &amp; earn</div>
-          <div class="step-desc">Every friend who joins via your link gives you <strong>+1 draw entry</strong> and moves you up the early-access queue. More friends = better odds + higher priority.</div>
+          <div class="step-title">Refer friends</div>
+          <div class="step-desc">Every friend who joins via your link gives you <strong>+1 draw entry</strong> and moves you up the queue.</div>
         </div>
       </div>
       <div class="step">
         <div class="step-num">03 —</div>
         <div>
-          <div class="step-title">Get early access at launch</div>
-          <div class="step-desc">Founding members get in first at the lowest price we'll ever charge. <strong>One person gets the whole year free.</strong></div>
+          <div class="step-title">Get in first</div>
+          <div class="step-desc">Founding members get first access at the lowest price we'll ever charge. <strong>One person gets a full year free.</strong></div>
         </div>
       </div>
     </div>
@@ -764,117 +517,7 @@
 </section>
 
 
-<!-- ══════════════ SPORTS ══════════════ -->
-<section id="sports" class="section">
-  <div class="container">
-    <div class="section-header fade-up">
-      <div class="eyebrow">What you get</div>
-      <h2 class="section-title">Every game.<br>Every sport.<br><span class="grad">One pass.</span></h2>
-      <p class="section-sub">One membership covers live games across every major sport in Melbourne. AFL, netball, football, rugby, basketball and more — all in.</p>
-    </div>
-
-    <div class="sports-grid" id="sports-grid">
-      <div class="sport-tile"><div class="sport-tile-icon">🏉</div><div class="sport-tile-name">AFL</div><div class="sport-tile-type watch">Watch</div></div>
-      <div class="sport-tile"><div class="sport-tile-icon">⚽</div><div class="sport-tile-name">Football</div><div class="sport-tile-type watch">Watch</div></div>
-      <div class="sport-tile"><div class="sport-tile-icon">🏀</div><div class="sport-tile-name">Basketball</div><div class="sport-tile-type watch">Watch</div></div>
-      <div class="sport-tile"><div class="sport-tile-icon">🏐</div><div class="sport-tile-name">Netball</div><div class="sport-tile-type watch">Watch</div></div>
-      <div class="sport-tile"><div class="sport-tile-icon">🏈</div><div class="sport-tile-name">Rugby / NRL</div><div class="sport-tile-type watch">Watch</div></div>
-      <div class="sport-tile"><div class="sport-tile-icon">🏏</div><div class="sport-tile-name">Cricket</div><div class="sport-tile-type watch">Watch</div></div>
-      <div class="sport-tile"><div class="sport-tile-icon">🎾</div><div class="sport-tile-name">Tennis</div><div class="sport-tile-type watch">Watch</div></div>
-      <div class="sport-tile"><div class="sport-tile-icon">🏇</div><div class="sport-tile-name">Racing</div><div class="sport-tile-type watch">Watch</div></div>
-      <div class="sport-tile"><div class="sport-tile-icon">🏊</div><div class="sport-tile-name">Swimming</div><div class="sport-tile-type watch">Watch</div></div>
-      <div class="sport-tile"><div class="sport-tile-icon">🥊</div><div class="sport-tile-name">Boxing</div><div class="sport-tile-type watch">Watch</div></div>
-      <div class="sport-tile"><div class="sport-tile-icon">🏃</div><div class="sport-tile-name">Athletics</div><div class="sport-tile-type watch">Watch</div></div>
-      <div class="sport-tile"><div class="sport-tile-icon">🏟️</div><div class="sport-tile-name">+ More</div><div class="sport-tile-type watch">Watch</div></div>
-    </div>
-
-    <p class="sports-more fade-up">+ new codes and venues added every season</p>
-
-    <div class="pass-features fade-up">
-      <div class="feature-chip"><span class="icon">🔄</span>No lock-in</div>
-      <div class="feature-chip"><span class="icon">🏟️</span>All venues</div>
-      <div class="feature-chip"><span class="icon">👥</span>Bring a +1</div>
-      <div class="feature-chip"><span class="icon">🏙️</span>Whole city</div>
-      <div class="feature-chip"><span class="icon">📺</span>Every code</div>
-      <div class="feature-chip"><span class="icon">💳</span>One pass</div>
-    </div>
-  </div>
-</section>
-
-
-<!-- ══════════════ PROOF ══════════════ -->
-<section id="proof" class="section">
-  <div class="container">
-    <div class="proof-split fade-up">
-      <div>
-        <div class="proof-eyebrow">People in line · Melbourne</div>
-        <div class="proof-number grad" id="proof-counter">1,284</div>
-        <div class="proof-label">and counting</div>
-      </div>
-      <div class="proof-right">
-        <div class="proof-spots-label">Founding spots</div>
-        <div class="spots-bar"><div class="spots-bar-fill" id="spots-fill"></div></div>
-        <div class="spots-pct grad-cyan" id="spots-pct">0%</div>
-        <div class="spots-of">of 500 claimed</div>
-      </div>
-    </div>
-
-    <div class="founding-block fade-up">
-      <div class="founding-left">
-        <div class="founding-eyebrow">Founding Members</div>
-        <div class="founding-title">Only 500 spots.<br><span class="grad">Lock yours in.</span></div>
-        <div class="perks">
-          <div class="perk"><span class="perk-mark">✦</span><span>Founding price — locked in for life, below launch rate</span></div>
-          <div class="perk"><span class="perk-mark">✦</span><span>First access to new codes, venues and cities as we expand</span></div>
-          <div class="perk"><span class="perk-mark">✦</span><span>Founding Member badge on your profile forever</span></div>
-          <div class="perk"><span class="perk-mark">✦</span><span>Direct line to the founders — help shape the product</span></div>
-        </div>
-      </div>
-      <div class="founding-right">
-        <div class="venue-label">Venue partners (coming soon)</div>
-        <div class="venue-logos">
-          <div class="venue-ph">Venue</div>
-          <div class="venue-ph">Venue</div>
-          <div class="venue-ph">Venue</div>
-          <div class="venue-ph">Venue</div>
-          <div class="venue-ph">Venue</div>
-          <div class="venue-ph">Venue</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<!-- ══════════════ REFERRAL ══════════════ -->
-<section id="refer" class="section">
-  <div class="container">
-    <div class="refer-wrap fade-up">
-      <div class="eyebrow">Jump the queue</div>
-      <h2 class="refer-title">Share your link.<br><span class="grad">Move up. Win big.</span></h2>
-      <p class="refer-sub">Every friend who joins via your link earns you +1 draw entry and bumps you up the early-access queue. The more you share, the better your shot at the free year.</p>
-
-      <div class="refer-form" id="refer-email-prompt">
-        <form class="email-row" id="refer-form" onsubmit="handleSignup(event,true)">
-          <input type="email" placeholder="your@email.com" autocomplete="email" required>
-          <button type="submit" class="btn-cta">Get early access →</button>
-        </form>
-      </div>
-
-      <div id="refer-share-buttons" style="display:none;flex-direction:column;gap:12px;width:100%;">
-        <div class="share-buttons">
-          <button class="share-btn" onclick="shareWhatsApp()"><span>💬</span> WhatsApp</button>
-          <button class="share-btn" onclick="shareTwitter()"><span>𝕏</span> Twitter/X</button>
-          <button class="share-btn" onclick="copyReferral()"><span>🔗</span> Copy link</button>
-        </div>
-        <p style="font-size:0.76rem;color:var(--muted)">Your link: <span id="refer-link-display" style="color:var(--cyan);font-family:monospace">join.m.sport/r/abc123</span></p>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<!-- ══════════════ FAQ ══════════════ -->
+<!-- ══ FAQ ═══════════════════════════════ -->
 <section id="faq" class="section">
   <div class="container">
     <div class="section-header fade-up">
@@ -883,39 +526,27 @@
     </div>
     <div class="faq-list fade-up">
       <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">Which city are you launching in first?<span class="faq-toggle"></span></div>
-        <div class="faq-a">Melbourne is first — the world capital of sport. We're targeting a launch later this year across the inner suburbs and CBD. Sydney and Brisbane are next.</div>
+        <div class="faq-q" onclick="toggleFaq(this)">What is M?<span class="faq-toggle"></span></div>
+        <div class="faq-a">M is a single membership that covers live sport across Melbourne — AFL, A-League football, NBL basketball, Super Netball, NRL and more. One pass, every code, no lock-in.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">How much will it cost?<span class="faq-toggle"></span></div>
-        <div class="faq-a">We're not publishing the final price yet — but the ballpark is $59–$79/month AUD. Founding members (the first 500) get a locked-in rate below that, for life.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">Is this for playing sport or watching sport?<span class="faq-toggle"></span></div>
-        <div class="faq-a">Watching. M is built for people who love going to live sport — AFL, netball, A-League football, NRL, NBL basketball and more. One membership gets you in the door across all of them, so you're never choosing between codes.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">Is there a long-term contract?<span class="faq-toggle"></span></div>
-        <div class="faq-a">No. M is month-to-month — cancel any time, no penalty, no awkward phone call.</div>
+        <div class="faq-a">Ballpark is $59–$79/month AUD. Founding members — the first 500 — get a locked-in rate below that, for life.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">How does the Golden Ticket draw work?<span class="faq-toggle"></span></div>
-        <div class="faq-a">Everyone on the waitlist gets at least 1 entry. Earn more by referring friends — each signup via your link = +1 entry. At launch, one winner is drawn at random, weighted by entries, and gets a full M pass for 12 months, completely free.</div>
+        <div class="faq-a">Everyone on the waitlist gets 1 entry. Each friend who joins via your link = +1 entry. At launch one winner is drawn at random and gets a full M membership for 12 months, completely free.</div>
       </div>
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">When do you launch?<span class="faq-toggle"></span></div>
-        <div class="faq-a">We're targeting later this year for Melbourne. Joining the waitlist guarantees you're first to know — and first through the door. We'll send an update 2 weeks before launch.</div>
-      </div>
-      <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">Do I need to be athletic?<span class="faq-toggle"></span></div>
-        <div class="faq-a">Not at all. Sessions range from casual social play to competitive leagues. M is for anyone who wants more sport in their life — at whatever level.</div>
+        <div class="faq-a">Melbourne is first — later this year. Joining now guarantees you're first to know, and first through the door.</div>
       </div>
     </div>
   </div>
 </section>
 
 
-<!-- ══════════════ FOOTER ══════════════ -->
+<!-- ══ FOOTER ════════════════════════════ -->
 <footer>
   <div class="container">
     <div class="footer-inner">
@@ -924,9 +555,8 @@
         <a href="#faq">FAQ</a>
         <a href="mailto:hello@m.sport">Contact</a>
         <a href="#">Privacy</a>
-        <a href="#">Terms</a>
       </div>
-      <div class="footer-copy">© 2025 M Sport Pty Ltd. Melbourne, VIC. All rights reserved.</div>
+      <div class="footer-copy">© 2025 M Sport Pty Ltd. Melbourne, VIC.</div>
     </div>
   </div>
 </footer>
@@ -934,23 +564,9 @@
 
 <script>
   const BASE_COUNT   = 1284;
-  const FOUND_SPOTS  = 500;
   const REFERRAL_URL = 'join.m.sport/r/abc123';
   let signed = false;
   let currentCount = BASE_COUNT;
-
-  /* barcode */
-  (function buildBarcode() {
-    const bc = document.getElementById('barcode');
-    if (!bc) return;
-    const bars = [3,1,2,1,3,1,1,2,1,3,2,1,1,2,3,1,2,1,1,3,2,1,2,1,3,1,1,2];
-    bars.forEach(h => {
-      const b = document.createElement('div');
-      b.className = 'bar';
-      b.style.height = (8 + h * 4) + 'px';
-      bc.appendChild(b);
-    });
-  })();
 
   /* ticker */
   const SPORTS = [
@@ -958,7 +574,7 @@
     ['🏈','NRL'],['🏏','Cricket'],['🎾','Tennis'],['🏇','Racing'],
     ['🥊','Boxing'],['🏊','Swimming'],['🏃','Athletics'],['🏟️','MCG'],
   ];
-  (function() {
+  (function(){
     const t = document.getElementById('ticker-track');
     t.innerHTML = [...SPORTS,...SPORTS].map(([i,n]) =>
       `<span class="ticker-item"><span>${i}</span>${n}</span><span class="ticker-sep">·</span>`
@@ -967,62 +583,40 @@
 
   /* counter */
   function animateCounter(el, target, dur=1400) {
-    const start = Math.max(0, target - Math.floor(Math.random()*90+50));
+    const start = Math.max(0, target - Math.floor(Math.random()*80+40));
     const t0 = performance.now();
     function tick(now) {
       const p = Math.min((now-t0)/dur,1);
       const e = 1-Math.pow(1-p,3);
       el.textContent = (start+Math.round(e*(target-start))).toLocaleString();
-      if(p<1) requestAnimationFrame(tick);
-      else el.textContent = target.toLocaleString();
+      if(p<1) requestAnimationFrame(tick); else el.textContent = target.toLocaleString();
     }
     requestAnimationFrame(tick);
   }
 
-  /* spots bar */
-  function animateSpotsBar() {
-    const pct = Math.min(100, Math.round((currentCount/FOUND_SPOTS)*100));
-    const fill = document.getElementById('spots-fill');
-    const label = document.getElementById('spots-pct');
-    if(fill) setTimeout(()=>{ fill.style.width=Math.min(pct,100)+'%'; label.textContent=pct+'%'; },300);
-  }
-
   /* live drift */
   setInterval(()=>{
-    if(Math.random()<0.35){
-      currentCount++;
-      const el = document.getElementById('hero-counter');
-      if(el) el.textContent = currentCount.toLocaleString();
-    }
+    if(Math.random()<0.35){ currentCount++;
+      const el=document.getElementById('hero-counter');
+      if(el) el.textContent=currentCount.toLocaleString(); }
   }, 7000);
 
   /* signup */
-  function handleSignup(event, fromRefer=false) {
+  function handleSignup(event) {
     event.preventDefault();
-    if(signed && !fromRefer) return;
+    if(signed) return;
     signed = true;
     document.getElementById('signup-state-default').style.display='none';
     document.getElementById('signup-state-confirmed').style.display='flex';
     document.getElementById('queue-pos').textContent=`#${(BASE_COUNT+1).toLocaleString()}`;
     document.getElementById('entry-count').textContent='1';
-    document.getElementById('refer-email-prompt').style.display='none';
-    document.getElementById('refer-share-buttons').style.display='flex';
-    if(fromRefer) document.getElementById('hero').scrollIntoView({behavior:'smooth'});
   }
 
   /* copy */
   function copyReferral() {
     navigator.clipboard.writeText('https://'+REFERRAL_URL).catch(()=>{});
     const btn=document.getElementById('copy-btn');
-    if(btn){ btn.textContent='Copied'; btn.classList.add('copied'); setTimeout(()=>{ btn.textContent='Copy'; btn.classList.remove('copied'); },2000); }
-  }
-
-  /* share */
-  function shareWhatsApp() {
-    window.open(`https://wa.me/?text=${encodeURIComponent(`Join me on M — one pass to watch every sport in Melbourne. AFL, netball, football, basketball and more. We're both in the draw for a free year 🎟️\nhttps://${REFERRAL_URL}`)}`,'_blank');
-  }
-  function shareTwitter() {
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`One pass. Watch every sport in Melbourne. 🏉⚽🏀🏐\n\nAFL, netball, football, NRL, basketball — all on one membership.\n\nJust joined @MsportHQ waitlist — get a free year via my link:\nhttps://${REFERRAL_URL}`)}`,'_blank');
+    if(btn){ btn.textContent='Copied'; setTimeout(()=>{ btn.textContent='Copy'; },2000); }
   }
 
   /* faq */
@@ -1034,31 +628,23 @@
   }
 
   /* sport tiles stagger */
-  (function() {
+  (function(){
     const io=new IntersectionObserver((entries)=>{
       let d=0;
-      entries.forEach(e=>{ if(e.isIntersecting){ setTimeout(()=>e.target.classList.add('visible'),d); d+=45; io.unobserve(e.target); } });
+      entries.forEach(e=>{ if(e.isIntersecting){ setTimeout(()=>e.target.classList.add('visible'),d); d+=38; io.unobserve(e.target); } });
     },{threshold:0.05});
     document.querySelectorAll('.sport-tile').forEach(t=>io.observe(t));
   })();
 
   /* scroll reveals */
   const io=new IntersectionObserver((entries)=>{
-    entries.forEach(e=>{
-      if(!e.isIntersecting) return;
-      e.target.classList.add('visible');
-      io.unobserve(e.target);
-      if(e.target.querySelector?.('#proof-counter')||e.target.id==='proof-counter'){
-        animateCounter(document.getElementById('proof-counter'),currentCount);
-        animateSpotsBar();
-      }
-    });
+    entries.forEach(e=>{ if(!e.isIntersecting) return; e.target.classList.add('visible'); io.unobserve(e.target); });
   },{threshold:0.08});
   document.querySelectorAll('.fade-up').forEach(el=>io.observe(el));
 
   window.addEventListener('load',()=>{
     animateCounter(document.getElementById('hero-counter'),BASE_COUNT,1500);
-    setTimeout(()=>document.querySelector('.ticket-wrap')?.classList.add('visible'),400);
+    setTimeout(()=>document.querySelector('.hero-graphic')?.classList.add('visible'),300);
   });
 </script>
 </body>
