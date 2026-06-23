@@ -4,34 +4,33 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>M — One Pass. Every Sport in the City.</title>
-  <meta name="description" content="One membership gets you into sport across the city. Book padel, football, climbing, tennis, run clubs and live events — all on one pass, no lock-in. Join the waitlist and enter the draw for a free year.">
+  <meta name="description" content="One membership gets you into sport across the city. Book padel, football, climbing, tennis, run clubs and live events — all on one pass, no lock-in.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
   <style>
-    /* ─── Reset ─────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; font-size: 16px; }
+    html { scroll-behavior: smooth; }
 
-    /* ─── Tokens ─────────────────────────────────────────── */
     :root {
       --gold:        #F5C518;
-      --gold-mid:    #D4A012;
+      --gold-mid:    #E0A800;
       --gold-deep:   #A87800;
-      --gold-glow:   rgba(245, 197, 24, 0.18);
-      --gold-border: rgba(245, 197, 24, 0.28);
-      --ink:         #06060E;
-      --dark:        #0C0C18;
-      --card:        #111122;
-      --card2:       #161628;
+      --gold-glow:   rgba(245,197,24,0.18);
+      --gold-border: rgba(245,197,24,0.30);
+      --hot:         #FF4D2E;
+      --hot-glow:    rgba(255,77,46,0.18);
+      --ink:         #050510;
+      --dark:        #0A0A1A;
+      --card:        #0F0F22;
+      --card2:       #141430;
       --white:       #FFFFFF;
-      --muted:       rgba(255,255,255,0.50);
-      --subtle:      rgba(255,255,255,0.08);
-      --radius:      14px;
-      --radius-lg:   22px;
+      --muted:       rgba(255,255,255,0.48);
+      --subtle:      rgba(255,255,255,0.07);
+      --radius:      12px;
+      --radius-lg:   20px;
     }
 
-    /* ─── Base ───────────────────────────────────────────── */
     body {
       font-family: 'Space Grotesk', sans-serif;
       background: var(--ink);
@@ -42,23 +41,22 @@
     }
 
     a { color: inherit; text-decoration: none; }
-    img { max-width: 100%; display: block; }
 
-    /* ─── Noise overlay ──────────────────────────────────── */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
-      background-size: 180px;
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.6;
+    /* ── Gradient text ── */
+    .grad {
+      background: linear-gradient(90deg, var(--gold) 0%, #FF9500 55%, var(--hot) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .grad-gold {
+      background: linear-gradient(90deg, #FFE066 0%, var(--gold) 60%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    section, header, footer { position: relative; z-index: 1; }
-
-    /* ─── Utility ────────────────────────────────────────── */
+    /* ── Container ── */
     .container {
       width: 100%;
       max-width: 680px;
@@ -66,16 +64,14 @@
       padding: 0 20px;
     }
 
-    .gold       { color: var(--gold); }
-    .muted      { color: var(--muted); }
-    .small      { font-size: 0.85rem; }
+    /* ── Tag pill ── */
     .tag {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      letter-spacing: 0.12em;
+      gap: 7px;
+      font-size: 0.70rem;
+      font-weight: 700;
+      letter-spacing: 0.13em;
       text-transform: uppercase;
       color: var(--gold);
       background: var(--gold-glow);
@@ -83,604 +79,528 @@
       border-radius: 100px;
       padding: 5px 14px;
     }
-
     .tag .dot {
       width: 6px; height: 6px;
       background: var(--gold);
       border-radius: 50%;
-      animation: pulse-dot 2s ease infinite;
+      animation: blink 1.8s ease infinite;
+    }
+    @keyframes blink {
+      0%,100% { opacity:1; } 50% { opacity:0.3; }
     }
 
-    @keyframes pulse-dot {
-      0%,100% { opacity: 1; transform: scale(1); }
-      50%      { opacity: 0.5; transform: scale(0.7); }
-    }
-
-    /* ─── Buttons ────────────────────────────────────────── */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      font-family: inherit;
-      font-size: 1rem;
-      font-weight: 700;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.18s ease;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .btn-gold {
-      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-mid) 100%);
-      color: var(--ink);
-      padding: 16px 28px;
-      box-shadow: 0 0 0 0 rgba(245,197,24,0.4);
-    }
-
-    .btn-gold:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 32px rgba(245,197,24,0.35);
-    }
-
-    .btn-gold:active { transform: translateY(0); }
-
-    .btn-outline {
-      background: transparent;
-      color: var(--white);
-      padding: 14px 24px;
-      border: 1.5px solid rgba(255,255,255,0.25);
-    }
-
-    .btn-outline:hover {
-      border-color: var(--gold);
-      color: var(--gold);
-    }
-
-    .btn-full { width: 100%; }
-
-    /* ─── HERO ───────────────────────────────────────────── */
+    /* ══════════════════════════════════════
+       HERO
+    ══════════════════════════════════════ */
     #hero {
       min-height: 100svh;
       display: flex;
       flex-direction: column;
-      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(245,197,24,0.12) 0%, transparent 60%),
-                  var(--ink);
-      padding-bottom: 60px;
+      position: relative;
+      overflow: hidden;
+      background: var(--ink);
+    }
+
+    /* aurora blobs */
+    .aurora {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .aurora-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.22;
+    }
+    .aurora-blob.b1 {
+      width: 420px; height: 420px;
+      background: radial-gradient(circle, #F5C518, transparent 70%);
+      top: -100px; left: -80px;
+      animation: blob1 10s ease-in-out infinite;
+    }
+    .aurora-blob.b2 {
+      width: 360px; height: 360px;
+      background: radial-gradient(circle, #FF4D2E, transparent 70%);
+      top: 30%; right: -100px;
+      animation: blob2 13s ease-in-out infinite;
+    }
+    .aurora-blob.b3 {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, #7B2FFF, transparent 70%);
+      bottom: 5%; left: 20%;
+      animation: blob3 9s ease-in-out infinite;
+    }
+    @keyframes blob1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(40px,30px) scale(1.15)} }
+    @keyframes blob2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-30px,40px) scale(1.1)} }
+    @keyframes blob3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(30px,-30px) scale(1.2)} }
+
+    /* grain overlay */
+    #hero::after {
+      content:'';
+      position:absolute; inset:0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      background-size:160px;
+      pointer-events:none;
+      z-index:0;
     }
 
     .hero-brand {
+      position: relative; z-index: 2;
       padding: 22px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
-
     .brand-mark {
-      font-size: 1.6rem;
+      font-size: 1.8rem;
       font-weight: 800;
-      letter-spacing: -0.04em;
-      color: var(--white);
+      letter-spacing: -0.05em;
+      font-style: italic;
     }
-
     .brand-mark span { color: var(--gold); }
 
     .hero-body {
+      position: relative; z-index: 2;
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       text-align: center;
-      padding: 28px 24px 0;
-      gap: 20px;
+      padding: 20px 24px 0;
+      gap: 22px;
     }
 
-    .counter-live {
+    /* live counter badge */
+    .live-badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      font-size: 0.82rem;
-      font-weight: 500;
-      color: var(--muted);
-      background: var(--subtle);
+      gap: 10px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
       border-radius: 100px;
-      padding: 6px 14px;
+      padding: 7px 16px;
+      font-size: 0.82rem;
+      font-weight: 600;
     }
-
-    .counter-live strong { color: var(--white); font-weight: 700; }
+    .live-pill {
+      background: var(--hot);
+      color: #fff;
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border-radius: 100px;
+      padding: 2px 8px;
+      animation: pulse-pill 2s ease infinite;
+    }
+    @keyframes pulse-pill {
+      0%,100% { box-shadow: 0 0 0 0 rgba(255,77,46,0.5); }
+      50%      { box-shadow: 0 0 0 6px rgba(255,77,46,0); }
+    }
+    .live-badge strong { color: var(--white); }
 
     .hero-headline {
-      font-size: clamp(2.4rem, 9vw, 4.2rem);
+      font-size: clamp(2.6rem, 10vw, 4.8rem);
       font-weight: 800;
-      line-height: 1.05;
-      letter-spacing: -0.035em;
-      max-width: 660px;
+      font-style: italic;
+      line-height: 1.0;
+      letter-spacing: -0.04em;
+      max-width: 640px;
     }
 
     .hero-subhead {
-      font-size: clamp(1rem, 3vw, 1.18rem);
+      font-size: clamp(0.95rem, 2.5vw, 1.12rem);
       color: var(--muted);
-      max-width: 480px;
-      font-weight: 400;
+      max-width: 460px;
+      line-height: 1.65;
     }
+    .hero-subhead strong { color: var(--white); }
 
-    /* ─── Email form ─────────────────────────────────────── */
-    #signup-form-wrap {
-      width: 100%;
-      max-width: 480px;
-    }
-
+    /* ── Email form ── */
+    #signup-form-wrap { width: 100%; max-width: 500px; }
     #signup-state-default { display: flex; flex-direction: column; gap: 10px; }
     #signup-state-confirmed { display: none; }
 
     .email-row {
       display: flex;
-      gap: 8px;
-      background: rgba(255,255,255,0.07);
-      border: 1.5px solid rgba(255,255,255,0.14);
+      gap: 6px;
+      background: rgba(255,255,255,0.06);
+      border: 1.5px solid rgba(255,255,255,0.13);
       border-radius: 14px;
       padding: 6px 6px 6px 18px;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-
     .email-row:focus-within {
       border-color: var(--gold);
-      background: rgba(245,197,24,0.04);
+      box-shadow: 0 0 0 3px rgba(245,197,24,0.10);
     }
-
     .email-row input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
+      flex: 1; min-width: 0;
+      background: transparent; border: none; outline: none;
+      font-family: inherit; font-size: 1rem; color: var(--white);
+    }
+    .email-row input::placeholder { color: rgba(255,255,255,0.30); }
+
+    .btn-gold {
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      gap: 6px;
       font-family: inherit;
-      font-size: 1rem;
-      color: var(--white);
-      min-width: 0;
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      border: none;
+      border-radius: 10px;
+      padding: 13px 22px;
+      cursor: pointer;
+      white-space: nowrap;
+      background: linear-gradient(135deg, #FFE066 0%, var(--gold) 45%, #D4920A 100%);
+      color: #0A0A00;
+      box-shadow: 0 0 20px rgba(245,197,24,0.35), 0 2px 8px rgba(0,0,0,0.3);
+      transition: all 0.18s ease;
+      animation: btn-pulse 3s ease infinite;
     }
-
-    .email-row input::placeholder { color: rgba(255,255,255,0.35); }
-
-    .email-row .btn-gold { border-radius: 10px; padding: 12px 20px; font-size: 0.95rem; }
-
-    .form-note {
-      font-size: 0.78rem;
-      color: rgba(255,255,255,0.35);
-      text-align: center;
+    @keyframes btn-pulse {
+      0%,100% { box-shadow: 0 0 20px rgba(245,197,24,0.35), 0 2px 8px rgba(0,0,0,0.3); }
+      50%      { box-shadow: 0 0 36px rgba(245,197,24,0.55), 0 2px 8px rgba(0,0,0,0.3); }
     }
-
-    /* ─── Confirmed state ────────────────────────────────── */
-    #signup-state-confirmed {
-      flex-direction: column;
-      gap: 16px;
-      text-align: left;
+    .btn-gold:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 40px rgba(245,197,24,0.6), 0 8px 24px rgba(0,0,0,0.4);
     }
+    .btn-gold:active { transform: translateY(0); }
+
+    .form-note { font-size: 0.76rem; color: rgba(255,255,255,0.30); text-align: center; }
+
+    /* ── Confirmed card ── */
+    #signup-state-confirmed { flex-direction: column; gap: 14px; text-align: left; }
 
     .confirmed-card {
-      background: var(--card);
+      background: linear-gradient(145deg, rgba(245,197,24,0.10) 0%, var(--card) 50%);
       border: 1.5px solid var(--gold-border);
       border-radius: var(--radius-lg);
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+      padding: 22px;
+      display: flex; flex-direction: column; gap: 14px;
+      box-shadow: 0 0 40px rgba(245,197,24,0.12);
     }
-
-    .confirmed-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .queue-badge {
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--gold);
-    }
-
-    .queue-pos {
-      font-size: 2.2rem;
-      font-weight: 800;
-      letter-spacing: -0.04em;
-      line-height: 1;
-    }
-
+    .confirmed-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .queue-badge { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
+    .queue-pos { font-size: 2.4rem; font-weight: 800; font-style: italic; letter-spacing: -0.05em; line-height: 1; }
     .entries-pill {
       background: var(--gold-glow);
       border: 1px solid var(--gold-border);
-      border-radius: 100px;
-      padding: 8px 16px;
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--muted);
+      border-radius: 12px;
+      padding: 10px 16px; text-align: center;
+      font-size: 0.78rem; color: var(--muted);
     }
-
-    .entries-pill strong { color: var(--gold); font-size: 1.3rem; display: block; line-height: 1; }
-
-    .referral-block {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .referral-label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--muted);
-    }
-
-    .referral-row {
-      display: flex;
-      gap: 8px;
-    }
-
+    .entries-pill strong { color: var(--gold); font-size: 1.5rem; display: block; line-height: 1; font-weight: 800; }
+    .referral-block { display: flex; flex-direction: column; gap: 8px; }
+    .referral-label { font-size: 0.78rem; font-weight: 600; color: var(--muted); }
+    .referral-row { display: flex; gap: 8px; }
     .referral-link-box {
-      flex: 1;
+      flex: 1; min-width: 0;
       background: var(--subtle);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 0.82rem;
-      color: var(--muted);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px; padding: 10px 14px;
+      font-size: 0.80rem; color: var(--muted);
       font-family: monospace;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-
     .btn-copy {
       background: var(--subtle);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: var(--white);
-      border-radius: 10px;
-      padding: 10px 16px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.15s;
-      white-space: nowrap;
+      border: 1px solid rgba(255,255,255,0.14);
+      color: var(--white); border-radius: 10px;
+      padding: 10px 16px; font-size: 0.82rem; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      transition: all 0.15s; white-space: nowrap;
     }
-
     .btn-copy:hover { border-color: var(--gold); color: var(--gold); }
-    .btn-copy.copied { border-color: var(--gold); color: var(--gold); }
-
+    .btn-copy.copied { border-color: var(--gold); color: var(--gold); background: var(--gold-glow); }
     .confirmed-nudge {
-      font-size: 0.85rem;
-      color: var(--muted);
-      border-top: 1px solid var(--subtle);
-      padding-top: 14px;
+      font-size: 0.82rem; color: var(--muted);
+      border-top: 1px solid var(--subtle); padding-top: 12px;
     }
 
-    /* ─── Golden Ticket ──────────────────────────────────── */
-    .ticket-wrap {
-      perspective: 900px;
-      margin-top: 10px;
+    /* ── Golden Ticket ── */
+    .ticket-wrap { width: 100%; max-width: 400px; perspective: 800px; margin-top: 4px; }
+
+    .ticket-rings {
+      position: absolute;
+      width: 340px; height: 340px;
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    .ticket-rings-inner {
+      position: relative; width: 100%; height: 100%;
+    }
+    .ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 1px solid rgba(245,197,24,0.15);
+      top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+    }
+    .ring:nth-child(1) { width: 160px; height: 160px; animation: ring-pulse 3s ease infinite; }
+    .ring:nth-child(2) { width: 240px; height: 240px; animation: ring-pulse 3s ease 0.5s infinite; }
+    .ring:nth-child(3) { width: 320px; height: 320px; animation: ring-pulse 3s ease 1s infinite; }
+    @keyframes ring-pulse {
+      0%,100% { opacity:0.6; transform:translate(-50%,-50%) scale(1); }
+      50%      { opacity:0.2; transform:translate(-50%,-50%) scale(1.04); }
     }
 
     .ticket {
       position: relative;
       width: 100%;
-      max-width: 400px;
-      margin: 0 auto;
       border-radius: 18px;
-      background: linear-gradient(118deg, #F5C518 0%, #E8B000 38%, #F5C518 65%, #FFE066 100%);
-      padding: 0;
+      background: linear-gradient(118deg, #FFE566 0%, #F5C518 30%, #D4920A 60%, #F5C518 80%, #FFE566 100%);
+      background-size: 200% auto;
       box-shadow:
-        0 2px 0 #A87800 inset,
-        0 -1px 0 rgba(255,255,255,0.4) inset,
-        0 20px 60px rgba(245,197,24,0.30),
-        0 4px 16px rgba(0,0,0,0.5);
-      animation: float 4s ease-in-out infinite;
+        inset 0 1px 0 rgba(255,255,255,0.5),
+        inset 0 -1px 0 rgba(0,0,0,0.2),
+        0 0 0 1px rgba(0,0,0,0.3),
+        0 24px 70px rgba(245,197,24,0.40),
+        0 8px 24px rgba(0,0,0,0.5);
+      animation: float-ticket 4s ease-in-out infinite, shimmer 3.5s linear infinite;
+      transform: rotate(-2.5deg);
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       overflow: visible;
-      transform: rotate(-2deg);
+    }
+    @keyframes float-ticket {
+      0%,100% { transform: rotate(-2.5deg) translateY(0); }
+      50%      { transform: rotate(-2.5deg) translateY(-10px); }
+    }
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position: 200% center; }
     }
 
-    @keyframes float {
-      0%,100% { transform: rotate(-2deg) translateY(0); }
-      50%      { transform: rotate(-2deg) translateY(-8px); }
-    }
-
-    /* notches */
-    .ticket::before,
-    .ticket::after {
+    .ticket::before, .ticket::after {
       content: '';
       position: absolute;
-      width: 28px; height: 28px;
+      width: 30px; height: 30px;
       background: var(--ink);
       border-radius: 50%;
-      top: 50%;
-      transform: translateY(-50%);
-      box-shadow: inset 0 2px 6px rgba(0,0,0,0.5);
+      top: 50%; transform: translateY(-50%);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.6);
     }
-    .ticket::before { left: -14px; }
-    .ticket::after  { right: -14px; }
-
-    .ticket-left {
-      padding: 20px 24px 20px 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .ticket-divider {
-      display: flex;
-      align-items: center;
-      position: relative;
-      padding: 0 14px;
-    }
-
-    .ticket-divider::before {
-      content: '';
-      flex: 1;
-      border-top: 2.5px dashed rgba(0,0,0,0.18);
-    }
-    .ticket-divider::after {
-      content: '';
-      flex: 1;
-      border-top: 2.5px dashed rgba(0,0,0,0.18);
-    }
-
-    .ticket-circle {
-      width: 10px; height: 10px;
-      background: rgba(0,0,0,0.15);
-      border-radius: 50%;
-      margin: 0 6px;
-      flex-shrink: 0;
-    }
-
-    .ticket-right {
-      padding: 16px 28px 16px 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      text-align: center;
-    }
-
-    .ticket-eyebrow {
-      font-size: 0.6rem;
-      font-weight: 700;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: rgba(0,0,0,0.45);
-    }
-
-    .ticket-title {
-      font-size: 1.35rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      color: var(--ink);
-      line-height: 1.1;
-    }
-
-    .ticket-subtitle {
-      font-size: 0.72rem;
-      font-weight: 600;
-      color: rgba(0,0,0,0.50);
-    }
-
-    .ticket-prize-label {
-      font-size: 0.58rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: rgba(0,0,0,0.38);
-      margin-top: 6px;
-    }
-
-    .ticket-prize-value {
-      font-size: 1.05rem;
-      font-weight: 800;
-      color: var(--ink);
-      letter-spacing: -0.02em;
-      line-height: 1.15;
-    }
-
-    .ticket-serial {
-      font-size: 0.6rem;
-      font-family: monospace;
-      color: rgba(0,0,0,0.30);
-      letter-spacing: 0.08em;
-      margin-top: 8px;
-    }
-
-    .ticket-stub-logo {
-      font-size: 2rem;
-      font-weight: 800;
-      color: rgba(0,0,0,0.6);
-      letter-spacing: -0.06em;
-    }
-
-    .ticket-stub-desc {
-      font-size: 0.62rem;
-      font-weight: 600;
-      color: rgba(0,0,0,0.4);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
+    .ticket::before { left: -15px; }
+    .ticket::after  { right: -15px; }
 
     .ticket-glare {
-      position: absolute;
-      inset: 0;
+      position: absolute; inset: 0;
       border-radius: 18px;
-      background: linear-gradient(135deg, rgba(255,255,255,0.35) 0%, transparent 50%);
+      background: linear-gradient(130deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.05) 40%, transparent 55%);
       pointer-events: none;
     }
 
-    /* ─── Section shared ─────────────────────────────────── */
-    .section {
-      padding: 80px 0;
+    .ticket-left  { padding: 22px 18px 22px 28px; display: flex; flex-direction: column; gap: 3px; }
+    .ticket-right { padding: 18px 28px 18px 18px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; }
+    .ticket-divider {
+      display: flex; align-items: center; flex-direction: column;
+      padding: 18px 4px; gap: 6px; position: relative;
+    }
+    .ticket-divider::before {
+      content: '';
+      position: absolute; top: 0; bottom: 0; left: 50%;
+      transform: translateX(-50%);
+      border-left: 2px dashed rgba(0,0,0,0.16);
+    }
+    .ticket-dot {
+      width: 9px; height: 9px;
+      background: rgba(0,0,0,0.12);
+      border-radius: 50%; z-index: 1;
     }
 
-    .section + .section {
-      border-top: 1px solid var(--subtle);
+    .t-eyebrow  { font-size: 0.56rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(0,0,0,0.45); }
+    .t-title    { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.03em; color: rgba(0,0,0,0.85); line-height: 1.1; font-style: italic; }
+    .t-sub      { font-size: 0.68rem; font-weight: 600; color: rgba(0,0,0,0.45); }
+    .t-serial   { font-size: 0.55rem; font-family: monospace; color: rgba(0,0,0,0.28); letter-spacing: 0.06em; margin-top: 10px; }
+    .t-logo     { font-size: 2.1rem; font-weight: 800; font-style: italic; color: rgba(0,0,0,0.65); letter-spacing: -0.06em; }
+    .t-sport    { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(0,0,0,0.4); }
+    .t-val-label{ font-size: 0.54rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.35); margin-top: 8px; }
+    .t-val      { font-size: 1.1rem; font-weight: 800; color: rgba(0,0,0,0.8); line-height: 1.15; letter-spacing: -0.02em; }
+
+    /* ══════════════════════════════════════
+       SPORT TICKER
+    ══════════════════════════════════════ */
+    .ticker-section {
+      position: relative; z-index: 2;
+      background: var(--dark);
+      border-top: 1px solid rgba(245,197,24,0.18);
+      border-bottom: 1px solid rgba(245,197,24,0.18);
+      overflow: hidden;
+      padding: 14px 0;
     }
+    .ticker-track {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+      animation: run-ticker 28s linear infinite;
+      white-space: nowrap;
+    }
+    .ticker-section:hover .ticker-track { animation-play-state: paused; }
+    @keyframes run-ticker {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 28px;
+      font-size: 0.80rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.50);
+    }
+    .ticker-item .ti { font-size: 1rem; }
+    .ticker-sep { color: var(--gold); font-size: 0.7rem; opacity: 0.5; }
+
+    /* ══════════════════════════════════════
+       SECTIONS
+    ══════════════════════════════════════ */
+    .section { padding: 88px 0; position: relative; }
 
     .section-header {
       text-align: center;
-      margin-bottom: 48px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
+      margin-bottom: 52px;
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
     }
-
     .section-title {
-      font-size: clamp(1.8rem, 6vw, 2.8rem);
+      font-size: clamp(1.9rem, 6vw, 3rem);
       font-weight: 800;
-      letter-spacing: -0.035em;
-      line-height: 1.1;
+      font-style: italic;
+      letter-spacing: -0.04em;
+      line-height: 1.08;
     }
-
     .section-sub {
       font-size: 1rem;
       color: var(--muted);
       max-width: 420px;
+      line-height: 1.65;
     }
 
-    /* ─── Prize section ──────────────────────────────────── */
+    /* diagonal divider */
+    .section-angled-top::before {
+      content:'';
+      display:block;
+      height: 48px;
+      background: inherit;
+      clip-path: polygon(0 0, 100% 100%, 100% 0);
+      margin-top: -48px;
+    }
+
+    /* ══════════════════════════════════════
+       PRIZE
+    ══════════════════════════════════════ */
     #prize { background: var(--dark); }
 
-    .prize-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
+    .prize-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
     .prize-card {
       background: var(--card);
-      border: 1px solid var(--subtle);
+      border: 1px solid rgba(255,255,255,0.07);
       border-radius: var(--radius);
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      padding: 22px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: border-color 0.2s, transform 0.2s;
     }
+    .prize-card:hover { border-color: rgba(245,197,24,0.3); transform: translateY(-2px); }
 
     .prize-card.featured {
       grid-column: 1 / -1;
       border-color: var(--gold-border);
-      background: linear-gradient(135deg, rgba(245,197,24,0.08) 0%, var(--card) 60%);
+      background: linear-gradient(140deg, rgba(245,197,24,0.10) 0%, var(--card) 55%);
+      box-shadow: 0 0 40px rgba(245,197,24,0.08);
     }
+    .prize-card-icon { font-size: 2rem; line-height: 1; }
+    .prize-card-title { font-size: 1rem; font-weight: 700; }
+    .prize-card-desc  { font-size: 0.83rem; color: var(--muted); line-height: 1.6; }
 
-    .prize-card-icon {
-      font-size: 1.8rem;
+    .big-prize-num {
+      font-size: clamp(3.5rem, 12vw, 5rem);
+      font-weight: 800;
+      font-style: italic;
+      letter-spacing: -0.05em;
       line-height: 1;
-    }
-
-    .prize-card-title {
-      font-size: 1rem;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
-
-    .prize-card-desc {
-      font-size: 0.83rem;
-      color: var(--muted);
-      line-height: 1.55;
     }
 
     .entries-info {
       margin-top: 32px;
       background: var(--card2);
-      border: 1px solid var(--subtle);
+      border: 1px solid rgba(255,255,255,0.07);
       border-radius: var(--radius-lg);
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+      overflow: hidden;
     }
-
+    .entries-header {
+      padding: 14px 22px;
+      background: rgba(245,197,24,0.06);
+      border-bottom: 1px solid var(--gold-border);
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--gold);
+    }
     .entries-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 16px 22px;
     }
-
-    .entries-action {
-      font-size: 0.9rem;
-      font-weight: 500;
-      color: var(--white);
-    }
-
+    .entries-row + .entries-row { border-top: 1px solid var(--subtle); }
+    .entries-action { font-size: 0.9rem; font-weight: 500; }
     .entries-pill-sm {
-      font-size: 0.78rem;
-      font-weight: 700;
+      font-size: 0.80rem; font-weight: 800;
       color: var(--gold);
       background: var(--gold-glow);
       border: 1px solid var(--gold-border);
       border-radius: 100px;
-      padding: 4px 12px;
+      padding: 4px 14px;
       white-space: nowrap;
     }
-
-    .entries-row + .entries-row {
-      padding-top: 14px;
+    .entries-footer {
+      padding: 14px 22px;
+      background: var(--subtle);
       border-top: 1px solid var(--subtle);
+      font-size: 0.80rem; color: var(--muted);
     }
 
-    /* ─── How it works ───────────────────────────────────── */
-    #how {
-      background: var(--ink);
-    }
+    /* ══════════════════════════════════════
+       HOW IT WORKS
+    ══════════════════════════════════════ */
+    #how { background: var(--ink); }
 
-    .steps {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
+    .steps { display: flex; flex-direction: column; gap: 4px; }
 
     .step {
-      display: flex;
-      gap: 20px;
-      align-items: flex-start;
-      padding: 24px 0;
+      display: flex; gap: 20px; align-items: flex-start;
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-lg);
+      padding: 24px 22px;
+      transition: border-color 0.2s, transform 0.2s;
     }
-
-    .step + .step {
-      border-top: 1px solid var(--subtle);
-    }
+    .step:hover { border-color: var(--gold-border); transform: translateX(4px); }
 
     .step-num {
-      width: 40px; height: 40px;
-      border-radius: 50%;
-      background: var(--gold-glow);
-      border: 1.5px solid var(--gold-border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.88rem;
-      font-weight: 800;
-      color: var(--gold);
-      flex-shrink: 0;
-      margin-top: 2px;
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-mid) 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 800; font-style: italic;
+      color: var(--ink); flex-shrink: 0;
+      box-shadow: 0 4px 16px rgba(245,197,24,0.35);
     }
+    .step-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 5px; }
+    .step-desc  { font-size: 0.87rem; color: var(--muted); line-height: 1.65; }
+    .step-desc strong { color: var(--white); }
 
-    .step-body {}
-
-    .step-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      margin-bottom: 4px;
-    }
-
-    .step-desc {
-      font-size: 0.88rem;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
-    /* ─── What you get ───────────────────────────────────── */
+    /* ══════════════════════════════════════
+       SPORTS GRID
+    ══════════════════════════════════════ */
     #sports { background: var(--dark); }
 
     .sports-grid {
@@ -691,429 +611,386 @@
 
     .sport-tile {
       background: var(--card);
-      border: 1px solid var(--subtle);
+      border: 1px solid rgba(255,255,255,0.07);
       border-radius: var(--radius);
-      padding: 18px 12px;
+      padding: 20px 10px;
       text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      transition: border-color 0.18s, transform 0.18s;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
       cursor: default;
+      opacity: 0;
+      transform: scale(0.92) translateY(10px);
+      transition: opacity 0.4s ease, transform 0.4s ease, border-color 0.18s, box-shadow 0.18s;
     }
-
+    .sport-tile.visible {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
     .sport-tile:hover {
       border-color: var(--gold-border);
-      transform: translateY(-2px);
+      box-shadow: 0 0 24px rgba(245,197,24,0.15), inset 0 0 20px rgba(245,197,24,0.04);
+      transform: translateY(-3px) scale(1.03);
     }
+    .sport-tile-icon { font-size: 2rem; line-height: 1; }
+    .sport-tile-name { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; }
+    .sport-tile-type {
+      font-size: 0.62rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 100px;
+    }
+    .sport-tile-type.play { color: var(--gold); background: var(--gold-glow); }
+    .sport-tile-type.watch { color: var(--hot); background: var(--hot-glow); }
 
-    .sport-tile-icon { font-size: 1.8rem; line-height: 1; }
-    .sport-tile-name { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.01em; }
-    .sport-tile-type { font-size: 0.68rem; color: var(--muted); }
-
-    .sports-note {
-      margin-top: 20px;
-      text-align: center;
-      font-size: 0.85rem;
-      color: var(--muted);
+    .sports-more {
+      margin-top: 18px; text-align: center;
+      font-size: 0.83rem; color: var(--muted); font-style: italic;
     }
 
     .pass-features {
       margin-top: 32px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
     }
-
     .feature-chip {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      display: flex; align-items: center; gap: 12px;
       background: var(--card);
-      border: 1px solid var(--subtle);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      font-size: 0.85rem;
-      font-weight: 500;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius); padding: 14px 16px;
+      font-size: 0.85rem; font-weight: 600;
+      transition: border-color 0.18s;
     }
+    .feature-chip:hover { border-color: var(--gold-border); }
+    .feature-chip .icon { font-size: 1.15rem; flex-shrink: 0; }
 
-    .feature-chip .icon {
-      font-size: 1.1rem;
-      flex-shrink: 0;
-    }
-
-    /* ─── Social proof ───────────────────────────────────── */
+    /* ══════════════════════════════════════
+       PROOF
+    ══════════════════════════════════════ */
     #proof {
       background: var(--ink);
+      overflow: hidden;
     }
 
-    .proof-big {
+    .proof-band {
+      background: linear-gradient(135deg, rgba(245,197,24,0.12) 0%, rgba(255,77,46,0.06) 100%);
+      border: 1px solid var(--gold-border);
+      border-radius: var(--radius-lg);
+      padding: 40px 28px;
       text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 40px;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      margin-bottom: 32px;
+      position: relative; overflow: hidden;
     }
-
-    .proof-number {
-      font-size: clamp(3rem, 12vw, 5.5rem);
+    .proof-band::before {
+      content: '1284';
+      position: absolute;
+      font-size: 12rem;
       font-weight: 800;
+      font-style: italic;
+      color: rgba(245,197,24,0.04);
       letter-spacing: -0.05em;
-      color: var(--gold);
+      right: -20px; top: -20px;
+      pointer-events: none;
       line-height: 1;
     }
-
+    .proof-eyebrow { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+    .proof-number {
+      font-size: clamp(4rem, 14vw, 7rem);
+      font-weight: 800; font-style: italic;
+      letter-spacing: -0.06em; line-height: 1;
+    }
     .proof-label { font-size: 0.95rem; color: var(--muted); }
 
+    .spots-bar-wrap { margin-top: 20px; width: 100%; max-width: 320px; }
+    .spots-bar-label {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.76rem; color: var(--muted); margin-bottom: 8px;
+    }
+    .spots-bar-label strong { color: var(--gold); }
+    .spots-bar {
+      height: 6px; background: rgba(255,255,255,0.1);
+      border-radius: 100px; overflow: hidden;
+    }
+    .spots-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--hot));
+      border-radius: 100px;
+      width: 0;
+      transition: width 1.5s cubic-bezier(0.16,1,0.3,1);
+    }
+
     .founding-card {
-      background: linear-gradient(135deg, rgba(245,197,24,0.10) 0%, var(--card) 70%);
+      background: linear-gradient(140deg, rgba(245,197,24,0.08) 0%, var(--card) 60%);
       border: 1.5px solid var(--gold-border);
       border-radius: var(--radius-lg);
       padding: 28px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+      display: flex; flex-direction: column; gap: 18px;
     }
+    .founding-eyebrow { font-size: 0.70rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--gold); }
+    .founding-title { font-size: 1.5rem; font-weight: 800; font-style: italic; letter-spacing: -0.03em; line-height: 1.2; }
+    .founding-perks { display: flex; flex-direction: column; gap: 11px; }
+    .perk-item { display: flex; align-items: flex-start; gap: 12px; font-size: 0.87rem; color: var(--muted); }
+    .perk-icon { color: var(--gold); flex-shrink: 0; margin-top: 1px; font-style: normal; }
 
-    .founding-eyebrow {
-      font-size: 0.72rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--gold);
-    }
-
-    .founding-title {
-      font-size: 1.4rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1.2;
-    }
-
-    .founding-perks {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .perk-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      font-size: 0.88rem;
-      color: var(--muted);
-    }
-
-    .perk-icon { color: var(--gold); flex-shrink: 0; margin-top: 1px; }
-
-    .venue-logos {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .venue-logo-placeholder {
+    .venue-logos { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-top: 4px; }
+    .venue-ph {
       background: var(--subtle);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px;
-      height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.65rem;
-      font-weight: 600;
-      color: rgba(255,255,255,0.2);
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.62rem; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: rgba(255,255,255,0.18);
     }
 
-    /* ─── Referral CTA ───────────────────────────────────── */
+    /* ══════════════════════════════════════
+       REFERRAL — INVERTED
+    ══════════════════════════════════════ */
     #refer {
-      background: var(--dark);
+      background: linear-gradient(135deg, #F5C518 0%, #E0A800 40%, #FF8C00 80%, #FF4D2E 100%);
+      position: relative; overflow: hidden;
     }
-
-    .refer-box {
-      background: linear-gradient(135deg, rgba(245,197,24,0.10) 0%, rgba(245,197,24,0.03) 100%);
-      border: 1.5px solid var(--gold-border);
-      border-radius: var(--radius-lg);
-      padding: 36px 28px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
+    #refer::before {
+      content:'';
+      position: absolute; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+      background-size: 150px; pointer-events: none;
     }
-
+    .refer-inner {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center; gap: 22px;
+    }
+    .refer-tag {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(0,0,0,0.18);
+      border: 1px solid rgba(0,0,0,0.12);
+      border-radius: 100px; padding: 5px 14px;
+      font-size: 0.70rem; font-weight: 700; letter-spacing: 0.13em;
+      text-transform: uppercase; color: rgba(0,0,0,0.65);
+    }
     .refer-title {
-      font-size: clamp(1.5rem, 6vw, 2.2rem);
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
+      font-size: clamp(2rem, 8vw, 3.2rem);
+      font-weight: 800; font-style: italic;
+      letter-spacing: -0.04em; line-height: 1.05;
+      color: var(--ink);
     }
+    .refer-sub { font-size: 0.95rem; color: rgba(0,0,0,0.60); max-width: 380px; line-height: 1.65; }
 
-    .refer-sub { font-size: 0.92rem; color: var(--muted); max-width: 380px; }
+    .refer-form-wrap { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 10px; }
+    .refer-email-row {
+      display: flex; gap: 6px;
+      background: rgba(0,0,0,0.12);
+      border: 1.5px solid rgba(0,0,0,0.18);
+      border-radius: 14px; padding: 6px 6px 6px 18px;
+      transition: border-color 0.2s;
+    }
+    .refer-email-row:focus-within { border-color: rgba(0,0,0,0.5); }
+    .refer-email-row input {
+      flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+      font-family: inherit; font-size: 1rem; color: rgba(0,0,0,0.8);
+    }
+    .refer-email-row input::placeholder { color: rgba(0,0,0,0.35); }
+    .btn-dark {
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: inherit; font-size: 0.92rem; font-weight: 800;
+      border: none; border-radius: 10px; padding: 13px 22px;
+      cursor: pointer; white-space: nowrap;
+      background: var(--ink); color: var(--white);
+      transition: all 0.18s;
+    }
+    .btn-dark:hover { background: #1a1a35; transform: translateY(-1px); }
 
     .share-buttons {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: center;
-      width: 100%;
+      display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 100%;
     }
-
     .share-btn {
-      flex: 1;
-      min-width: 120px;
-      background: var(--card);
-      border: 1.5px solid var(--subtle);
-      color: var(--white);
-      border-radius: 12px;
-      padding: 13px 18px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      flex: 1; min-width: 110px;
+      background: rgba(0,0,0,0.15);
+      border: 1.5px solid rgba(0,0,0,0.18);
+      color: rgba(0,0,0,0.75);
+      border-radius: 12px; padding: 13px 16px;
+      font-size: 0.88rem; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
       transition: all 0.15s;
-      text-decoration: none;
     }
+    .share-btn:hover { background: rgba(0,0,0,0.25); color: var(--ink); }
 
-    .share-btn:hover {
-      border-color: var(--gold-border);
-      background: var(--gold-glow);
-      color: var(--gold);
-    }
+    /* ══════════════════════════════════════
+       FAQ
+    ══════════════════════════════════════ */
+    #faq { background: var(--dark); }
 
-    /* ─── FAQ ────────────────────────────────────────────── */
-    #faq { background: var(--ink); }
-
-    .faq-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
+    .faq-list { display: flex; flex-direction: column; gap: 8px; }
 
     .faq-item {
-      border-bottom: 1px solid var(--subtle);
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.2s;
     }
-
-    .faq-item:first-child { border-top: 1px solid var(--subtle); }
+    .faq-item.open { border-color: var(--gold-border); }
 
     .faq-q {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 20px 0;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      user-select: none;
-      color: var(--white);
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+      padding: 18px 20px;
+      font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; user-select: none;
       transition: color 0.15s;
     }
-
     .faq-q:hover { color: var(--gold); }
+    .faq-item.open .faq-q { color: var(--gold); }
 
     .faq-chevron {
-      width: 22px; height: 22px;
-      border: 1.5px solid rgba(255,255,255,0.2);
+      width: 24px; height: 24px;
+      background: var(--subtle);
       border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      font-size: 0.7rem;
-      transition: transform 0.25s, border-color 0.15s;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 0.68rem;
+      transition: transform 0.25s, background 0.15s;
     }
-
-    .faq-item.open .faq-chevron {
-      transform: rotate(180deg);
-      border-color: var(--gold);
-      color: var(--gold);
-    }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); background: var(--gold-glow); color: var(--gold); }
 
     .faq-a {
-      max-height: 0;
-      overflow: hidden;
+      max-height: 0; overflow: hidden;
       transition: max-height 0.35s ease, padding 0.25s ease;
-      font-size: 0.88rem;
-      color: var(--muted);
-      line-height: 1.7;
+      font-size: 0.87rem; color: var(--muted); line-height: 1.72;
     }
+    .faq-item.open .faq-a { max-height: 300px; padding: 0 20px 20px; }
 
-    .faq-item.open .faq-a {
-      max-height: 300px;
-      padding-bottom: 20px;
-    }
-
-    /* ─── Footer ─────────────────────────────────────────── */
+    /* ══════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════ */
     footer {
-      background: var(--dark);
+      background: var(--ink);
       border-top: 1px solid var(--subtle);
-      padding: 32px 0;
+      padding: 36px 0;
     }
-
     .footer-inner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-      text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center;
     }
-
-    .footer-brand { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.04em; }
+    .footer-brand { font-size: 1.5rem; font-weight: 800; font-style: italic; letter-spacing: -0.05em; }
     .footer-brand span { color: var(--gold); }
-
-    .footer-links {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .footer-links a {
-      font-size: 0.8rem;
-      color: var(--muted);
-      transition: color 0.15s;
-    }
+    .footer-links { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; }
+    .footer-links a { font-size: 0.80rem; color: var(--muted); transition: color 0.15s; }
     .footer-links a:hover { color: var(--white); }
+    .footer-copy { font-size: 0.73rem; color: rgba(255,255,255,0.20); }
 
-    .footer-copy {
-      font-size: 0.75rem;
-      color: rgba(255,255,255,0.22);
-    }
-
-    /* ─── Animations ─────────────────────────────────────── */
+    /* ══════════════════════════════════════
+       ANIMATIONS
+    ══════════════════════════════════════ */
     .fade-up {
-      opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.55s ease, transform 0.55s ease;
+      opacity: 0; transform: translateY(28px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
     }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
 
-    .fade-up.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* ─── Responsive ─────────────────────────────────────── */
+    /* ══════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════ */
     @media (min-width: 520px) {
-      .sports-grid { grid-template-columns: repeat(4, 1fr); }
+      .sports-grid { grid-template-columns: repeat(4,1fr); }
     }
-
-    @media (min-width: 640px) {
-      #signup-state-default { flex-direction: column; }
-      .prize-grid { grid-template-columns: 1fr 1fr; }
-      .prize-card.featured { grid-column: 1 / -1; }
-    }
-
-    @media (max-width: 380px) {
-      .sports-grid { grid-template-columns: repeat(3, 1fr); }
+    @media (max-width: 400px) {
       .pass-features { grid-template-columns: 1fr; }
+      .prize-grid { grid-template-columns: 1fr; }
+      .prize-card.featured { grid-column: auto; }
     }
   </style>
 </head>
 <body>
 
-<!-- ════════════════════════════════════════════════════════
-     HERO
-════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════ HERO ═══════════════════ -->
 <section id="hero">
+  <div class="aurora" aria-hidden="true">
+    <div class="aurora-blob b1"></div>
+    <div class="aurora-blob b2"></div>
+    <div class="aurora-blob b3"></div>
+  </div>
+
   <div class="hero-brand">
     <div class="brand-mark">M<span>.</span></div>
-    <span class="tag"><span class="dot"></span>Pre-launch</span>
+    <span class="tag"><span class="dot"></span>Pre-launch · London</span>
   </div>
 
   <div class="hero-body">
-    <div class="counter-live">
-      <strong id="hero-counter">1,284</strong>&nbsp;people already in line
+
+    <div class="live-badge">
+      <span class="live-pill">Live</span>
+      <span><strong id="hero-counter">1,284</strong> people in the queue</span>
     </div>
 
     <h1 class="hero-headline">
-      One pass.<br>Every sport<br>in the city.
+      One pass.<br>
+      <span class="grad">Every sport</span><br>
+      in the city.
     </h1>
 
     <p class="hero-subhead">
-      Play padel, five-a-side, climbing and more — or watch live local sport — all on one flexible membership. No lock-in. Join the waitlist and enter the draw for <strong>a free year</strong>.
+      Play padel, five-a-side, climbing, tennis &amp; more — or watch live local sport — all on one flexible membership, no lock-in. Join the waitlist and enter the draw for <strong>a free year of sport</strong>.
     </p>
 
-    <!-- ── Signup form ── -->
+    <!-- Signup form -->
     <div id="signup-form-wrap">
-
-      <!-- Default state -->
       <div id="signup-state-default">
         <form class="email-row" id="hero-form" onsubmit="handleSignup(event)">
-          <input
-            type="email"
-            id="email-input"
-            placeholder="your@email.com"
-            autocomplete="email"
-            required
-          >
-          <button type="submit" class="btn btn-gold">
-            Claim your Golden Ticket →
-          </button>
+          <input type="email" id="email-input" placeholder="your@email.com" autocomplete="email" required>
+          <button type="submit" class="btn-gold">Claim your Golden Ticket →</button>
         </form>
-        <p class="form-note">Free to join. No card. Unsubscribe anytime.</p>
+        <p class="form-note">Free to join · No card required · Unsubscribe anytime</p>
       </div>
 
-      <!-- Confirmed state -->
       <div id="signup-state-confirmed">
         <div class="confirmed-card">
           <div class="confirmed-top">
             <div>
-              <div class="queue-badge">Your position</div>
+              <div class="queue-badge">Your queue position</div>
               <div class="queue-pos" id="queue-pos">#1,285</div>
             </div>
             <div class="entries-pill">
               <strong id="entry-count">1</strong>
-              draw entr<span id="entry-word">y</span>
+              draw entry
             </div>
           </div>
-
-          <p style="font-size:0.88rem; color: var(--muted);">
-            You're in the draw for a free year of sport. Each friend who joins via your link gets you <strong style="color:var(--white)">+1 entry</strong> and bumps you up the queue.
+          <p style="font-size:0.86rem; color:var(--muted);">
+            You're in the draw for a free year of sport. Each friend who joins via your link = <strong style="color:var(--white)">+1 entry</strong> and moves you up the queue.
           </p>
-
           <div class="referral-block">
             <div class="referral-label">Your referral link — share it to jump the queue</div>
             <div class="referral-row">
               <div class="referral-link-box" id="referral-link-display">join.m.sport/r/abc123</div>
-              <button class="btn-copy" id="copy-btn" onclick="copyReferral()">Copy link</button>
+              <button class="btn-copy" id="copy-btn" onclick="copyReferral()">Copy</button>
             </div>
           </div>
-
-          <p class="confirmed-nudge">
-            Only <strong style="color:var(--white)">500 founding spots</strong> in London. One winner takes a full year free.
-          </p>
+          <p class="confirmed-nudge">Only <strong style="color:var(--white)">500 founding spots</strong> in London. One winner gets a full year free.</p>
         </div>
       </div>
-
     </div>
 
-    <!-- ── Golden Ticket ── -->
-    <div class="ticket-wrap fade-up">
+    <!-- Golden Ticket -->
+    <div class="ticket-wrap fade-up" style="position:relative;">
+      <div class="ticket-rings" aria-hidden="true">
+        <div class="ticket-rings-inner">
+          <div class="ring"></div>
+          <div class="ring"></div>
+          <div class="ring"></div>
+        </div>
+      </div>
       <div class="ticket">
         <div class="ticket-left">
-          <div class="ticket-eyebrow">Golden Ticket</div>
-          <div class="ticket-title">Free Sport<br>for a Year</div>
-          <div class="ticket-subtitle">M — One Pass. Every Sport.</div>
-          <div class="ticket-serial">ADMIT ONE · #GT-2024-XXXX</div>
+          <div class="t-eyebrow">Golden Ticket</div>
+          <div class="t-title">Free Sport<br>for a Year</div>
+          <div class="t-sub">M — One Pass. Every Sport.</div>
+          <div class="t-serial">ADMIT ONE · #GT-2024-XXXX</div>
         </div>
         <div class="ticket-divider">
-          <div class="ticket-circle"></div>
+          <div class="ticket-dot"></div>
+          <div class="ticket-dot"></div>
+          <div class="ticket-dot"></div>
         </div>
         <div class="ticket-right">
-          <div class="ticket-stub-logo">M.</div>
-          <div class="ticket-stub-desc">Sport Pass</div>
-          <div class="ticket-prize-label" style="margin-top:10px">Prize value</div>
-          <div class="ticket-prize-value">£599<br><span style="font-size:0.65rem;font-weight:600;color:rgba(0,0,0,0.4)">/ year</span></div>
+          <div class="t-logo">M.</div>
+          <div class="t-sport">Sport Pass</div>
+          <div class="t-val-label">Prize value</div>
+          <div class="t-val">£599<br><span style="font-size:0.62rem;font-weight:600;color:rgba(0,0,0,0.38)">/year</span></div>
         </div>
         <div class="ticket-glare"></div>
       </div>
@@ -1123,22 +1000,29 @@
 </section>
 
 
-<!-- ════════════════════════════════════════════════════════
-     THE PRIZE
-════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════ SPORT TICKER ═══════════════════ -->
+<div class="ticker-section" aria-hidden="true">
+  <div class="ticker-track" id="ticker-track"></div>
+</div>
+
+
+<!-- ═══════════════════ PRIZE ═══════════════════ -->
 <section id="prize" class="section">
   <div class="container">
     <div class="section-header fade-up">
       <span class="tag">The prize</span>
-      <h2 class="section-title">Win a free year of<br><span class="gold">every sport in the city</span></h2>
+      <h2 class="section-title">Win a free year of<br><span class="grad">every sport in the city</span></h2>
       <p class="section-sub">One golden-ticket winner gets a full M pass — every session, every sport, every live event — completely free for 12 months.</p>
     </div>
 
     <div class="prize-grid fade-up">
       <div class="prize-card featured">
         <div class="prize-card-icon">🎟️</div>
-        <div class="prize-card-title">The Golden Ticket — 1 Winner</div>
-        <div class="prize-card-desc">A full M Sport Pass for 12 months. Every session, every sport, every live local event across the city. No limits, no top-ups. Value: ~£599.</div>
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span class="prize-card-title">The Golden Ticket</span>
+          <span class="big-prize-num grad-gold">£599</span>
+        </div>
+        <div class="prize-card-desc">A full M Sport Pass for 12 months. Every session, every sport, every live event across the city. No limits, no top-ups — completely free for the winner.</div>
       </div>
       <div class="prize-card">
         <div class="prize-card-icon">⭐</div>
@@ -1148,42 +1032,37 @@
       <div class="prize-card">
         <div class="prize-card-icon">🚀</div>
         <div class="prize-card-title">Early Access</div>
-        <div class="prize-card-desc">Founding members get the app before anyone else and first pick of sessions.</div>
+        <div class="prize-card-desc">Founding members get the app first and first pick of every session at launch.</div>
       </div>
     </div>
 
     <div class="entries-info fade-up">
-      <div style="font-size:0.8rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted)">How to earn draw entries</div>
+      <div class="entries-header">How to earn more draw entries</div>
       <div class="entries-row">
-        <div class="entries-action">✅ Join the waitlist</div>
+        <div class="entries-action">✅&nbsp; Join the waitlist</div>
         <div class="entries-pill-sm">+1 entry</div>
       </div>
       <div class="entries-row">
-        <div class="entries-action">👥 Each friend who signs up via your link</div>
+        <div class="entries-action">👥&nbsp; Each friend who signs up via your link</div>
         <div class="entries-pill-sm">+1 entry</div>
       </div>
       <div class="entries-row">
-        <div class="entries-action">📣 Share on Instagram / Twitter / WhatsApp</div>
+        <div class="entries-action">📣&nbsp; Share on Instagram, Twitter or WhatsApp</div>
         <div class="entries-pill-sm">+1 entry</div>
       </div>
-      <div class="entries-row" style="padding-top:16px; border-top:1px solid var(--subtle); font-size:0.82rem; color:var(--muted)">
-        Draw is open. No cap on entries. Winner picked at launch.
-      </div>
+      <div class="entries-footer">No cap on entries — draw is open until launch day.</div>
     </div>
   </div>
 </section>
 
 
-<!-- ════════════════════════════════════════════════════════
-     HOW IT WORKS
-════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════ HOW IT WORKS ═══════════════════ -->
 <section id="how" class="section">
   <div class="container">
     <div class="section-header fade-up">
       <span class="tag">How it works</span>
-      <h2 class="section-title">Three steps to<br>the front of the queue</h2>
+      <h2 class="section-title">Three steps to<br><span class="grad">the front of the queue</span></h2>
     </div>
-
     <div class="steps fade-up">
       <div class="step">
         <div class="step-num">1</div>
@@ -1195,15 +1074,15 @@
       <div class="step">
         <div class="step-num">2</div>
         <div class="step-body">
-          <div class="step-title">Refer friends to climb + earn entries</div>
-          <div class="step-desc">Every friend who joins via your personal link gives you <strong style="color:var(--white)">+1 draw entry</strong> and moves you up the early-access queue. More friends = better odds + higher priority.</div>
+          <div class="step-title">Refer friends — climb &amp; earn entries</div>
+          <div class="step-desc">Every friend who joins via your link gives you <strong>+1 draw entry</strong> and moves you up the early-access queue. More friends = better odds + higher priority.</div>
         </div>
       </div>
       <div class="step">
         <div class="step-num">3</div>
         <div class="step-body">
           <div class="step-title">Get early access at launch</div>
-          <div class="step-desc">When M launches in London, founding members get in first — at the lowest price we'll ever charge. One lucky person gets the whole year free.</div>
+          <div class="step-desc">When M launches in London, founding members get in first — at the lowest price we'll ever charge. <strong>One lucky person gets the whole year free.</strong></div>
         </div>
       </div>
     </div>
@@ -1211,81 +1090,31 @@
 </section>
 
 
-<!-- ════════════════════════════════════════════════════════
-     WHAT YOU GET
-════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════ SPORTS ═══════════════════ -->
 <section id="sports" class="section">
   <div class="container">
     <div class="section-header fade-up">
       <span class="tag">What you get</span>
-      <h2 class="section-title">Play more.<br>Watch more.<br><span class="gold">Pay once.</span></h2>
+      <h2 class="section-title">Play more.<br>Watch more.<br><span class="grad">Pay once.</span></h2>
       <p class="section-sub">One pass unlocks a rotating mix of bookable sessions and live sporting events across the city.</p>
     </div>
 
-    <div class="sports-grid fade-up">
-      <div class="sport-tile">
-        <div class="sport-tile-icon">🎾</div>
-        <div class="sport-tile-name">Padel</div>
-        <div class="sport-tile-type">Play</div>
-      </div>
-      <div class="sport-tile">
-        <div class="sport-tile-icon">⚽</div>
-        <div class="sport-tile-name">5-a-side</div>
-        <div class="sport-tile-type">Play</div>
-      </div>
-      <div class="sport-tile">
-        <div class="sport-tile-icon">🧗</div>
-        <div class="sport-tile-name">Climbing</div>
-        <div class="sport-tile-type">Play</div>
-      </div>
-      <div class="sport-tile">
-        <div class="sport-tile-icon">🎾</div>
-        <div class="sport-tile-name">Tennis</div>
-        <div class="sport-tile-type">Play</div>
-      </div>
-      <div class="sport-tile">
-        <div class="sport-tile-icon">🏃</div>
-        <div class="sport-tile-name">Run Clubs</div>
-        <div class="sport-tile-type">Play</div>
-      </div>
-      <div class="sport-tile">
-        <div class="sport-tile-icon">🏀</div>
-        <div class="sport-tile-name">Basketball</div>
-        <div class="sport-tile-type">Play</div>
-      </div>
-      <div class="sport-tile">
-        <div class="sport-tile-icon">🥊</div>
-        <div class="sport-tile-name">Boxing</div>
-        <div class="sport-tile-type">Play</div>
-      </div>
-      <div class="sport-tile">
-        <div class="sport-tile-icon">🏐</div>
-        <div class="sport-tile-name">Volleyball</div>
-        <div class="sport-tile-type">Play</div>
-      </div>
-      <div class="sport-tile">
-        <div class="sport-tile-icon">🏟️</div>
-        <div class="sport-tile-name">Live Events</div>
-        <div class="sport-tile-type">Watch</div>
-      </div>
-      <div class="sport-tile">
-        <div class="sport-tile-icon">🏑</div>
-        <div class="sport-tile-name">Hockey</div>
-        <div class="sport-tile-type">Play</div>
-      </div>
-      <div class="sport-tile">
-        <div class="sport-tile-icon">🎱</div>
-        <div class="sport-tile-name">Snooker</div>
-        <div class="sport-tile-type">Play</div>
-      </div>
-      <div class="sport-tile">
-        <div class="sport-tile-icon">🏊</div>
-        <div class="sport-tile-name">Swimming</div>
-        <div class="sport-tile-type">Play</div>
-      </div>
+    <div class="sports-grid" id="sports-grid">
+      <div class="sport-tile"><div class="sport-tile-icon">🎾</div><div class="sport-tile-name">Padel</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">⚽</div><div class="sport-tile-name">5-a-side</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🧗</div><div class="sport-tile-name">Climbing</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏸</div><div class="sport-tile-name">Tennis</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏃</div><div class="sport-tile-name">Run Clubs</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏀</div><div class="sport-tile-name">Basketball</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🥊</div><div class="sport-tile-name">Boxing</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏐</div><div class="sport-tile-name">Volleyball</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏑</div><div class="sport-tile-name">Hockey</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏊</div><div class="sport-tile-name">Swimming</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🎱</div><div class="sport-tile-name">Snooker</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏟️</div><div class="sport-tile-name">Live Events</div><div class="sport-tile-type watch">Watch</div></div>
     </div>
 
-    <p class="sports-note fade-up">+ social leagues, new venues added monthly. More sports at launch.</p>
+    <p class="sports-more fade-up">+ social leagues, new venues added monthly</p>
 
     <div class="pass-features fade-up">
       <div class="feature-chip"><span class="icon">🔄</span>No lock-in</div>
@@ -1299,47 +1128,40 @@
 </section>
 
 
-<!-- ════════════════════════════════════════════════════════
-     MOMENTUM / SOCIAL PROOF
-════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════ PROOF ═══════════════════ -->
 <section id="proof" class="section">
   <div class="container">
-    <div class="proof-big fade-up">
-      <div class="proof-number" id="proof-counter">1,284</div>
-      <div class="proof-label">people already in line for London</div>
+    <div class="proof-band fade-up">
+      <div class="proof-eyebrow">Already in line for London</div>
+      <div class="proof-number grad-gold" id="proof-counter">1,284</div>
+      <div class="proof-label">people in the queue and counting</div>
+      <div class="spots-bar-wrap">
+        <div class="spots-bar-label">
+          <span>Founding spots filled</span>
+          <strong id="spots-pct">0%</strong>
+        </div>
+        <div class="spots-bar"><div class="spots-bar-fill" id="spots-fill"></div></div>
+      </div>
     </div>
 
     <div class="founding-card fade-up">
       <div class="founding-eyebrow">Founding Members</div>
-      <div class="founding-title">Only 500 spots in London.<br>Lock yours in.</div>
+      <div class="founding-title">Only 500 spots in London.<br><span class="grad">Lock yours in.</span></div>
       <div class="founding-perks">
-        <div class="perk-item">
-          <span class="perk-icon">✦</span>
-          <span>Founding price — locked in for life, below launch rate</span>
-        </div>
-        <div class="perk-item">
-          <span class="perk-icon">✦</span>
-          <span>First access to new sports, venues and cities as we expand</span>
-        </div>
-        <div class="perk-item">
-          <span class="perk-icon">✦</span>
-          <span>Founding Member badge on your profile forever</span>
-        </div>
-        <div class="perk-item">
-          <span class="perk-icon">✦</span>
-          <span>Direct line to the founders — help shape the product</span>
-        </div>
+        <div class="perk-item"><span class="perk-icon">✦</span><span>Founding price — locked in for life, below launch rate</span></div>
+        <div class="perk-item"><span class="perk-icon">✦</span><span>First access to new sports, venues and cities as we expand</span></div>
+        <div class="perk-item"><span class="perk-icon">✦</span><span>Founding Member badge on your profile forever</span></div>
+        <div class="perk-item"><span class="perk-icon">✦</span><span>Direct line to the founders — help shape the product</span></div>
       </div>
-
-      <div style="margin-top:8px">
-        <div style="font-size:0.75rem; font-weight:600; color:var(--muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.1em;">Venue partners (coming soon)</div>
+      <div>
+        <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Venue partners (coming soon)</div>
         <div class="venue-logos">
-          <div class="venue-logo-placeholder">Venue</div>
-          <div class="venue-logo-placeholder">Venue</div>
-          <div class="venue-logo-placeholder">Venue</div>
-          <div class="venue-logo-placeholder">Venue</div>
-          <div class="venue-logo-placeholder">Venue</div>
-          <div class="venue-logo-placeholder">Venue</div>
+          <div class="venue-ph">Venue</div>
+          <div class="venue-ph">Venue</div>
+          <div class="venue-ph">Venue</div>
+          <div class="venue-ph">Venue</div>
+          <div class="venue-ph">Venue</div>
+          <div class="venue-ph">Venue</div>
         </div>
       </div>
     </div>
@@ -1347,112 +1169,76 @@
 </section>
 
 
-<!-- ════════════════════════════════════════════════════════
-     REFERRAL CTA REPEAT
-════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════ REFERRAL CTA (INVERTED) ═══════════════════ -->
 <section id="refer" class="section">
   <div class="container">
-    <div class="refer-box fade-up">
-      <span class="tag">Jump the queue</span>
-      <h2 class="refer-title">Share your link.<br><span class="gold">Move up. Win big.</span></h2>
-      <p class="refer-sub">
-        Every friend who joins via your link earns you +1 draw entry and bumps you up the early-access queue. The more you share, the better your shot at the free year.
-      </p>
+    <div class="refer-inner">
+      <span class="refer-tag">🏆 Jump the queue</span>
+      <h2 class="refer-title">Share your link.<br>Move up. Win big.</h2>
+      <p class="refer-sub">Every friend who joins via your link earns you +1 draw entry and bumps you up the early-access queue. The more you share, the better your shot at the free year.</p>
 
-      <div id="refer-email-prompt" style="width:100%; display:flex; flex-direction:column; gap:10px;">
-        <form class="email-row" id="refer-form" onsubmit="handleSignup(event, true)" style="max-width:100%;">
+      <div class="refer-form-wrap" id="refer-email-prompt">
+        <form class="refer-email-row" id="refer-form" onsubmit="handleSignup(event, true)">
           <input type="email" placeholder="your@email.com" autocomplete="email" required>
-          <button type="submit" class="btn btn-gold" style="border-radius:10px; padding:12px 16px; font-size:0.88rem;">Get early access →</button>
+          <button type="submit" class="btn-dark">Get early access →</button>
         </form>
       </div>
 
-      <div id="refer-share-buttons" style="display:none; width:100%;">
+      <div id="refer-share-buttons" style="display:none; flex-direction:column; align-items:center; gap:14px; width:100%;">
         <div class="share-buttons">
-          <button class="share-btn" onclick="shareWhatsApp()">
-            <span>💬</span> WhatsApp
-          </button>
-          <button class="share-btn" onclick="shareTwitter()">
-            <span>𝕏</span> Twitter/X
-          </button>
-          <button class="share-btn" onclick="copyReferral()">
-            <span>🔗</span> Copy link
-          </button>
+          <button class="share-btn" onclick="shareWhatsApp()"><span>💬</span> WhatsApp</button>
+          <button class="share-btn" onclick="shareTwitter()"><span>𝕏</span> Twitter/X</button>
+          <button class="share-btn" onclick="copyReferral()"><span>🔗</span> Copy link</button>
         </div>
-        <p style="font-size:0.8rem; color:var(--muted); margin-top:14px;">Your link: <span id="refer-link-display" style="color:var(--gold)">join.m.sport/r/abc123</span></p>
+        <p style="font-size:0.8rem;color:rgba(0,0,0,0.5);">Your link: <span id="refer-link-display" style="color:rgba(0,0,0,0.75);font-weight:700;">join.m.sport/r/abc123</span></p>
       </div>
     </div>
   </div>
 </section>
 
 
-<!-- ════════════════════════════════════════════════════════
-     FAQ
-════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════ FAQ ═══════════════════ -->
 <section id="faq" class="section">
   <div class="container">
     <div class="section-header fade-up">
       <span class="tag">FAQ</span>
       <h2 class="section-title">Got questions?</h2>
     </div>
-
     <div class="faq-list fade-up">
       <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          Which city are you launching in first?
-          <span class="faq-chevron">▾</span>
-        </div>
+        <div class="faq-q" onclick="toggleFaq(this)">Which city are you launching in first?<span class="faq-chevron">▾</span></div>
         <div class="faq-a">London is first. We're targeting a launch later this year with a curated set of venues across zones 1–3. Other UK cities — Manchester, Bristol, Edinburgh — are next. Drop your email and we'll notify you when your city is live.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          How much will it cost?
-          <span class="faq-chevron">▾</span>
-        </div>
-        <div class="faq-a">We're not publishing the final price yet — but the ball-park is around £49–£59/month. Founding members (the first 500 who join at launch) will get a locked-in rate below that, for as long as they stay subscribed.</div>
+        <div class="faq-q" onclick="toggleFaq(this)">How much will it cost?<span class="faq-chevron">▾</span></div>
+        <div class="faq-a">We're not publishing the final price yet — but the ballpark is £49–£59/month. Founding members (the first 500 who join at launch) will get a locked-in rate below that, for as long as they stay subscribed.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          Is this for playing sport, watching sport, or both?
-          <span class="faq-chevron">▾</span>
-        </div>
+        <div class="faq-q" onclick="toggleFaq(this)">Is this for playing sport, watching sport, or both?<span class="faq-chevron">▾</span></div>
         <div class="faq-a">Both — that's the point. Your M pass covers bookable sessions (padel, climbing, five-a-side, tennis, run clubs etc.) AND tickets to local live sporting events. One membership, both sides of the experience.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          Is there a long-term contract?
-          <span class="faq-chevron">▾</span>
-        </div>
+        <div class="faq-q" onclick="toggleFaq(this)">Is there a long-term contract?<span class="faq-chevron">▾</span></div>
         <div class="faq-a">No. M is month-to-month — cancel any time, no penalty, no awkward phone call. We're building something good enough that you'll want to stay.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          How does the Golden Ticket draw work?
-          <span class="faq-chevron">▾</span>
-        </div>
-        <div class="faq-a">Everyone on the waitlist gets at least 1 entry. Earn more by referring friends (each signup via your link = +1 entry). At launch, one winner is drawn at random, weighted by entries. The winner gets a full M pass for 12 months, completely free. Runners-up from the top of the queue get the founding-member rate.</div>
+        <div class="faq-q" onclick="toggleFaq(this)">How does the Golden Ticket draw work?<span class="faq-chevron">▾</span></div>
+        <div class="faq-a">Everyone on the waitlist gets at least 1 entry. Earn more by referring friends — each signup via your link = +1 entry. At launch, one winner is drawn at random, weighted by entries. The winner gets a full M pass for 12 months, completely free. Runners-up from the top of the queue get the founding-member rate.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          When do you launch?
-          <span class="faq-chevron">▾</span>
-        </div>
+        <div class="faq-q" onclick="toggleFaq(this)">When do you launch?<span class="faq-chevron">▾</span></div>
         <div class="faq-a">We're targeting later this year for London. Joining the waitlist guarantees you're first to know — and first through the door. We'll send an update email 2 weeks before launch.</div>
       </div>
       <div class="faq-item">
-        <div class="faq-q" onclick="toggleFaq(this)">
-          Do I need to be athletic to join?
-          <span class="faq-chevron">▾</span>
-        </div>
-        <div class="faq-a">Not at all. Sessions range from casual social play for beginners to competitive leagues. And if you just want to come watch live sport, that's the whole idea. M is for anyone who wants more sport in their life — at whatever level.</div>
+        <div class="faq-q" onclick="toggleFaq(this)">Do I need to be athletic to join?<span class="faq-chevron">▾</span></div>
+        <div class="faq-a">Not at all. Sessions range from casual social play to competitive leagues. And if you just want to watch live sport, that's the whole idea. M is for anyone who wants more sport in their life — at whatever level.</div>
       </div>
     </div>
   </div>
 </section>
 
 
-<!-- ════════════════════════════════════════════════════════
-     FOOTER
-════════════════════════════════════════════════════════ -->
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
 <footer>
   <div class="container">
     <div class="footer-inner">
@@ -1470,93 +1256,108 @@
 
 
 <script>
-  /* ── State ───────────────────────────────────────────── */
+  /* ── Constants ── */
   const BASE_COUNT   = 1284;
-  const REFERRAL_ID  = 'abc123';
-  const REFERRAL_URL = `join.m.sport/r/${REFERRAL_ID}`;
+  const FOUND_SPOTS  = 500;
+  const REFERRAL_URL = 'join.m.sport/r/abc123';
   let signed = false;
+  let currentCount = BASE_COUNT;
 
-  /* ── Counter animation ───────────────────────────────── */
-  function animateCounter(el, target, duration = 1200) {
-    const start   = Math.max(0, target - Math.floor(Math.random() * 80 + 40));
+  /* ── Build ticker ── */
+  const SPORTS = [
+    ['🎾','Padel'], ['⚽','5-a-Side'], ['🧗','Climbing'], ['🏸','Tennis'],
+    ['🏃','Run Clubs'], ['🏀','Basketball'], ['🥊','Boxing'], ['🏐','Volleyball'],
+    ['🏟️','Live Events'], ['🏑','Hockey'], ['🏊','Swimming'], ['🎱','Snooker'],
+  ];
+  function buildTicker() {
+    const track = document.getElementById('ticker-track');
+    const items = [...SPORTS, ...SPORTS].map(([icon, name]) => {
+      return `<span class="ticker-item"><span class="ti">${icon}</span>${name}</span><span class="ticker-sep">·</span>`;
+    }).join('');
+    track.innerHTML = items;
+  }
+  buildTicker();
+
+  /* ── Counter animation ── */
+  function animateCounter(el, target, duration = 1400) {
+    const start   = Math.max(0, target - Math.floor(Math.random() * 90 + 50));
     const range   = target - start;
     const startTs = performance.now();
-
     function tick(now) {
-      const progress = Math.min((now - startTs) / duration, 1);
-      const eased    = 1 - Math.pow(1 - progress, 3);
-      el.textContent = (start + Math.round(eased * range)).toLocaleString();
-      if (progress < 1) requestAnimationFrame(tick);
+      const p = Math.min((now - startTs) / duration, 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      el.textContent = (start + Math.round(e * range)).toLocaleString();
+      if (p < 1) requestAnimationFrame(tick);
       else el.textContent = target.toLocaleString();
     }
     requestAnimationFrame(tick);
   }
 
-  /* ── Live counter drift ──────────────────────────────── */
-  let currentCount = BASE_COUNT;
+  /* ── Spots bar ── */
+  function animateSpotsBar() {
+    const pct = Math.min(100, Math.round((currentCount / FOUND_SPOTS) * 100));
+    const fill = document.getElementById('spots-fill');
+    const label = document.getElementById('spots-pct');
+    if (fill) {
+      setTimeout(() => {
+        fill.style.width = Math.min(pct, 100) + '%';
+        label.textContent = pct + '%';
+      }, 300);
+    }
+  }
+
+  /* ── Live counter drift ── */
   setInterval(() => {
     if (Math.random() < 0.35) {
       currentCount++;
-      document.querySelectorAll('.live-count').forEach(el => {
-        el.textContent = currentCount.toLocaleString();
-      });
+      const hc = document.getElementById('hero-counter');
+      if (hc) hc.textContent = currentCount.toLocaleString();
     }
-  }, 8000);
+  }, 7000);
 
-  /* ── Signup handler ──────────────────────────────────── */
+  /* ── Signup ── */
   function handleSignup(event, fromRefer = false) {
     event.preventDefault();
     if (signed && !fromRefer) return;
     signed = true;
 
-    const queuePos = BASE_COUNT + 1;
-
-    /* update hero */
+    /* hero state */
     document.getElementById('signup-state-default').style.display = 'none';
-    const confirmed = document.getElementById('signup-state-confirmed');
-    confirmed.style.display = 'flex';
-    document.getElementById('queue-pos').textContent = `#${queuePos.toLocaleString()}`;
+    const conf = document.getElementById('signup-state-confirmed');
+    conf.style.display = 'flex';
+    document.getElementById('queue-pos').textContent = `#${(BASE_COUNT + 1).toLocaleString()}`;
     document.getElementById('entry-count').textContent = '1';
 
-    /* update referral section */
+    /* referral section */
     document.getElementById('refer-email-prompt').style.display = 'none';
-    document.getElementById('refer-share-buttons').style.display = 'flex';
-    document.getElementById('refer-share-buttons').style.flexDirection = 'column';
-    document.getElementById('refer-share-buttons').style.alignItems = 'center';
-    document.getElementById('refer-share-buttons').style.gap = '4px';
+    const rsb = document.getElementById('refer-share-buttons');
+    rsb.style.display = 'flex';
 
-    /* scroll to confirmation if from refer section */
-    if (fromRefer) {
-      document.getElementById('hero').scrollIntoView({ behavior: 'smooth' });
-    }
+    if (fromRefer) document.getElementById('hero').scrollIntoView({ behavior: 'smooth' });
   }
 
-  /* ── Copy referral link ──────────────────────────────── */
+  /* ── Copy ── */
   function copyReferral() {
     navigator.clipboard.writeText('https://' + REFERRAL_URL).catch(() => {});
     const btn = document.getElementById('copy-btn');
     if (btn) {
       btn.textContent = 'Copied!';
       btn.classList.add('copied');
-      setTimeout(() => {
-        btn.textContent = 'Copy link';
-        btn.classList.remove('copied');
-      }, 2000);
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
     }
   }
 
-  /* ── Share helpers ───────────────────────────────────── */
+  /* ── Share ── */
   function shareWhatsApp() {
     const msg = encodeURIComponent(`Join me on M — one pass for every sport in the city. We're both in the draw for a free year 🎟️\nhttps://${REFERRAL_URL}`);
     window.open(`https://wa.me/?text=${msg}`, '_blank');
   }
-
   function shareTwitter() {
     const msg = encodeURIComponent(`One pass. Every sport in the city. 🏃🎾🧗\n\nJust joined the @MsportHQ waitlist — enter for a free year via my link:\nhttps://${REFERRAL_URL}`);
     window.open(`https://twitter.com/intent/tweet?text=${msg}`, '_blank');
   }
 
-  /* ── FAQ accordion ───────────────────────────────────── */
+  /* ── FAQ ── */
   function toggleFaq(qEl) {
     const item = qEl.closest('.faq-item');
     const isOpen = item.classList.contains('open');
@@ -1564,32 +1365,42 @@
     if (!isOpen) item.classList.add('open');
   }
 
-  /* ── Intersection observer for fade-up ───────────────── */
+  /* ── Sport tiles stagger ── */
+  function staggerTiles() {
+    const tiles = document.querySelectorAll('.sport-tile');
+    const io = new IntersectionObserver((entries) => {
+      let delay = 0;
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setTimeout(() => entry.target.classList.add('visible'), delay);
+          delay += 55;
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.05 });
+    tiles.forEach(t => io.observe(t));
+  }
+  staggerTiles();
+
+  /* ── Intersection observer (fade-up + counters) ── */
   const io = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        io.unobserve(entry.target);
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('visible');
+      io.unobserve(entry.target);
 
-        /* trigger counters when proof section enters view */
-        if (entry.target.querySelector && entry.target.querySelector('#proof-counter')) {
-          animateCounter(document.getElementById('proof-counter'), currentCount);
-        }
+      if (entry.target.id === 'proof-counter' || entry.target.querySelector?.('#proof-counter')) {
+        animateCounter(document.getElementById('proof-counter'), currentCount);
+        animateSpotsBar();
       }
     });
-  }, { threshold: 0.12 });
-
+  }, { threshold: 0.1 });
   document.querySelectorAll('.fade-up').forEach(el => io.observe(el));
 
-  /* ── Hero counter animation on load ─────────────────── */
+  /* ── On load ── */
   window.addEventListener('load', () => {
-    const heroCounter = document.getElementById('hero-counter');
-    if (heroCounter) animateCounter(heroCounter, BASE_COUNT, 1400);
-
-    /* make ticket visible immediately */
-    setTimeout(() => {
-      document.querySelector('.ticket-wrap')?.classList.add('visible');
-    }, 300);
+    animateCounter(document.getElementById('hero-counter'), BASE_COUNT, 1500);
+    setTimeout(() => document.querySelector('.ticket-wrap')?.classList.add('visible'), 400);
   });
 </script>
 </body>
