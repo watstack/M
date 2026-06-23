@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>M — One Pass. Every Sport in the City.</title>
+  <meta name="description" content="One membership gets you into sport across the city. Book padel, football, climbing, tennis, run clubs and live events — all on one pass, no lock-in.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --cyan:         #00D4FF;
+      --cyan-dim:     #00A8CC;
+      --cyan-glow:    rgba(0,212,255,0.14);
+      --cyan-border:  rgba(0,212,255,0.28);
+      --blue:         #3D5AFE;
+      --mag:          #FF2D78;
+      --mag-glow:     rgba(255,45,120,0.14);
+      --purple:       #7B2FFF;
+      --ink:          #03030E;
+      --dark:         #06061A;
+      --card:         #09091F;
+      --card2:        #0D0D28;
+      --white:        #FFFFFF;
+      --muted:        rgba(255,255,255,0.44);
+      --subtle:       rgba(255,255,255,0.06);
+      --radius:       12px;
+      --radius-lg:    20px;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--ink);
+      color: var(--white);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* ── Gradient text ─────────────────────────── */
+    .grad {
+      background: linear-gradient(90deg, var(--cyan) 0%, var(--purple) 50%, var(--mag) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .grad-cyan {
+      background: linear-gradient(90deg, #60EFFF 0%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ── Container ─────────────────────────────── */
+    .container { width: 100%; max-width: 680px; margin: 0 auto; padding: 0 20px; }
+
+    /* ── Tag pill ──────────────────────────────── */
+    .tag {
+      display: inline-flex; align-items: center; gap: 7px;
+      font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--cyan);
+      background: var(--cyan-glow);
+      border: 1px solid var(--cyan-border);
+      border-radius: 100px; padding: 5px 14px;
+    }
+    .tag .dot {
+      width: 5px; height: 5px; background: var(--cyan); border-radius: 50%;
+      animation: blink 1.8s ease infinite;
+      box-shadow: 0 0 6px var(--cyan);
+    }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
+
+    /* ════════════════════════════════════════════
+       HERO
+    ════════════════════════════════════════════ */
+    #hero {
+      min-height: 100svh;
+      display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+      background: var(--ink);
+    }
+
+    /* city grid */
+    #hero::before {
+      content: '';
+      position: absolute; inset: 0; z-index: 0;
+      background-image:
+        repeating-linear-gradient(0deg,   transparent, transparent 48px, rgba(0,212,255,0.03) 48px, rgba(0,212,255,0.03) 49px),
+        repeating-linear-gradient(90deg,  transparent, transparent 48px, rgba(0,212,255,0.03) 48px, rgba(0,212,255,0.03) 49px);
+      pointer-events: none;
+    }
+
+    /* noise */
+    #hero::after {
+      content:''; position:absolute; inset:0; z-index:0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+      background-size:160px; pointer-events:none;
+    }
+
+    /* aurora blobs */
+    .aurora { position:absolute; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+    .aurora-blob {
+      position:absolute; border-radius:50%; filter:blur(90px); opacity:0.18;
+    }
+    .b1 { width:500px;height:500px; background:radial-gradient(circle,#00D4FF,transparent 70%); top:-150px;left:-100px; animation:b1 12s ease-in-out infinite; }
+    .b2 { width:380px;height:380px; background:radial-gradient(circle,#FF2D78,transparent 70%); top:25%;right:-120px; animation:b2 9s ease-in-out infinite; }
+    .b3 { width:340px;height:340px; background:radial-gradient(circle,#7B2FFF,transparent 70%); bottom:0;left:30%; animation:b3 11s ease-in-out infinite; }
+    @keyframes b1 { 0%,100%{transform:translate(0,0)scale(1)} 50%{transform:translate(40px,30px)scale(1.12)} }
+    @keyframes b2 { 0%,100%{transform:translate(0,0)scale(1)} 50%{transform:translate(-30px,40px)scale(1.08)} }
+    @keyframes b3 { 0%,100%{transform:translate(0,0)scale(1)} 50%{transform:translate(30px,-30px)scale(1.15)} }
+
+    /* brand bar */
+    .hero-brand {
+      position:relative; z-index:2;
+      padding: 22px 24px;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .brand-mark { font-size:1.9rem; font-weight:800; font-style:italic; letter-spacing:-0.05em; }
+    .brand-mark span { color:var(--cyan); text-shadow:0 0 20px rgba(0,212,255,0.6); }
+
+    /* hero body */
+    .hero-body {
+      position:relative; z-index:2;
+      flex:1; display:flex; flex-direction:column;
+      align-items:center; text-align:center;
+      padding: 20px 24px 0; gap:22px;
+    }
+
+    /* live counter badge */
+    .live-badge {
+      display:inline-flex; align-items:center; gap:10px;
+      background: rgba(0,212,255,0.06);
+      border: 1px solid rgba(0,212,255,0.18);
+      border-radius:100px; padding:7px 16px;
+      font-size:0.82rem; font-weight:600;
+    }
+    .live-pill {
+      background: var(--mag);
+      color:#fff; font-size:0.58rem; font-weight:800;
+      letter-spacing:0.1em; text-transform:uppercase;
+      border-radius:100px; padding:2px 8px;
+      box-shadow:0 0 10px rgba(255,45,120,0.5);
+      animation:mag-pulse 2s ease infinite;
+    }
+    @keyframes mag-pulse {
+      0%,100%{box-shadow:0 0 8px rgba(255,45,120,0.4);}
+      50%    {box-shadow:0 0 20px rgba(255,45,120,0.8);}
+    }
+    .live-badge strong { color:var(--white); }
+
+    /* headline */
+    .hero-headline {
+      font-size: clamp(2.7rem,10vw,5rem);
+      font-weight:800; font-style:italic;
+      line-height:1.0; letter-spacing:-0.04em;
+      max-width:640px;
+    }
+
+    .hero-subhead {
+      font-size: clamp(0.95rem,2.5vw,1.1rem);
+      color:var(--muted); max-width:460px; line-height:1.65;
+    }
+    .hero-subhead strong { color:var(--white); }
+
+    /* ── Email form ── */
+    #signup-form-wrap { width:100%; max-width:500px; }
+    #signup-state-default { display:flex; flex-direction:column; gap:10px; }
+    #signup-state-confirmed { display:none; }
+
+    .email-row {
+      display:flex; gap:6px;
+      background:rgba(255,255,255,0.05);
+      border:1.5px solid rgba(255,255,255,0.10);
+      border-radius:14px; padding:6px 6px 6px 18px;
+      transition:border-color 0.2s, box-shadow 0.2s;
+    }
+    .email-row:focus-within {
+      border-color:var(--cyan);
+      box-shadow:0 0 0 3px rgba(0,212,255,0.10);
+    }
+    .email-row input {
+      flex:1; min-width:0; background:transparent;
+      border:none; outline:none;
+      font-family:inherit; font-size:1rem; color:var(--white);
+    }
+    .email-row input::placeholder { color:rgba(255,255,255,0.28); }
+
+    .btn-cta {
+      display:inline-flex; align-items:center; justify-content:center; gap:6px;
+      font-family:inherit; font-size:0.92rem; font-weight:800;
+      border:none; border-radius:10px; padding:13px 22px;
+      cursor:pointer; white-space:nowrap;
+      background:linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
+      color:#fff;
+      box-shadow:0 0 24px rgba(0,212,255,0.30), 0 0 8px rgba(61,90,254,0.4);
+      transition:all 0.18s ease;
+      animation:cta-glow 3s ease infinite;
+    }
+    @keyframes cta-glow {
+      0%,100%{box-shadow:0 0 24px rgba(0,212,255,0.30),0 0 8px rgba(61,90,254,0.4);}
+      50%    {box-shadow:0 0 40px rgba(0,212,255,0.55),0 0 16px rgba(61,90,254,0.6);}
+    }
+    .btn-cta:hover { transform:translateY(-2px); box-shadow:0 0 50px rgba(0,212,255,0.6),0 8px 24px rgba(0,0,0,0.5); }
+    .btn-cta:active { transform:translateY(0); }
+
+    .form-note { font-size:0.75rem; color:rgba(255,255,255,0.28); text-align:center; }
+
+    /* ── Confirmed card ── */
+    #signup-state-confirmed { flex-direction:column; gap:14px; text-align:left; }
+    .confirmed-card {
+      background:linear-gradient(145deg, rgba(0,212,255,0.08) 0%, var(--card) 55%);
+      border:1.5px solid var(--cyan-border);
+      border-radius:var(--radius-lg); padding:22px;
+      display:flex; flex-direction:column; gap:14px;
+      box-shadow:0 0 40px rgba(0,212,255,0.10);
+    }
+    .confirmed-top { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .queue-badge { font-size:0.68rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--cyan); }
+    .queue-pos { font-size:2.4rem; font-weight:800; font-style:italic; letter-spacing:-0.05em; line-height:1; color:var(--white); }
+    .entries-pill {
+      background:var(--cyan-glow); border:1px solid var(--cyan-border);
+      border-radius:12px; padding:10px 16px; text-align:center;
+      font-size:0.78rem; color:var(--muted);
+    }
+    .entries-pill strong { color:var(--cyan); font-size:1.5rem; display:block; line-height:1; font-weight:800; }
+    .referral-block { display:flex; flex-direction:column; gap:8px; }
+    .referral-label { font-size:0.76rem; font-weight:600; color:var(--muted); }
+    .referral-row { display:flex; gap:8px; }
+    .referral-link-box {
+      flex:1; min-width:0; background:var(--subtle);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:10px; padding:10px 14px;
+      font-size:0.78rem; color:var(--muted);
+      font-family:monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .btn-copy {
+      background:var(--subtle); border:1px solid rgba(255,255,255,0.12);
+      color:var(--white); border-radius:10px;
+      padding:10px 16px; font-size:0.80rem; font-weight:700;
+      cursor:pointer; font-family:inherit; transition:all 0.15s; white-space:nowrap;
+    }
+    .btn-copy:hover, .btn-copy.copied { border-color:var(--cyan); color:var(--cyan); background:var(--cyan-glow); }
+    .confirmed-nudge { font-size:0.82rem; color:var(--muted); border-top:1px solid var(--subtle); padding-top:12px; }
+
+    /* ── Holographic Ticket ────────────────────── */
+    .ticket-wrap { width:100%; max-width:400px; position:relative; margin-top:8px; }
+
+    /* rings */
+    .t-rings { position:absolute; width:380px; height:380px; top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; z-index:-1; }
+    .t-ring {
+      position:absolute; border-radius:50%; border:1px solid rgba(0,212,255,0.10);
+      top:50%; left:50%; transform:translate(-50%,-50%);
+      animation:ring-p 3.5s ease infinite;
+    }
+    .t-ring:nth-child(1){ width:160px;height:160px; }
+    .t-ring:nth-child(2){ width:260px;height:260px; animation-delay:0.6s; }
+    .t-ring:nth-child(3){ width:360px;height:360px; animation-delay:1.2s; }
+    @keyframes ring-p {
+      0%,100%{opacity:0.6;transform:translate(-50%,-50%)scale(1);}
+      50%    {opacity:0.15;transform:translate(-50%,-50%)scale(1.03);}
+    }
+
+    .ticket {
+      position:relative; width:100%;
+      border-radius:18px;
+      background: var(--card2);
+      border:1px solid rgba(0,212,255,0.35);
+      box-shadow:
+        0 0 0 1px rgba(0,212,255,0.08),
+        0 0 30px rgba(0,212,255,0.18),
+        0 0 70px rgba(123,47,255,0.12),
+        inset 0 0 40px rgba(0,212,255,0.03);
+      display:grid; grid-template-columns:1fr auto 1fr;
+      overflow:visible;
+      animation:float-t 4.5s ease-in-out infinite;
+      transform:rotate(-2deg);
+    }
+    @keyframes float-t {
+      0%,100%{transform:rotate(-2deg)translateY(0);}
+      50%    {transform:rotate(-2deg)translateY(-10px);}
+    }
+
+    /* notches */
+    .ticket::before,.ticket::after {
+      content:''; position:absolute;
+      width:28px; height:28px; background:var(--ink);
+      border-radius:50%; top:50%; transform:translateY(-50%);
+      box-shadow:0 0 0 1px rgba(0,212,255,0.3);
+    }
+    .ticket::before { left:-14px; }
+    .ticket::after  { right:-14px; }
+
+    /* holo shimmer */
+    .t-holo {
+      position:absolute; inset:0; border-radius:18px; pointer-events:none;
+      background:linear-gradient(130deg,
+        rgba(0,212,255,0.10) 0%,
+        transparent 25%,
+        rgba(123,47,255,0.08) 50%,
+        transparent 75%,
+        rgba(255,45,120,0.10) 100%
+      );
+      animation:holo 5s ease infinite alternate;
+    }
+    @keyframes holo {
+      0%  {opacity:0.6;background-position:0% 0%;}
+      100%{opacity:1; background-position:100% 100%;}
+    }
+    .t-glare {
+      position:absolute; inset:0; border-radius:18px; pointer-events:none;
+      background:linear-gradient(130deg, rgba(255,255,255,0.06) 0%, transparent 45%);
+    }
+
+    .t-left  { padding:22px 16px 22px 26px; display:flex; flex-direction:column; gap:4px; }
+    .t-right { padding:18px 26px 18px 16px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; text-align:center; }
+    .t-divider {
+      display:flex; align-items:center; flex-direction:column;
+      padding:18px 4px; gap:5px; position:relative;
+    }
+    .t-divider::before {
+      content:''; position:absolute; top:0; bottom:0; left:50%;
+      transform:translateX(-50%);
+      border-left:1.5px dashed rgba(0,212,255,0.20);
+    }
+    .t-dot { width:8px;height:8px; background:var(--card2); border:1px solid rgba(0,212,255,0.3); border-radius:50%; z-index:1; }
+
+    .te  { font-size:0.56rem; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--cyan); opacity:0.7; }
+    .tt  { font-size:1.4rem; font-weight:800; font-style:italic; letter-spacing:-0.03em; color:var(--white); line-height:1.1; }
+    .ts  { font-size:0.66rem; font-weight:600; color:var(--muted); }
+    .tsr { font-size:0.54rem; font-family:monospace; color:rgba(0,212,255,0.30); letter-spacing:0.06em; margin-top:10px; }
+    .tl  { font-size:2rem; font-weight:800; font-style:italic; color:var(--cyan); letter-spacing:-0.06em; text-shadow:0 0 16px rgba(0,212,255,0.5); }
+    .tsp { font-size:0.58rem; font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); }
+    .tvl { font-size:0.52rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--cyan); opacity:0.5; margin-top:8px; }
+    .tv  { font-size:1.1rem; font-weight:800; color:var(--white); line-height:1.15; letter-spacing:-0.02em; }
+
+    /* ════════════════════════════════════════════
+       TICKER
+    ════════════════════════════════════════════ */
+    .ticker-section {
+      position:relative; z-index:2;
+      background:var(--dark);
+      border-top:1px solid rgba(0,212,255,0.12);
+      border-bottom:1px solid rgba(0,212,255,0.12);
+      overflow:hidden; padding:13px 0;
+    }
+    .ticker-track {
+      display:inline-flex; align-items:center; gap:0;
+      animation:run-t 30s linear infinite; white-space:nowrap;
+    }
+    .ticker-section:hover .ticker-track { animation-play-state:paused; }
+    @keyframes run-t { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+    .ticker-item {
+      display:inline-flex; align-items:center; gap:10px;
+      padding:0 26px;
+      font-size:0.76rem; font-weight:700;
+      letter-spacing:0.10em; text-transform:uppercase;
+      color:rgba(255,255,255,0.38);
+    }
+    .ticker-item .ti { font-size:0.95rem; }
+    .ticker-sep { color:var(--cyan); opacity:0.35; font-size:0.7rem; }
+
+    /* ════════════════════════════════════════════
+       SECTIONS shared
+    ════════════════════════════════════════════ */
+    .section { padding:88px 0; position:relative; }
+
+    .section-header {
+      text-align:center; margin-bottom:52px;
+      display:flex; flex-direction:column; align-items:center; gap:16px;
+    }
+    .section-title {
+      font-size:clamp(1.9rem,6vw,3rem);
+      font-weight:800; font-style:italic;
+      letter-spacing:-0.04em; line-height:1.08;
+    }
+    .section-sub { font-size:1rem; color:var(--muted); max-width:420px; line-height:1.65; }
+
+    /* ════════════════════════════════════════════
+       PRIZE
+    ════════════════════════════════════════════ */
+    #prize { background:var(--dark); }
+
+    .prize-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+    .prize-card {
+      background:var(--card); border:1px solid rgba(255,255,255,0.06);
+      border-radius:var(--radius); padding:22px;
+      display:flex; flex-direction:column; gap:10px;
+      transition:border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .prize-card:hover { border-color:var(--cyan-border); transform:translateY(-2px); box-shadow:0 0 20px rgba(0,212,255,0.10); }
+
+    .prize-card.featured {
+      grid-column:1/-1;
+      border-color:var(--cyan-border);
+      background:linear-gradient(140deg, rgba(0,212,255,0.07) 0%, var(--card) 55%);
+      box-shadow:0 0 40px rgba(0,212,255,0.07);
+    }
+    .prize-card-icon { font-size:1.9rem; line-height:1; }
+    .prize-card-title { font-size:1rem; font-weight:700; }
+    .prize-card-desc  { font-size:0.83rem; color:var(--muted); line-height:1.6; }
+
+    .big-prize-num {
+      font-size:clamp(3.2rem,11vw,4.8rem);
+      font-weight:800; font-style:italic; letter-spacing:-0.05em; line-height:1;
+    }
+
+    .entries-info {
+      margin-top:30px;
+      background:var(--card2);
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:var(--radius-lg); overflow:hidden;
+    }
+    .entries-header {
+      padding:13px 22px;
+      background:rgba(0,212,255,0.05);
+      border-bottom:1px solid var(--cyan-border);
+      font-size:0.70rem; font-weight:700;
+      letter-spacing:0.13em; text-transform:uppercase; color:var(--cyan);
+    }
+    .entries-row {
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:16px 22px;
+    }
+    .entries-row + .entries-row { border-top:1px solid var(--subtle); }
+    .entries-action { font-size:0.90rem; font-weight:500; }
+    .entries-pill-sm {
+      font-size:0.78rem; font-weight:800; color:var(--cyan);
+      background:var(--cyan-glow); border:1px solid var(--cyan-border);
+      border-radius:100px; padding:4px 13px; white-space:nowrap;
+    }
+    .entries-footer {
+      padding:13px 22px;
+      background:var(--subtle);
+      border-top:1px solid var(--subtle);
+      font-size:0.78rem; color:var(--muted);
+    }
+
+    /* ════════════════════════════════════════════
+       HOW IT WORKS
+    ════════════════════════════════════════════ */
+    #how { background:var(--ink); }
+
+    .steps { display:flex; flex-direction:column; gap:6px; }
+    .step {
+      display:flex; gap:20px; align-items:flex-start;
+      background:var(--card);
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:var(--radius-lg); padding:24px 22px;
+      transition:border-color 0.2s, transform 0.22s, box-shadow 0.22s;
+    }
+    .step:hover {
+      border-color:var(--cyan-border);
+      transform:translateX(5px);
+      box-shadow:0 0 20px rgba(0,212,255,0.08);
+    }
+    .step-num {
+      width:44px; height:44px; border-radius:10px; flex-shrink:0;
+      background:linear-gradient(135deg, var(--blue) 0%, var(--cyan) 100%);
+      display:flex; align-items:center; justify-content:center;
+      font-size:1.1rem; font-weight:800; font-style:italic; color:#fff;
+      box-shadow:0 4px 16px rgba(0,212,255,0.30);
+    }
+    .step-title { font-size:1.05rem; font-weight:700; margin-bottom:5px; }
+    .step-desc  { font-size:0.87rem; color:var(--muted); line-height:1.65; }
+    .step-desc strong { color:var(--white); }
+
+    /* ════════════════════════════════════════════
+       SPORTS
+    ════════════════════════════════════════════ */
+    #sports { background:var(--dark); }
+
+    .sports-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+
+    .sport-tile {
+      background:var(--card); border:1px solid rgba(255,255,255,0.06);
+      border-radius:var(--radius); padding:20px 10px;
+      text-align:center; display:flex; flex-direction:column; align-items:center; gap:8px;
+      cursor:default;
+      opacity:0; transform:scale(0.90) translateY(12px);
+      transition:opacity 0.4s ease, transform 0.4s ease, border-color 0.18s, box-shadow 0.18s;
+    }
+    .sport-tile.visible { opacity:1; transform:scale(1) translateY(0); }
+    .sport-tile:hover {
+      border-color:var(--cyan-border);
+      box-shadow:0 0 20px rgba(0,212,255,0.12), inset 0 0 16px rgba(0,212,255,0.04);
+      transform:translateY(-3px) scale(1.04);
+    }
+    .sport-tile-icon { font-size:2rem; line-height:1; }
+    .sport-tile-name { font-size:0.76rem; font-weight:700; letter-spacing:0.02em; }
+    .sport-tile-type {
+      font-size:0.60rem; font-weight:700;
+      letter-spacing:0.10em; text-transform:uppercase;
+      padding:2px 8px; border-radius:100px;
+    }
+    .sport-tile-type.play  { color:var(--cyan);  background:var(--cyan-glow); }
+    .sport-tile-type.watch { color:var(--mag);   background:var(--mag-glow); }
+
+    .sports-more { margin-top:16px; text-align:center; font-size:0.82rem; color:var(--muted); font-style:italic; }
+
+    .pass-features { margin-top:28px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .feature-chip {
+      display:flex; align-items:center; gap:12px;
+      background:var(--card); border:1px solid rgba(255,255,255,0.06);
+      border-radius:var(--radius); padding:14px 16px;
+      font-size:0.84rem; font-weight:600;
+      transition:border-color 0.18s;
+    }
+    .feature-chip:hover { border-color:var(--cyan-border); }
+    .feature-chip .icon { font-size:1.1rem; flex-shrink:0; }
+
+    /* ════════════════════════════════════════════
+       PROOF
+    ════════════════════════════════════════════ */
+    #proof { background:var(--ink); }
+
+    .proof-band {
+      background:linear-gradient(135deg, rgba(0,212,255,0.08) 0%, rgba(123,47,255,0.06) 50%, rgba(255,45,120,0.05) 100%);
+      border:1px solid var(--cyan-border);
+      border-radius:var(--radius-lg); padding:44px 28px;
+      text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px;
+      margin-bottom:28px; position:relative; overflow:hidden;
+    }
+    /* ghost number background */
+    .proof-band::before {
+      content:'1,284';
+      position:absolute; font-size:10rem; font-weight:800; font-style:italic;
+      color:rgba(0,212,255,0.04); letter-spacing:-0.06em;
+      right:-10px; top:-10px; line-height:1; pointer-events:none;
+      white-space:nowrap;
+    }
+    .proof-eyebrow { font-size:0.70rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--cyan); }
+    .proof-number {
+      font-size:clamp(4.5rem,16vw,8rem);
+      font-weight:800; font-style:italic;
+      letter-spacing:-0.06em; line-height:1;
+    }
+    .proof-label { font-size:0.92rem; color:var(--muted); }
+
+    /* progress bar */
+    .spots-bar-wrap { margin-top:20px; width:100%; max-width:300px; }
+    .spots-bar-label {
+      display:flex; justify-content:space-between;
+      font-size:0.74rem; color:var(--muted); margin-bottom:8px;
+    }
+    .spots-bar-label strong { color:var(--cyan); }
+    .spots-bar { height:5px; background:rgba(255,255,255,0.08); border-radius:100px; overflow:hidden; }
+    .spots-bar-fill {
+      height:100%;
+      background:linear-gradient(90deg, var(--cyan), var(--purple), var(--mag));
+      border-radius:100px; width:0;
+      transition:width 1.6s cubic-bezier(0.16,1,0.3,1);
+      box-shadow:0 0 8px rgba(0,212,255,0.5);
+    }
+
+    .founding-card {
+      background:linear-gradient(140deg, rgba(0,212,255,0.06) 0%, var(--card) 60%);
+      border:1.5px solid var(--cyan-border);
+      border-radius:var(--radius-lg); padding:28px 24px;
+      display:flex; flex-direction:column; gap:18px;
+    }
+    .founding-eyebrow { font-size:0.68rem; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--cyan); }
+    .founding-title { font-size:1.5rem; font-weight:800; font-style:italic; letter-spacing:-0.03em; line-height:1.2; }
+    .founding-perks { display:flex; flex-direction:column; gap:11px; }
+    .perk-item { display:flex; align-items:flex-start; gap:12px; font-size:0.87rem; color:var(--muted); }
+    .perk-icon { color:var(--cyan); flex-shrink:0; margin-top:1px; }
+
+    .venue-logos { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:4px; }
+    .venue-ph {
+      background:var(--subtle); border:1px solid rgba(255,255,255,0.06);
+      border-radius:10px; height:48px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.60rem; font-weight:600;
+      letter-spacing:0.07em; text-transform:uppercase;
+      color:rgba(255,255,255,0.16);
+    }
+
+    /* ════════════════════════════════════════════
+       REFERRAL — NEON DARK
+    ════════════════════════════════════════════ */
+    #refer {
+      background:var(--dark);
+      position:relative; overflow:hidden;
+    }
+    /* background glow */
+    #refer::before {
+      content:'';
+      position:absolute; inset:0; pointer-events:none;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 50%, rgba(0,212,255,0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 50% at 80% 50%, rgba(255,45,120,0.07) 0%, transparent 70%);
+    }
+    .refer-inner {
+      position:relative; z-index:1;
+      display:flex; flex-direction:column; align-items:center; text-align:center; gap:22px;
+    }
+    .refer-box-wrap {
+      width:100%;
+      background:var(--card);
+      border:1.5px solid var(--cyan-border);
+      border-radius:var(--radius-lg); padding:40px 28px;
+      display:flex; flex-direction:column; align-items:center; gap:22px;
+      box-shadow:
+        0 0 0 1px rgba(0,212,255,0.06),
+        0 0 60px rgba(0,212,255,0.10),
+        0 0 100px rgba(123,47,255,0.08);
+    }
+    .refer-title {
+      font-size:clamp(2rem,8vw,3.2rem);
+      font-weight:800; font-style:italic;
+      letter-spacing:-0.04em; line-height:1.05;
+    }
+    .refer-sub { font-size:0.95rem; color:var(--muted); max-width:380px; line-height:1.65; }
+
+    .refer-form-wrap { width:100%; max-width:480px; display:flex; flex-direction:column; gap:10px; }
+
+    .share-buttons { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; width:100%; }
+    .share-btn {
+      flex:1; min-width:110px;
+      background:var(--card2); border:1.5px solid rgba(255,255,255,0.08);
+      color:var(--white); border-radius:12px; padding:13px 16px;
+      font-size:0.88rem; font-weight:700; cursor:pointer; font-family:inherit;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+      transition:all 0.15s;
+    }
+    .share-btn:hover { border-color:var(--cyan-border); color:var(--cyan); box-shadow:0 0 16px rgba(0,212,255,0.15); }
+
+    /* ════════════════════════════════════════════
+       FAQ
+    ════════════════════════════════════════════ */
+    #faq { background:var(--ink); }
+
+    .faq-list { display:flex; flex-direction:column; gap:6px; }
+    .faq-item {
+      background:var(--card); border:1px solid rgba(255,255,255,0.06);
+      border-radius:var(--radius); overflow:hidden;
+      transition:border-color 0.2s;
+    }
+    .faq-item.open { border-color:var(--cyan-border); }
+    .faq-q {
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      padding:18px 20px; font-size:0.94rem; font-weight:600;
+      cursor:pointer; user-select:none; transition:color 0.15s;
+    }
+    .faq-q:hover { color:var(--cyan); }
+    .faq-item.open .faq-q { color:var(--cyan); }
+    .faq-chevron {
+      width:24px; height:24px; background:var(--subtle);
+      border-radius:50%; display:flex; align-items:center; justify-content:center;
+      flex-shrink:0; font-size:0.68rem;
+      transition:transform 0.25s, background 0.15s;
+    }
+    .faq-item.open .faq-chevron { transform:rotate(180deg); background:var(--cyan-glow); color:var(--cyan); }
+    .faq-a {
+      max-height:0; overflow:hidden;
+      transition:max-height 0.35s ease, padding 0.25s ease;
+      font-size:0.87rem; color:var(--muted); line-height:1.72;
+    }
+    .faq-item.open .faq-a { max-height:300px; padding:0 20px 20px; }
+
+    /* ════════════════════════════════════════════
+       FOOTER
+    ════════════════════════════════════════════ */
+    footer {
+      background:var(--ink);
+      border-top:1px solid var(--subtle);
+      padding:36px 0;
+    }
+    .footer-inner { display:flex; flex-direction:column; align-items:center; gap:16px; text-align:center; }
+    .footer-brand { font-size:1.6rem; font-weight:800; font-style:italic; letter-spacing:-0.05em; }
+    .footer-brand span { color:var(--cyan); text-shadow:0 0 16px rgba(0,212,255,0.5); }
+    .footer-links { display:flex; gap:22px; flex-wrap:wrap; justify-content:center; }
+    .footer-links a { font-size:0.78rem; color:var(--muted); transition:color 0.15s; }
+    .footer-links a:hover { color:var(--cyan); }
+    .footer-copy { font-size:0.72rem; color:rgba(255,255,255,0.18); }
+
+    /* ════════════════════════════════════════════
+       ANIMATIONS
+    ════════════════════════════════════════════ */
+    .fade-up {
+      opacity:0; transform:translateY(28px);
+      transition:opacity 0.6s ease, transform 0.6s ease;
+    }
+    .fade-up.visible { opacity:1; transform:translateY(0); }
+
+    /* ════════════════════════════════════════════
+       RESPONSIVE
+    ════════════════════════════════════════════ */
+    @media (min-width:520px) { .sports-grid { grid-template-columns:repeat(4,1fr); } }
+    @media (max-width:400px) {
+      .pass-features { grid-template-columns:1fr; }
+      .prize-grid { grid-template-columns:1fr; }
+      .prize-card.featured { grid-column:auto; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ HERO ══════════════════ -->
+<section id="hero">
+  <div class="aurora" aria-hidden="true">
+    <div class="aurora-blob b1"></div>
+    <div class="aurora-blob b2"></div>
+    <div class="aurora-blob b3"></div>
+  </div>
+
+  <div class="hero-brand">
+    <div class="brand-mark">M<span>.</span></div>
+    <span class="tag"><span class="dot"></span>Pre-launch · London</span>
+  </div>
+
+  <div class="hero-body">
+
+    <div class="live-badge">
+      <span class="live-pill">Live</span>
+      <span><strong id="hero-counter">1,284</strong> people in the queue</span>
+    </div>
+
+    <h1 class="hero-headline">
+      One pass.<br>
+      <span class="grad">Every sport</span><br>
+      in the city.
+    </h1>
+
+    <p class="hero-subhead">
+      Play padel, five-a-side, climbing, tennis &amp; more — or watch live local sport — all on one flexible membership. No lock-in. Join the waitlist and enter the draw for <strong>a free year of sport</strong>.
+    </p>
+
+    <div id="signup-form-wrap">
+      <div id="signup-state-default">
+        <form class="email-row" id="hero-form" onsubmit="handleSignup(event)">
+          <input type="email" id="email-input" placeholder="your@email.com" autocomplete="email" required>
+          <button type="submit" class="btn-cta">Claim your Golden Ticket →</button>
+        </form>
+        <p class="form-note">Free to join · No card required · Unsubscribe anytime</p>
+      </div>
+
+      <div id="signup-state-confirmed">
+        <div class="confirmed-card">
+          <div class="confirmed-top">
+            <div>
+              <div class="queue-badge">Your queue position</div>
+              <div class="queue-pos" id="queue-pos">#1,285</div>
+            </div>
+            <div class="entries-pill">
+              <strong id="entry-count">1</strong>
+              draw entry
+            </div>
+          </div>
+          <p style="font-size:0.86rem;color:var(--muted);">You're in the draw for a free year of sport. Each friend who joins via your link = <strong style="color:var(--white)">+1 entry</strong> and moves you up the queue.</p>
+          <div class="referral-block">
+            <div class="referral-label">Your referral link — share it to jump the queue</div>
+            <div class="referral-row">
+              <div class="referral-link-box" id="referral-link-display">join.m.sport/r/abc123</div>
+              <button class="btn-copy" id="copy-btn" onclick="copyReferral()">Copy</button>
+            </div>
+          </div>
+          <p class="confirmed-nudge">Only <strong style="color:var(--white)">500 founding spots</strong> in London. One winner gets a full year free.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Holographic Ticket -->
+    <div class="ticket-wrap fade-up">
+      <div class="t-rings" aria-hidden="true">
+        <div class="t-ring"></div>
+        <div class="t-ring"></div>
+        <div class="t-ring"></div>
+      </div>
+      <div class="ticket">
+        <div class="t-left">
+          <div class="te">Golden Ticket</div>
+          <div class="tt">Free Sport<br>for a Year</div>
+          <div class="ts">M — One Pass. Every Sport.</div>
+          <div class="tsr">ADMIT ONE · #GT-2024-XXXX</div>
+        </div>
+        <div class="t-divider">
+          <div class="t-dot"></div>
+          <div class="t-dot"></div>
+          <div class="t-dot"></div>
+        </div>
+        <div class="t-right">
+          <div class="tl">M.</div>
+          <div class="tsp">Sport Pass</div>
+          <div class="tvl">Prize value</div>
+          <div class="tv">£599<br><span style="font-size:0.60rem;font-weight:600;color:var(--muted)">/year</span></div>
+        </div>
+        <div class="t-holo"></div>
+        <div class="t-glare"></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ══════════════════ TICKER ══════════════════ -->
+<div class="ticker-section" aria-hidden="true">
+  <div class="ticker-track" id="ticker-track"></div>
+</div>
+
+
+<!-- ══════════════════ PRIZE ══════════════════ -->
+<section id="prize" class="section">
+  <div class="container">
+    <div class="section-header fade-up">
+      <span class="tag">The prize</span>
+      <h2 class="section-title">Win a free year of<br><span class="grad">every sport in the city</span></h2>
+      <p class="section-sub">One golden-ticket winner gets a full M pass — every session, every sport, every live event — completely free for 12 months.</p>
+    </div>
+
+    <div class="prize-grid fade-up">
+      <div class="prize-card featured">
+        <div class="prize-card-icon">🎟️</div>
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span class="prize-card-title">The Golden Ticket</span>
+          <span class="big-prize-num grad-cyan">£599</span>
+        </div>
+        <div class="prize-card-desc">A full M Sport Pass for 12 months. Every session, every sport, every live event across the city. No limits, no top-ups — completely free for the winner.</div>
+      </div>
+      <div class="prize-card">
+        <div class="prize-card-icon">⭐</div>
+        <div class="prize-card-title">Founding Member</div>
+        <div class="prize-card-desc">Top of the queue get locked-in founding pricing — cheaper than launch, for life.</div>
+      </div>
+      <div class="prize-card">
+        <div class="prize-card-icon">🚀</div>
+        <div class="prize-card-title">Early Access</div>
+        <div class="prize-card-desc">Founding members get the app first and first pick of every session at launch.</div>
+      </div>
+    </div>
+
+    <div class="entries-info fade-up">
+      <div class="entries-header">How to earn more draw entries</div>
+      <div class="entries-row">
+        <div class="entries-action">✅&nbsp; Join the waitlist</div>
+        <div class="entries-pill-sm">+1 entry</div>
+      </div>
+      <div class="entries-row">
+        <div class="entries-action">👥&nbsp; Each friend who signs up via your link</div>
+        <div class="entries-pill-sm">+1 entry</div>
+      </div>
+      <div class="entries-row">
+        <div class="entries-action">📣&nbsp; Share on Instagram, Twitter or WhatsApp</div>
+        <div class="entries-pill-sm">+1 entry</div>
+      </div>
+      <div class="entries-footer">No cap on entries — draw is open until launch day.</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════ HOW ══════════════════ -->
+<section id="how" class="section">
+  <div class="container">
+    <div class="section-header fade-up">
+      <span class="tag">How it works</span>
+      <h2 class="section-title">Three steps to<br><span class="grad">the front of the queue</span></h2>
+    </div>
+    <div class="steps fade-up">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Join the waitlist</div>
+          <div class="step-desc">Drop your email above. You're instantly in the draw for a free year and locked into your queue position. Takes 10 seconds.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Refer friends — climb &amp; earn entries</div>
+          <div class="step-desc">Every friend who joins via your link gives you <strong>+1 draw entry</strong> and moves you up the early-access queue.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Get early access at launch</div>
+          <div class="step-desc">Founding members get in first at the lowest price we'll ever charge. <strong>One lucky person gets the whole year free.</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════ SPORTS ══════════════════ -->
+<section id="sports" class="section">
+  <div class="container">
+    <div class="section-header fade-up">
+      <span class="tag">What you get</span>
+      <h2 class="section-title">Play more.<br>Watch more.<br><span class="grad">Pay once.</span></h2>
+      <p class="section-sub">One pass unlocks a rotating mix of bookable sessions and live sporting events across the city.</p>
+    </div>
+
+    <div class="sports-grid" id="sports-grid">
+      <div class="sport-tile"><div class="sport-tile-icon">🎾</div><div class="sport-tile-name">Padel</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">⚽</div><div class="sport-tile-name">5-a-side</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🧗</div><div class="sport-tile-name">Climbing</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏸</div><div class="sport-tile-name">Tennis</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏃</div><div class="sport-tile-name">Run Clubs</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏀</div><div class="sport-tile-name">Basketball</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🥊</div><div class="sport-tile-name">Boxing</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏐</div><div class="sport-tile-name">Volleyball</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏑</div><div class="sport-tile-name">Hockey</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏊</div><div class="sport-tile-name">Swimming</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🎱</div><div class="sport-tile-name">Snooker</div><div class="sport-tile-type play">Play</div></div>
+      <div class="sport-tile"><div class="sport-tile-icon">🏟️</div><div class="sport-tile-name">Live Events</div><div class="sport-tile-type watch">Watch</div></div>
+    </div>
+
+    <p class="sports-more fade-up">+ social leagues, new venues added monthly</p>
+
+    <div class="pass-features fade-up">
+      <div class="feature-chip"><span class="icon">🔄</span>No lock-in</div>
+      <div class="feature-chip"><span class="icon">📅</span>Book daily</div>
+      <div class="feature-chip"><span class="icon">👥</span>Bring a +1</div>
+      <div class="feature-chip"><span class="icon">🏙️</span>Whole city</div>
+      <div class="feature-chip"><span class="icon">📺</span>Watch live</div>
+      <div class="feature-chip"><span class="icon">💳</span>One pass</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════ PROOF ══════════════════ -->
+<section id="proof" class="section">
+  <div class="container">
+    <div class="proof-band fade-up">
+      <div class="proof-eyebrow">Already in line for London</div>
+      <div class="proof-number grad" id="proof-counter">1,284</div>
+      <div class="proof-label">people in the queue and counting</div>
+      <div class="spots-bar-wrap">
+        <div class="spots-bar-label">
+          <span>Founding spots claimed</span>
+          <strong id="spots-pct">0%</strong>
+        </div>
+        <div class="spots-bar"><div class="spots-bar-fill" id="spots-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="founding-card fade-up">
+      <div class="founding-eyebrow">Founding Members</div>
+      <div class="founding-title">Only 500 spots in London.<br><span class="grad">Lock yours in.</span></div>
+      <div class="founding-perks">
+        <div class="perk-item"><span class="perk-icon">✦</span><span>Founding price — locked in for life, below launch rate</span></div>
+        <div class="perk-item"><span class="perk-icon">✦</span><span>First access to new sports, venues and cities as we expand</span></div>
+        <div class="perk-item"><span class="perk-icon">✦</span><span>Founding Member badge on your profile forever</span></div>
+        <div class="perk-item"><span class="perk-icon">✦</span><span>Direct line to the founders — help shape the product</span></div>
+      </div>
+      <div>
+        <div style="font-size:0.70rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;">Venue partners (coming soon)</div>
+        <div class="venue-logos">
+          <div class="venue-ph">Venue</div>
+          <div class="venue-ph">Venue</div>
+          <div class="venue-ph">Venue</div>
+          <div class="venue-ph">Venue</div>
+          <div class="venue-ph">Venue</div>
+          <div class="venue-ph">Venue</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════ REFERRAL ══════════════════ -->
+<section id="refer" class="section">
+  <div class="container">
+    <div class="refer-inner">
+      <div class="refer-box-wrap">
+        <span class="tag">🏆 Jump the queue</span>
+        <h2 class="refer-title">Share your link.<br><span class="grad">Move up. Win big.</span></h2>
+        <p class="refer-sub">Every friend who joins via your link earns you +1 draw entry and bumps you up the early-access queue.</p>
+
+        <div class="refer-form-wrap" id="refer-email-prompt">
+          <form class="email-row" id="refer-form" onsubmit="handleSignup(event,true)">
+            <input type="email" placeholder="your@email.com" autocomplete="email" required>
+            <button type="submit" class="btn-cta" style="padding:12px 18px;font-size:0.88rem;">Get early access →</button>
+          </form>
+        </div>
+
+        <div id="refer-share-buttons" style="display:none;flex-direction:column;align-items:center;gap:14px;width:100%;">
+          <div class="share-buttons">
+            <button class="share-btn" onclick="shareWhatsApp()"><span>💬</span> WhatsApp</button>
+            <button class="share-btn" onclick="shareTwitter()"><span>𝕏</span> Twitter/X</button>
+            <button class="share-btn" onclick="copyReferral()"><span>🔗</span> Copy link</button>
+          </div>
+          <p style="font-size:0.78rem;color:var(--muted)">Your link: <span id="refer-link-display" style="color:var(--cyan);font-weight:700">join.m.sport/r/abc123</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════ FAQ ══════════════════ -->
+<section id="faq" class="section">
+  <div class="container">
+    <div class="section-header fade-up">
+      <span class="tag">FAQ</span>
+      <h2 class="section-title">Got questions?</h2>
+    </div>
+    <div class="faq-list fade-up">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Which city are you launching in first?<span class="faq-chevron">▾</span></div>
+        <div class="faq-a">London is first. We're targeting a launch later this year with a curated set of venues across zones 1–3. Other UK cities — Manchester, Bristol, Edinburgh — are next.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">How much will it cost?<span class="faq-chevron">▾</span></div>
+        <div class="faq-a">We're not publishing the final price yet — but the ballpark is £49–£59/month. Founding members (the first 500) get a locked-in rate below that, for life.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Is this for playing sport, watching sport, or both?<span class="faq-chevron">▾</span></div>
+        <div class="faq-a">Both — that's the point. Your M pass covers bookable sessions (padel, climbing, five-a-side, tennis, run clubs etc.) AND tickets to local live sporting events. One membership, both sides of the experience.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Is there a long-term contract?<span class="faq-chevron">▾</span></div>
+        <div class="faq-a">No. M is month-to-month — cancel any time, no penalty, no awkward phone call.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">How does the Golden Ticket draw work?<span class="faq-chevron">▾</span></div>
+        <div class="faq-a">Everyone gets at least 1 entry. Earn more by referring friends — each signup via your link = +1 entry. At launch, one winner is drawn at random, weighted by entries, and gets a full M pass for 12 months completely free.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">When do you launch?<span class="faq-chevron">▾</span></div>
+        <div class="faq-a">We're targeting later this year for London. Joining the waitlist guarantees you're first to know — and first through the door.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Do I need to be athletic?<span class="faq-chevron">▾</span></div>
+        <div class="faq-a">Not at all. Sessions range from casual social play to competitive leagues. M is for anyone who wants more sport in their life — at whatever level.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand">M<span>.</span></div>
+      <div class="footer-links">
+        <a href="#faq">FAQ</a>
+        <a href="mailto:hello@m.sport">Contact</a>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+      </div>
+      <div class="footer-copy">© 2024 M Sport Ltd. London, UK. All rights reserved.</div>
+    </div>
+  </div>
+</footer>
+
+
+<script>
+  const BASE_COUNT   = 1284;
+  const FOUND_SPOTS  = 500;
+  const REFERRAL_URL = 'join.m.sport/r/abc123';
+  let signed = false;
+  let currentCount = BASE_COUNT;
+
+  /* ── ticker ── */
+  const SPORTS = [
+    ['🎾','Padel'],['⚽','5-a-Side'],['🧗','Climbing'],['🏸','Tennis'],
+    ['🏃','Run Clubs'],['🏀','Basketball'],['🥊','Boxing'],['🏐','Volleyball'],
+    ['🏟️','Live Events'],['🏑','Hockey'],['🏊','Swimming'],['🎱','Snooker'],
+  ];
+  (function buildTicker() {
+    const t = document.getElementById('ticker-track');
+    const items = [...SPORTS,...SPORTS].map(([i,n]) =>
+      `<span class="ticker-item"><span class="ti">${i}</span>${n}</span><span class="ticker-sep">·</span>`
+    ).join('');
+    t.innerHTML = items;
+  })();
+
+  /* ── counter animation ── */
+  function animateCounter(el, target, dur=1400) {
+    const start = Math.max(0, target - Math.floor(Math.random()*90+50));
+    const range = target - start;
+    const t0 = performance.now();
+    function tick(now) {
+      const p = Math.min((now-t0)/dur,1);
+      const e = 1-Math.pow(1-p,3);
+      el.textContent = (start+Math.round(e*range)).toLocaleString();
+      if(p<1) requestAnimationFrame(tick);
+      else el.textContent = target.toLocaleString();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  /* ── spots bar ── */
+  function animateSpotsBar() {
+    const pct = Math.min(100, Math.round((currentCount/FOUND_SPOTS)*100));
+    const fill = document.getElementById('spots-fill');
+    const label = document.getElementById('spots-pct');
+    if(fill) setTimeout(()=>{ fill.style.width=Math.min(pct,100)+'%'; label.textContent=pct+'%'; },300);
+  }
+
+  /* ── live drift ── */
+  setInterval(()=>{
+    if(Math.random()<0.35) {
+      currentCount++;
+      const el = document.getElementById('hero-counter');
+      if(el) el.textContent = currentCount.toLocaleString();
+    }
+  }, 7000);
+
+  /* ── signup ── */
+  function handleSignup(event, fromRefer=false) {
+    event.preventDefault();
+    if(signed && !fromRefer) return;
+    signed = true;
+    document.getElementById('signup-state-default').style.display = 'none';
+    const conf = document.getElementById('signup-state-confirmed');
+    conf.style.display = 'flex';
+    document.getElementById('queue-pos').textContent = `#${(BASE_COUNT+1).toLocaleString()}`;
+    document.getElementById('entry-count').textContent = '1';
+    document.getElementById('refer-email-prompt').style.display = 'none';
+    const rsb = document.getElementById('refer-share-buttons');
+    rsb.style.display = 'flex';
+    if(fromRefer) document.getElementById('hero').scrollIntoView({behavior:'smooth'});
+  }
+
+  /* ── copy ── */
+  function copyReferral() {
+    navigator.clipboard.writeText('https://'+REFERRAL_URL).catch(()=>{});
+    const btn = document.getElementById('copy-btn');
+    if(btn){ btn.textContent='Copied!'; btn.classList.add('copied'); setTimeout(()=>{ btn.textContent='Copy'; btn.classList.remove('copied'); },2000); }
+  }
+
+  /* ── share ── */
+  function shareWhatsApp() {
+    const m = encodeURIComponent(`Join me on M — one pass for every sport in the city. We're both in the draw for a free year 🎟️\nhttps://${REFERRAL_URL}`);
+    window.open(`https://wa.me/?text=${m}`,'_blank');
+  }
+  function shareTwitter() {
+    const m = encodeURIComponent(`One pass. Every sport in the city. 🏃🎾🧗\n\nJust joined the @MsportHQ waitlist — enter for a free year via my link:\nhttps://${REFERRAL_URL}`);
+    window.open(`https://twitter.com/intent/tweet?text=${m}`,'_blank');
+  }
+
+  /* ── FAQ ── */
+  function toggleFaq(qEl) {
+    const item = qEl.closest('.faq-item');
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item.open').forEach(i=>i.classList.remove('open'));
+    if(!isOpen) item.classList.add('open');
+  }
+
+  /* ── sport tiles stagger ── */
+  (function stagger() {
+    const tiles = document.querySelectorAll('.sport-tile');
+    const io = new IntersectionObserver((entries) => {
+      let delay = 0;
+      entries.forEach(e => {
+        if(e.isIntersecting){ setTimeout(()=>e.target.classList.add('visible'), delay); delay+=50; io.unobserve(e.target); }
+      });
+    },{threshold:0.05});
+    tiles.forEach(t=>io.observe(t));
+  })();
+
+  /* ── scroll reveals ── */
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(!e.isIntersecting) return;
+      e.target.classList.add('visible');
+      io.unobserve(e.target);
+      if(e.target.querySelector?.('#proof-counter')||e.target.id==='proof-counter') {
+        animateCounter(document.getElementById('proof-counter'), currentCount);
+        animateSpotsBar();
+      }
+    });
+  },{threshold:0.1});
+  document.querySelectorAll('.fade-up').forEach(el=>io.observe(el));
+
+  /* ── init ── */
+  window.addEventListener('load',()=>{
+    animateCounter(document.getElementById('hero-counter'), BASE_COUNT, 1500);
+    setTimeout(()=>document.querySelector('.ticket-wrap')?.classList.add('visible'), 350);
+  });
+</script>
+</body>
+</html>
