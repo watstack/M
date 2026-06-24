@@ -970,34 +970,25 @@
     }
     .slip-peek-stake:focus { border-color: var(--green); outline: none; }
 
-    /* ── Parlay Pump Banner ── */
-    .pp-banner {
-      position: sticky; top: 0; z-index: 200;
-      background: linear-gradient(90deg, #fbbf24, #f59e0b);
-      color: #1a1000;
+    /* ── Parlay Pump in-slip banner ── */
+    .pp-slip-banner {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: var(--radius);
+      font-family: var(--font-mono); font-size: 0.78rem;
+      border: 1px solid; margin-top: 8px;
+      transition: opacity .15s, border-color .15s, background .15s;
     }
-    .pp-banner.hidden { display: none; }
-    @keyframes ppSlideDown {
-      from { transform: translateY(-100%); opacity: 0; }
-      to   { transform: translateY(0);     opacity: 1; }
+    .pp-slip-active {
+      background: rgba(251,191,36,.12);
+      border-color: rgba(251,191,36,.5);
+      color: #fbbf24;
     }
-    .pp-banner-inner {
-      max-width: 780px; margin: 0 auto;
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 16px;
-      animation: ppSlideDown 0.2s ease-out;
+    .pp-slip-inactive {
+      background: rgba(255,255,255,.03);
+      border-color: var(--border);
+      color: var(--muted);
+      opacity: 0.55;
     }
-    .pp-icon { font-size: 1.3rem; flex-shrink: 0; }
-    .pp-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-    .pp-text strong { font-family: var(--font-pixel); font-size: 0.42rem; }
-    .pp-sub { font-size: 0.78rem; opacity: 0.85; }
-    .pp-dismiss {
-      flex-shrink: 0; background: rgba(0,0,0,.15);
-      border: 1px solid rgba(0,0,0,.2); border-radius: var(--radius);
-      color: #1a1000; font-size: 0.75rem; padding: 5px 12px; cursor: pointer;
-    }
-    .pp-dismiss:hover { background: rgba(0,0,0,.25); }
-    @media (max-width: 640px) { .pp-sub { display: none; } }
 
     /* ── Spin the Wheel Promo ── */
     .spin-promo-overlay {
@@ -1174,18 +1165,6 @@
   </div>
 </div>
 
-<!-- ── Parlay Pump Banner ── -->
-<div id="parlayPumpBanner" class="pp-banner hidden">
-  <div class="pp-banner-inner">
-    <span class="pp-icon">⚡</span>
-    <div class="pp-text">
-      <strong>PARLAY PUMP: +30% ODDS BOOST</strong>
-      <span class="pp-sub">3+ leg parlays now through Thu 6am AEST &middot; Win $240 &rarr; Get $312</span>
-    </div>
-    <button class="pp-dismiss" onclick="dismissParlayPump()">Dismiss</button>
-  </div>
-</div>
-
 <div class="bet-page">
 
   <div class="bet-header">
@@ -1300,6 +1279,7 @@
       <div id="boostOddsDisplay" class="boost-odds-display" style="display:none"></div>
       <div id="boostHint" class="boost-hint hidden"></div>
     </div>
+    <div id="ppSlipBanner" class="pp-slip-banner" style="display:none"></div>
   </div>
   <button class="place-btn" id="placeBetBtn" onclick="confirmBet()">Place Bet</button>
 </div>
@@ -1382,7 +1362,6 @@ async function init() {
   _participant = part;
   initBoosts();
   maybeShowSpinPromo();
-  initParlayPumpBanner();
 
   // Render header
   document.getElementById('avatarImg').innerHTML = renderAvatar(part.avatar_type, null, 28);
@@ -1826,6 +1805,7 @@ function renderBetSlip() {
   updateBoostUI();
   updatePayout();
   updateSlipSummary();
+  updateParlayPumpSlip();
 }
 
 function selectBet(btn) {
@@ -2203,7 +2183,7 @@ function closeSpinPromo() {
   document.getElementById('spinPromoOverlay').classList.add('hidden');
 }
 
-// ─── Parlay Pump Banner ───────────────────────────────────────────────────────
+// ─── Parlay Pump in-slip banner ──────────────────────────────────────────────
 
 function _ppIsActive() {
   const { dow, hour } = _tuAESTNow();
@@ -2211,40 +2191,20 @@ function _ppIsActive() {
   return dow === 3 || (dow === 4 && hour < 6);
 }
 
-function _ppThursdayExpiryMs() {
-  // Returns Unix ms of the upcoming Thu 6:00 AM AEST for this promo window.
-  const now = new Date();
-  const a = _tuAESTNow();
-  const aestOffsetMs =
-    new Date(Date.UTC(a.year, a.month - 1, a.day, a.hour, a.minute, a.second)).getTime()
-    - now.getTime();
-  let daysUntilThu = (4 - a.dow + 7) % 7;
-  // Already Thursday and past 6am → advance to next Thursday
-  if (daysUntilThu === 0 && (a.hour > 6 || (a.hour === 6 && a.minute > 0))) daysUntilThu = 7;
-  const thuAEST6am = new Date(Date.UTC(a.year, a.month - 1, a.day + daysUntilThu, 6, 0, 0));
-  return thuAEST6am.getTime() - aestOffsetMs;
-}
-
-function initParlayPumpBanner() {
-  if (!_ppIsActive()) return;
-  const expiryMs = _ppThursdayExpiryMs();
-  const stored = localStorage.getItem('wc26_pp_dismissed');
-  // Dismissed flag is keyed to the expiry timestamp of the current promo window.
-  // Within 1 hour of match means "same window — don't re-show."
-  if (stored && Math.abs(parseInt(stored, 10) - expiryMs) < 60 * 60 * 1000) return;
-  const banner = document.getElementById('parlayPumpBanner');
-  banner.classList.remove('hidden');
-  // Push the sticky tab bar down so it doesn't sit behind the banner
-  const sticky = document.querySelector('.bet-sticky');
-  if (sticky) sticky.style.top = banner.offsetHeight + 'px';
-}
-
-function dismissParlayPump() {
-  const banner = document.getElementById('parlayPumpBanner');
-  banner.classList.add('hidden');
-  const sticky = document.querySelector('.bet-sticky');
-  if (sticky) sticky.style.top = '0';
-  localStorage.setItem('wc26_pp_dismissed', String(_ppThursdayExpiryMs()));
+function updateParlayPumpSlip() {
+  const el = document.getElementById('ppSlipBanner');
+  if (!el || !_ppIsActive()) { if (el) el.style.display = 'none'; return; }
+  const n = _parlayLegs.length;
+  if (n === 0) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  if (n >= 3) {
+    el.className = 'pp-slip-banner pp-slip-active';
+    el.textContent = '⚡ PARLAY PUMP +35% boost active!';
+  } else {
+    const need = 3 - n;
+    el.className = 'pp-slip-banner pp-slip-inactive';
+    el.textContent = `⚡ PARLAY PUMP +35% — add ${need} more leg${need > 1 ? 's' : ''} to unlock`;
+  }
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
