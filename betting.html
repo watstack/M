@@ -1293,6 +1293,7 @@
         <input type="number" id="stakeInputPeek" class="slip-peek-stake" min="1" value="100" oninput="syncPeekStake(this.value)">
       </div>
     </div>
+    <div id="ppSlipPeekBanner" class="pp-slip-banner" style="display:none"></div>
   </div>
   <div id="slipBody" class="slip-body">
     <div id="slipLegs" class="slip-legs"></div>
@@ -2234,19 +2235,27 @@ function _ppIsActive() {
 }
 
 function updateParlayPumpSlip() {
-  const el = document.getElementById('ppSlipBanner');
-  if (!el || !_ppIsActive()) { if (el) el.style.display = 'none'; return; }
+  const el   = document.getElementById('ppSlipBanner');
+  const peek = document.getElementById('ppSlipPeekBanner');
+  const active = _ppIsActive();
   const n = _parlayLegs.length;
-  if (n === 0) { el.style.display = 'none'; return; }
-  el.style.display = 'flex';
-  if (n >= 3) {
-    el.className = 'pp-slip-banner pp-slip-active';
-    el.textContent = '⚡ PARLAY PUMP +35% boost active!';
-  } else {
-    const need = 3 - n;
-    el.className = 'pp-slip-banner pp-slip-inactive';
-    el.textContent = `⚡ PARLAY PUMP +35% — add ${need} more leg${need > 1 ? 's' : ''} to unlock`;
+
+  function applyState(node) {
+    if (!node) return;
+    if (!active || n === 0) { node.style.display = 'none'; return; }
+    node.style.display = 'flex';
+    if (n >= 3) {
+      node.className = 'pp-slip-banner pp-slip-active';
+      node.textContent = '⚡ PARLAY PUMP +35% boost active!';
+    } else {
+      const need = 3 - n;
+      node.className = 'pp-slip-banner pp-slip-inactive';
+      node.textContent = `⚡ PARLAY PUMP +35% — add ${need} more leg${need > 1 ? 's' : ''} to unlock`;
+    }
   }
+
+  applyState(el);
+  applyState(peek);
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
