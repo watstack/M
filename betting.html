@@ -970,6 +970,48 @@
     }
     .slip-peek-stake:focus { border-color: var(--green); outline: none; }
 
+    /* ── Parlay Pump promo card ── */
+    .pp-card {
+      flex: 1; display: flex; flex-direction: column;
+      background: var(--panel);
+      border: 2px solid rgba(251,191,36,.4);
+      border-radius: var(--radius);
+      box-shadow: 3px 3px 0 rgba(0,0,0,.5);
+      overflow: hidden;
+    }
+    .pp-card-head {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
+      padding: 14px 16px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .pp-card-title {
+      font-family: var(--font-pixel); font-size: 0.68rem;
+      color: var(--text); line-height: 1.4; letter-spacing: .02em;
+    }
+    .pp-card-sub { font-family: var(--font-body); font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
+    .pp-card-body {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 18px 16px 14px; gap: 4px;
+    }
+    .pp-card-boost {
+      font-family: var(--font-pixel); font-size: clamp(1.6rem, 7vw, 2.4rem);
+      color: #fbbf24; letter-spacing: .04em;
+      text-shadow: 3px 3px 0 rgba(0,0,0,.6);
+    }
+    .pp-card-desc { font-family: var(--font-body); font-size: 0.78rem; color: var(--muted); }
+    .pp-card-example {
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      margin-top: 10px; padding: 8px 16px; border-radius: var(--radius);
+      background: rgba(251,191,36,.08); border: 1px solid rgba(251,191,36,.2);
+    }
+    .pp-eg-label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+    .pp-eg-math { font-family: var(--font-mono); font-size: 0.88rem; color: #fbbf24; }
+    .pp-card-foot {
+      flex-shrink: 0; padding: 8px 16px 12px;
+      border-top: 1px solid var(--border);
+      font-family: var(--font-body); font-size: 0.68rem; color: var(--muted);
+      text-align: center;
+    }
+
     /* ── Parlay Pump in-slip banner ── */
     .pp-slip-banner {
       display: flex; align-items: center; gap: 8px;
