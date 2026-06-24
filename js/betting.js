@@ -947,6 +947,7 @@ function renderPromoCarousel() {
 
   return `<div class="promo-carousel" id="promoCarousel">
   <div class="promo-track" id="promoTrack">
+    ${ppSlide}
     <div class="promo-slide" id="promoSlide0">
       ${potHtml}${renderRequestBetCard()}
     </div>
