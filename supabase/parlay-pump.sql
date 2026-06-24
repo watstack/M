@@ -1,4 +1,4 @@
--- Parlay Pump Promotion: +30% payout boost for 3+ leg parlays placed Wed → Thu 6am AEST.
+-- Parlay Pump Promotion: +35% payout boost for 3+ leg parlays placed Wed → Thu 6am AEST.
 -- Additive migration — adds promo_boost column and replaces place_parlay + settle_market.
 
 -- ─── 1. Add promo_boost column ───────────────────────────────────────────────
@@ -67,7 +67,7 @@ BEGIN
     v_aest_dow  := EXTRACT(DOW  FROM NOW() AT TIME ZONE 'Australia/Sydney')::INT;
     v_aest_hour := EXTRACT(HOUR FROM NOW() AT TIME ZONE 'Australia/Sydney')::INT;
     IF v_aest_dow = 3 OR (v_aest_dow = 4 AND v_aest_hour < 6) THEN
-      v_promo_boost := 1.3;
+      v_promo_boost := 1.35;
     END IF;
   END IF;
 
@@ -165,7 +165,7 @@ BEGIN
       SELECT COALESCE(EXP(SUM(LN(odds))), 1) INTO v_effective_odds
       FROM parlay_bet_legs WHERE parlay_id = v_parlay_id AND status = 'won';
 
-      -- Apply Parlay Pump boost (1.3 for eligible bets, 1.0 for all others)
+      -- Apply Parlay Pump boost (1.35 for eligible bets, 1.0 for all others)
       v_payout := ROUND(v_parlay.stake * v_effective_odds * v_parlay.promo_boost);
       UPDATE parlay_bets SET status = 'won' WHERE id = v_parlay_id;
       UPDATE participants SET coin_balance = coin_balance + v_payout
