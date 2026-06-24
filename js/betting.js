@@ -913,8 +913,38 @@ function renderTwoUpCard() {
 </div>`;
 }
 
+function renderParlayPumpCard() {
+  return `<div class="pp-card" id="parlayPumpCard">
+  <div class="pp-card-head">
+    <div>
+      <div class="pp-card-title">⚡ Parlay Pump</div>
+      <div class="pp-card-sub">Wed → Thu 6am AEST &middot; 3+ leg parlays</div>
+    </div>
+    <span class="market-chip open">Active</span>
+  </div>
+  <div class="pp-card-body">
+    <div class="pp-card-boost">+35%</div>
+    <div class="pp-card-desc">automatic payout boost</div>
+    <div class="pp-card-example">
+      <span class="pp-eg-label">Example</span>
+      <span class="pp-eg-math">Win 🪙240 &rarr; Get 🪙324</span>
+    </div>
+  </div>
+  <div class="pp-card-foot">Auto-applied at settlement &middot; No code needed</div>
+</div>`;
+}
+
 function renderPromoCarousel() {
-  const potHtml = (typeof renderPotBanner === 'function') ? renderPotBanner() : '';
+  const potHtml  = (typeof renderPotBanner === 'function') ? renderPotBanner() : '';
+  const ppActive = (typeof _ppIsActive === 'function') && _ppIsActive();
+  const ppSlide  = ppActive
+    ? `<div class="promo-slide" id="parlayPumpSlide">${renderParlayPumpCard()}</div>`
+    : '';
+  const slideCount = 2 + (ppActive ? 1 : 0);
+  const dots = Array.from({ length: slideCount }, (_, i) =>
+    `<span class="promo-dot${i === 0 ? ' active' : ''}" id="promoDot${i}"></span>`
+  ).join('');
+
   return `<div class="promo-carousel" id="promoCarousel">
   <div class="promo-track" id="promoTrack">
     <div class="promo-slide" id="promoSlide0">
@@ -923,13 +953,11 @@ function renderPromoCarousel() {
     <div class="promo-slide" id="twoUpSlide">
       ${renderTwoUpCard()}
     </div>
+    ${ppSlide}
   </div>
   <div class="promo-nav">
     <button class="promo-arrow" onclick="promoScroll(-1)">‹</button>
-    <div style="display:flex;gap:6px;align-items:center">
-      <span class="promo-dot active" id="promoDot0"></span>
-      <span class="promo-dot" id="promoDot1"></span>
-    </div>
+    <div style="display:flex;gap:6px;align-items:center">${dots}</div>
     <button class="promo-arrow" onclick="promoScroll(1)">›</button>
   </div>
 </div>`;
