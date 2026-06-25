@@ -59,6 +59,16 @@ BEGIN
     RAISE EXCEPTION 'parlay_correlated_legs';
   END IF;
 
+  -- Reject parlays that include a custom bet leg
+  IF EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(p_legs) AS leg
+    JOIN bet_markets bm ON bm.id = (leg->>'market_id')::UUID
+    WHERE bm.market_type = 'custom'
+  ) THEN
+    RAISE EXCEPTION 'custom_bet_in_parlay';
+  END IF;
+
   -- ── Parlay Pump eligibility ──────────────────────────────────────────────────
   -- Boost applies to 3+ leg parlays placed Wed (DOW=3) any time
   -- through Thu (DOW=4) before 06:00 AEST.

@@ -106,6 +106,16 @@ BEGIN
     RAISE EXCEPTION 'parlay_correlated_legs';
   END IF;
 
+  -- Reject parlays that include a custom bet leg
+  IF EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(p_legs) AS leg
+    JOIN bet_markets bm ON bm.id = (leg->>'market_id')::UUID
+    WHERE bm.market_type = 'custom'
+  ) THEN
+    RAISE EXCEPTION 'custom_bet_in_parlay';
+  END IF;
+
   -- Balance check + single deduction for the whole parlay
   SELECT coin_balance INTO v_balance FROM participants
   WHERE id = p_participant_id FOR UPDATE;

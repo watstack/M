@@ -1861,6 +1861,19 @@ function selectBet(btn) {
   const matchName  = marketCard?.querySelector('.match-name')?.textContent?.trim() || '';
   const label      = labelForSelection(selection, matchName);
 
+  // Block custom bets from multis
+  const alreadyInSlip = _parlayLegs.some(l => l.marketId === marketId);
+  if (!alreadyInSlip) {
+    if (marketType === 'custom' && _parlayLegs.length > 0) {
+      showToast("custom bets can't be added to multis");
+      return;
+    }
+    if (_parlayLegs.some(l => l.marketType === 'custom')) {
+      showToast("custom bets can't be added to multis");
+      return;
+    }
+  }
+
   // Block correlated same-match legs (match_result / correct_score / double_chance)
   if (matchNo && marketType) {
     const CORRELATED = ['match_result', 'correct_score', 'double_chance'];

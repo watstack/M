@@ -146,6 +146,7 @@ async function placeParlay(participantId, legs, stake, totalOdds) {
     if (msg.includes('market_not_found'))     throw new Error('Market not found');
     if (msg.includes('parlay_too_few_legs'))    throw new Error('A multi needs at least 2 selections');
     if (msg.includes('parlay_correlated_legs')) throw new Error('nice try you cheeky bastard.\n\non ya bike 🚲');
+    if (msg.includes('custom_bet_in_parlay'))   throw new Error("custom bets can't be used in multis");
     throw error;
   }
   return data;
