@@ -1965,6 +1965,7 @@ function updateSlipSummary() {
   const stake = parseInt(document.getElementById('stakeInput').value, 10) || 0;
   let totalOdds = calcTotalOdds();
   if (_boostState.active && n === 1) totalOdds = applyBoostCalc(totalOdds);
+  if (_ppIsActive() && n >= 3) totalOdds *= 1.35;
   const payout = stake ? Math.round(stake * totalOdds) : 0;
   document.getElementById('slipPeekReturn').textContent = payout ? `${payout.toLocaleString()} 🪙` : '—';
   document.getElementById('stakeInputPeek').value = stake || '';
@@ -1972,10 +1973,12 @@ function updateSlipSummary() {
 
 function updatePayout() {
   const stake = parseInt(document.getElementById('stakeInput').value, 10) || 0;
-  let totalOdds = _parlayLegs.length > 0 ? calcTotalOdds() : 0;
-  if (_boostState.active && _parlayLegs.length === 1 && totalOdds > 0) {
+  const n = _parlayLegs.length;
+  let totalOdds = n > 0 ? calcTotalOdds() : 0;
+  if (_boostState.active && n === 1 && totalOdds > 0) {
     totalOdds = applyBoostCalc(totalOdds);
   }
+  if (_ppIsActive() && n >= 3 && totalOdds > 0) totalOdds *= 1.35;
   const payout = totalOdds ? Math.round(stake * totalOdds) : 0;
   document.getElementById('payoutAmt').textContent = payout ? `${payout.toLocaleString()} 🪙` : '—';
   updateSlipSummary();
