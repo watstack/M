@@ -1965,7 +1965,7 @@ function updateSlipSummary() {
   const stake = parseInt(document.getElementById('stakeInput').value, 10) || 0;
   let totalOdds = calcTotalOdds();
   if (_boostState.active && n === 1) totalOdds = applyBoostCalc(totalOdds);
-  if (_ppIsActive() && n >= 3) totalOdds *= 1.35;
+  if (_ppIsActive() && n >= 3 && !_ppHasCustomLeg()) totalOdds *= 1.35;
   const payout = stake ? Math.round(stake * totalOdds) : 0;
   document.getElementById('slipPeekReturn').textContent = payout ? `${payout.toLocaleString()} 🪙` : '—';
   document.getElementById('stakeInputPeek').value = stake || '';
@@ -1978,7 +1978,7 @@ function updatePayout() {
   if (_boostState.active && n === 1 && totalOdds > 0) {
     totalOdds = applyBoostCalc(totalOdds);
   }
-  if (_ppIsActive() && n >= 3 && totalOdds > 0) totalOdds *= 1.35;
+  if (_ppIsActive() && n >= 3 && !_ppHasCustomLeg() && totalOdds > 0) totalOdds *= 1.35;
   const payout = totalOdds ? Math.round(stake * totalOdds) : 0;
   document.getElementById('payoutAmt').textContent = payout ? `${payout.toLocaleString()} 🪙` : '—';
   updateSlipSummary();
@@ -2023,6 +2023,12 @@ async function confirmBet() {
       await placeBet(leg.marketId, _participant.id, leg.selection, stake, oddsToUse);
       showToast(boosted ? 'Boosted bet placed! 🚀' : 'Bet placed! Good luck 🎰');
     } else {
+      if (_ppIsActive() && _parlayLegs.length >= 3 && _ppHasCustomLeg()) {
+        showToast('nice try. on your bike you bastard');
+        btn.disabled = false;
+        btn.textContent = 'Place Bet';
+        return;
+      }
       const totalOdds = calcTotalOdds();
       const legs = _parlayLegs.map(l => ({
         market_id: l.marketId,
@@ -2242,17 +2248,26 @@ function _ppIsActive() {
   return false;
 }
 
+function _ppHasCustomLeg() {
+  return _parlayLegs.some(l => l.marketType === 'custom');
+}
+
 function updateParlayPumpSlip() {
   const el   = document.getElementById('ppSlipBanner');
   const peek = document.getElementById('ppSlipPeekBanner');
   const active = _ppIsActive();
   const n = _parlayLegs.length;
 
+  const hasCustom = _ppHasCustomLeg();
+
   function applyState(node) {
     if (!node) return;
     if (!active || n === 0) { node.style.display = 'none'; return; }
     node.style.display = 'flex';
-    if (n >= 3) {
+    if (hasCustom) {
+      node.className = 'pp-slip-banner pp-slip-inactive';
+      node.textContent = '⚡ PARLAY PUMP — custom bets not eligible';
+    } else if (n >= 3) {
       node.className = 'pp-slip-banner pp-slip-active';
       node.textContent = '⚡ PARLAY PUMP +35% boost active!';
     } else {

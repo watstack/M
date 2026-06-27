@@ -53,7 +53,12 @@ BEGIN
 
   -- ── Parlay Pump eligibility ──────────────────────────────────────────────────
   v_leg_count := jsonb_array_length(p_legs);
-  IF v_leg_count >= 3 THEN
+  IF v_leg_count >= 3 AND NOT EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(p_legs) AS leg
+    JOIN bet_markets bm ON bm.id = (leg->>'market_id')::UUID
+    WHERE bm.market_type = 'custom'
+  ) THEN
     v_aest_dow  := EXTRACT(DOW  FROM NOW() AT TIME ZONE 'Australia/Sydney')::INT;
     v_aest_hour := EXTRACT(HOUR FROM NOW() AT TIME ZONE 'Australia/Sydney')::INT;
 
