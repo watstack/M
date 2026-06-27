@@ -2231,7 +2231,12 @@ function closeSpinPromo() {
 function _ppIsActive() {
   const { dow, hour } = _tuAESTNow();
   // Wed (dow=3) all day, or Thu (dow=4) before 06:00 AEST
-  return dow === 3 || (dow === 4 && hour < 6);
+  if (dow === 3 || (dow === 4 && hour < 6)) return true;
+  // One-off window: LaddyLadLad, now → Sun 28 Jun 2026 07:00 AEST (= 27 Jun 21:00 UTC)
+  if (_tournament && _tournament.id === '31e106b4-3264-4333-8817-ba268aff9e7a') {
+    return Date.now() < Date.UTC(2026, 5, 27, 21, 0, 0);
+  }
+  return false;
 }
 
 function updateParlayPumpSlip() {
