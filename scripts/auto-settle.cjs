@@ -61,10 +61,15 @@ async function main() {
     // Skip unresolved knockout bracket slots (teams not yet known).
     if (!home_code || !away_code) { skipped++; continue; }
 
-    const wc = byTeams.get(`${home_code}-${away_code}`);
+    let wc = byTeams.get(`${home_code}-${away_code}`);
+    let swapped = false;
+    if (!wc) { wc = byTeams.get(`${away_code}-${home_code}`); swapped = true; }
     if (!wc || wc.home_score == null || wc.away_score == null) { skipped++; continue; }
 
-    const h = wc.home_score, a = wc.away_score;
+    // If ESPN has the teams reversed relative to bet_markets, swap scores so
+    // home/away still refers to the fixture's home/away team.
+    const h = swapped ? wc.away_score : wc.home_score;
+    const a = swapped ? wc.home_score : wc.away_score;
     const matchResult  = h > a ? 'home' : a > h ? 'away' : 'draw';
     const correctScore = `${h}-${a}`;
 
