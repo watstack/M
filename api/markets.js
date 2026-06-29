@@ -67,12 +67,19 @@ module.exports = async function handler(req, res) {
     );
     const shouldFetchOdds = oddsStale || hasUnpricedResolved;
 
-    // 3. Fetch h2h odds when stale (only resolved fixtures get matched)
+    // 3. Fetch h2h odds when stale (only resolved fixtures get matched).
+    // Call The Odds API directly to bypass the 24h CDN cache on /api/odds —
+    // that cache can predate R32 team announcements and stall odds indefinitely.
     let h2hEvents = null;
     let fetchedAt = null;
     if (shouldFetchOdds) {
-      const base = selfBase(req);
-      h2hEvents = await fetchJson(`${base}/api/odds?sport=${SPORT}&markets=h2h`);
+      const oddsKey = process.env.ODDS_API_KEY;
+      if (oddsKey) {
+        const p = new URLSearchParams({ apiKey: oddsKey, regions: 'uk', oddsFormat: 'decimal', markets: 'h2h' });
+        h2hEvents = await fetchJson(`https://api.the-odds-api.com/v4/sports/${SPORT}/odds/?${p}`);
+      } else {
+        h2hEvents = await fetchJson(`${selfBase(req)}/api/odds?sport=${SPORT}&markets=h2h`);
+      }
       fetchedAt = new Date().toISOString();
     }
 
