@@ -49,7 +49,7 @@ module.exports = async function handler(req, res) {
     // 2. Decide whether odds are stale (refresh at most every 24h)
     const exRes = await rest(
       `/bet_markets?tournament_id=eq.${tournamentId}` +
-      `&market_type=eq.match_result&select=odds_fetched_at`
+      `&market_type=eq.match_result&select=match_no,odds_fetched_at`
     );
     const existing = exRes.ok ? await exRes.json() : [];
     const newest = existing.reduce((acc, m) => {
@@ -58,10 +58,19 @@ module.exports = async function handler(req, res) {
     }, 0);
     const oddsStale = !existing.length || (Date.now() - newest > ODDS_TTL_MS);
 
+    // Also force a refresh when a newly-resolved fixture has never had odds
+    // (e.g. R32 teams just became known within the 24h window).
+    const { WC2026_FIXTURES } = require('./_lib/fixtures');
+    const pricedNos = new Set(existing.filter(m => m.odds_fetched_at).map(m => m.match_no));
+    const hasUnpricedResolved = WC2026_FIXTURES.some(
+      fx => fx.home.code && fx.away.code && !pricedNos.has(fx.match_no)
+    );
+    const shouldFetchOdds = oddsStale || hasUnpricedResolved;
+
     // 3. Fetch h2h odds when stale (only resolved fixtures get matched)
     let h2hEvents = null;
     let fetchedAt = null;
-    if (oddsStale) {
+    if (shouldFetchOdds) {
       const base = selfBase(req);
       h2hEvents = await fetchJson(`${base}/api/odds?sport=${SPORT}&markets=h2h`);
       fetchedAt = new Date().toISOString();
@@ -70,7 +79,7 @@ module.exports = async function handler(req, res) {
     // 4. Build market rows from the static fixture list via shared builder.
     const { groupRows, koRows, oddsMatched } = buildMarketRows(
       tournamentId,
-      oddsStale ? h2hEvents : null,
+      shouldFetchOdds ? h2hEvents : null,
       fetchedAt,
     );
 
