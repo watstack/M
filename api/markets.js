@@ -10,8 +10,8 @@
 // cache dedupes the upstream Odds API call across all tournaments.
 
 const { buildMarketRows } = require('./_lib/market-builder');
+const { resolveSportKey } = require('./_lib/sport-key');
 
-const SPORT = 'soccer_fifa_world_cup_2026';
 const ODDS_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
 module.exports = async function handler(req, res) {
@@ -75,10 +75,13 @@ module.exports = async function handler(req, res) {
     if (shouldFetchOdds) {
       const oddsKey = process.env.ODDS_API_KEY;
       if (oddsKey) {
-        const p = new URLSearchParams({ apiKey: oddsKey, regions: 'uk', oddsFormat: 'decimal', markets: 'h2h' });
-        h2hEvents = await fetchJson(`https://api.the-odds-api.com/v4/sports/${SPORT}/odds/?${p}`);
+        const sport = await resolveSportKey(oddsKey);
+        if (sport) {
+          const p = new URLSearchParams({ apiKey: oddsKey, regions: 'uk', oddsFormat: 'decimal', markets: 'h2h' });
+          h2hEvents = await fetchJson(`https://api.the-odds-api.com/v4/sports/${sport}/odds/?${p}`);
+        }
       } else {
-        h2hEvents = await fetchJson(`${selfBase(req)}/api/odds?sport=${SPORT}&markets=h2h`);
+        h2hEvents = await fetchJson(`${selfBase(req)}/api/odds?sport=soccer_fifa_world_cup_2026&markets=h2h`);
       }
       fetchedAt = new Date().toISOString();
     }
