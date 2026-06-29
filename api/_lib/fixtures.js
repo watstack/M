@@ -1019,12 +1019,10 @@ module.exports = {
       "kickoff_utc": "2026-06-28T19:00:00Z",
       "venue": "SoFi Stadium, Los Angeles",
       "home": {
-        "slot": "R_A",
-        "label": "Runner-up Group A"
+        "code": "RSA"
       },
       "away": {
-        "slot": "R_B",
-        "label": "Runner-up Group B"
+        "code": "CAN"
       }
     },
     {
@@ -1035,12 +1033,10 @@ module.exports = {
       "kickoff_utc": "2026-06-29T20:30:00Z",
       "venue": "Gillette Stadium, Boston",
       "home": {
-        "slot": "W_E",
-        "label": "Winner Group E"
+        "code": "GER"
       },
       "away": {
-        "slot": "3_ABCDF",
-        "label": "3rd A/B/C/D/F"
+        "code": "PAR"
       }
     },
     {
@@ -1051,12 +1047,10 @@ module.exports = {
       "kickoff_utc": "2026-06-30T02:00:00Z",
       "venue": "Estadio BBVA, Monterrey",
       "home": {
-        "slot": "W_F",
-        "label": "Winner Group F"
+        "code": "NED"
       },
       "away": {
-        "slot": "R_C",
-        "label": "Runner-up Group C"
+        "code": "MAR"
       }
     },
     {
@@ -1067,12 +1061,10 @@ module.exports = {
       "kickoff_utc": "2026-06-29T17:00:00Z",
       "venue": "NRG Stadium, Houston",
       "home": {
-        "slot": "W_C",
-        "label": "Winner Group C"
+        "code": "BRA"
       },
       "away": {
-        "slot": "R_F",
-        "label": "Runner-up Group F"
+        "code": "JPN"
       }
     },
     {
@@ -1083,12 +1075,10 @@ module.exports = {
       "kickoff_utc": "2026-06-30T21:00:00Z",
       "venue": "MetLife Stadium, New York/New Jersey",
       "home": {
-        "slot": "W_I",
-        "label": "Winner Group I"
+        "code": "FRA"
       },
       "away": {
-        "slot": "3_CDFGH",
-        "label": "3rd C/D/F/G/H"
+        "code": "SWE"
       }
     },
     {
@@ -1099,12 +1089,10 @@ module.exports = {
       "kickoff_utc": "2026-06-30T17:00:00Z",
       "venue": "AT&T Stadium, Dallas",
       "home": {
-        "slot": "R_E",
-        "label": "Runner-up Group E"
+        "code": "CIV"
       },
       "away": {
-        "slot": "R_I",
-        "label": "Runner-up Group I"
+        "code": "NOR"
       }
     },
     {
@@ -1115,12 +1103,10 @@ module.exports = {
       "kickoff_utc": "2026-07-01T03:00:00Z",
       "venue": "Estadio Azteca, Mexico City",
       "home": {
-        "slot": "W_A",
-        "label": "Winner Group A"
+        "code": "MEX"
       },
       "away": {
-        "slot": "3_CEFHI",
-        "label": "3rd C/E/F/H/I"
+        "code": "ECU"
       }
     },
     {
@@ -1131,12 +1117,10 @@ module.exports = {
       "kickoff_utc": "2026-07-01T16:00:00Z",
       "venue": "Mercedes-Benz Stadium, Atlanta",
       "home": {
-        "slot": "W_L",
-        "label": "Winner Group L"
+        "code": "ENG"
       },
       "away": {
-        "slot": "3_EHIJK",
-        "label": "3rd E/H/I/J/K"
+        "code": "COD"
       }
     },
     {
@@ -1147,12 +1131,10 @@ module.exports = {
       "kickoff_utc": "2026-07-02T03:00:00Z",
       "venue": "Levi's Stadium, San Francisco Bay",
       "home": {
-        "slot": "W_D",
-        "label": "Winner Group D"
+        "code": "USA"
       },
       "away": {
-        "slot": "3_BEFIJ",
-        "label": "3rd B/E/F/I/J"
+        "code": "BIH"
       }
     },
     {
@@ -1163,12 +1145,10 @@ module.exports = {
       "kickoff_utc": "2026-07-01T23:00:00Z",
       "venue": "Lumen Field, Seattle",
       "home": {
-        "slot": "W_G",
-        "label": "Winner Group G"
+        "code": "BEL"
       },
       "away": {
-        "slot": "3_AEHIJ",
-        "label": "3rd A/E/H/I/J"
+        "code": "SEN"
       }
     },
     {
@@ -1179,12 +1159,10 @@ module.exports = {
       "kickoff_utc": "2026-07-02T23:00:00Z",
       "venue": "BMO Field, Toronto",
       "home": {
-        "slot": "R_K",
-        "label": "Runner-up Group K"
+        "code": "POR"
       },
       "away": {
-        "slot": "R_L",
-        "label": "Runner-up Group L"
+        "code": "CRO"
       }
     },
     {
@@ -1195,12 +1173,10 @@ module.exports = {
       "kickoff_utc": "2026-07-02T19:00:00Z",
       "venue": "SoFi Stadium, Los Angeles",
       "home": {
-        "slot": "W_H",
-        "label": "Winner Group H"
+        "code": "ESP"
       },
       "away": {
-        "slot": "R_J",
-        "label": "Runner-up Group J"
+        "code": "AUT"
       }
     },
     {
@@ -1211,12 +1187,10 @@ module.exports = {
       "kickoff_utc": "2026-07-03T03:00:00Z",
       "venue": "BC Place, Vancouver",
       "home": {
-        "slot": "W_B",
-        "label": "Winner Group B"
+        "code": "SUI"
       },
       "away": {
-        "slot": "3_EFGIJ",
-        "label": "3rd E/F/G/I/J"
+        "code": "ALG"
       }
     },
     {
@@ -1227,12 +1201,10 @@ module.exports = {
       "kickoff_utc": "2026-07-03T22:00:00Z",
       "venue": "Hard Rock Stadium, Miami",
       "home": {
-        "slot": "W_J",
-        "label": "Winner Group J"
+        "code": "ARG"
       },
       "away": {
-        "slot": "R_H",
-        "label": "Runner-up Group H"
+        "code": "CPV"
       }
     },
     {
@@ -1243,12 +1215,10 @@ module.exports = {
       "kickoff_utc": "2026-07-04T01:30:00Z",
       "venue": "Arrowhead Stadium, Kansas City",
       "home": {
-        "slot": "W_K",
-        "label": "Winner Group K"
+        "code": "COL"
       },
       "away": {
-        "slot": "3_DEIJL",
-        "label": "3rd D/E/I/J/L"
+        "code": "GHA"
       }
     },
     {
@@ -1259,12 +1229,10 @@ module.exports = {
       "kickoff_utc": "2026-07-03T18:00:00Z",
       "venue": "AT&T Stadium, Dallas",
       "home": {
-        "slot": "R_D",
-        "label": "Runner-up Group D"
+        "code": "AUS"
       },
       "away": {
-        "slot": "R_G",
-        "label": "Runner-up Group G"
+        "code": "EGY"
       }
     },
     {
