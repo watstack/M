@@ -109,22 +109,22 @@ const _WC2026_GROUP_ROWS = [
 // one of those groups, W## / L## = winner/loser of match ##.
 const _WC2026_KO_ROWS = [
   // ── Round of 32 (73–88) ──
-  [73,  'r32', 'R_A',     'R_B',     '2026-06-28T19:00:00Z', 'SoFi Stadium, Los Angeles'],
-  [74,  'r32', 'W_E',     '3_ABCDF', '2026-06-29T20:30:00Z', 'Gillette Stadium, Boston'],
-  [75,  'r32', 'W_F',     'R_C',     '2026-06-30T02:00:00Z', 'Estadio BBVA, Monterrey'],
-  [76,  'r32', 'W_C',     'R_F',     '2026-06-29T17:00:00Z', 'NRG Stadium, Houston'],
-  [77,  'r32', 'W_I',     '3_CDFGH', '2026-06-30T21:00:00Z', 'MetLife Stadium, New York/New Jersey'],
-  [78,  'r32', 'R_E',     'R_I',     '2026-06-30T17:00:00Z', 'AT&T Stadium, Dallas'],
-  [79,  'r32', 'W_A',     '3_CEFHI', '2026-07-01T03:00:00Z', 'Estadio Azteca, Mexico City'],
-  [80,  'r32', 'W_L',     '3_EHIJK', '2026-07-01T16:00:00Z', 'Mercedes-Benz Stadium, Atlanta'],
-  [81,  'r32', 'W_D',     '3_BEFIJ', '2026-07-02T03:00:00Z', "Levi's Stadium, San Francisco Bay"],
-  [82,  'r32', 'W_G',     '3_AEHIJ', '2026-07-01T23:00:00Z', 'Lumen Field, Seattle'],
-  [83,  'r32', 'R_K',     'R_L',     '2026-07-02T23:00:00Z', 'BMO Field, Toronto'],
-  [84,  'r32', 'W_H',     'R_J',     '2026-07-02T19:00:00Z', 'SoFi Stadium, Los Angeles'],
-  [85,  'r32', 'W_B',     '3_EFGIJ', '2026-07-03T03:00:00Z', 'BC Place, Vancouver'],
-  [86,  'r32', 'W_J',     'R_H',     '2026-07-03T22:00:00Z', 'Hard Rock Stadium, Miami'],
-  [87,  'r32', 'W_K',     '3_DEIJL', '2026-07-04T01:30:00Z', 'Arrowhead Stadium, Kansas City'],
-  [88,  'r32', 'R_D',     'R_G',     '2026-07-03T18:00:00Z', 'AT&T Stadium, Dallas'],
+  [73,  'r32', 'RSA', 'CAN', '2026-06-28T19:00:00Z', 'SoFi Stadium, Los Angeles'],
+  [74,  'r32', 'GER', 'PAR', '2026-06-29T20:30:00Z', 'Gillette Stadium, Boston'],
+  [75,  'r32', 'NED', 'MAR', '2026-06-30T02:00:00Z', 'Estadio BBVA, Monterrey'],
+  [76,  'r32', 'BRA', 'JPN', '2026-06-29T17:00:00Z', 'NRG Stadium, Houston'],
+  [77,  'r32', 'FRA', 'SWE', '2026-06-30T21:00:00Z', 'MetLife Stadium, New York/New Jersey'],
+  [78,  'r32', 'CIV', 'NOR', '2026-06-30T17:00:00Z', 'AT&T Stadium, Dallas'],
+  [79,  'r32', 'MEX', 'ECU', '2026-07-01T03:00:00Z', 'Estadio Azteca, Mexico City'],
+  [80,  'r32', 'ENG', 'COD', '2026-07-01T16:00:00Z', 'Mercedes-Benz Stadium, Atlanta'],
+  [81,  'r32', 'USA', 'BIH', '2026-07-02T03:00:00Z', "Levi's Stadium, San Francisco Bay"],
+  [82,  'r32', 'BEL', 'SEN', '2026-07-01T23:00:00Z', 'Lumen Field, Seattle'],
+  [83,  'r32', 'POR', 'CRO', '2026-07-02T23:00:00Z', 'BMO Field, Toronto'],
+  [84,  'r32', 'ESP', 'AUT', '2026-07-02T19:00:00Z', 'SoFi Stadium, Los Angeles'],
+  [85,  'r32', 'SUI', 'ALG', '2026-07-03T03:00:00Z', 'BC Place, Vancouver'],
+  [86,  'r32', 'ARG', 'CPV', '2026-07-03T22:00:00Z', 'Hard Rock Stadium, Miami'],
+  [87,  'r32', 'COL', 'GHA', '2026-07-04T01:30:00Z', 'Arrowhead Stadium, Kansas City'],
+  [88,  'r32', 'AUS', 'EGY', '2026-07-03T18:00:00Z', 'AT&T Stadium, Dallas'],
   // ── Round of 16 (89–96) ──
   [89,  'r16', 'W74', 'W77', '2026-07-04T21:00:00Z', 'Lincoln Financial Field, Philadelphia'],
   [90,  'r16', 'W73', 'W75', '2026-07-04T18:00:00Z', 'NRG Stadium, Houston'],
@@ -158,6 +158,10 @@ function wcSlotLabel(slot) {
   return slot;
 }
 
+function _isSlot(s) {
+  return /^(W_[A-L]|R_[A-L]|3_[A-L]+|W\d+|L\d+)$/.test(s);
+}
+
 // Build the unified 104-fixture list.
 const WC2026_FIXTURES = [
   ..._WC2026_GROUP_ROWS.map(([match_no, group, matchday, home, away, kickoff_utc, venue]) => ({
@@ -166,8 +170,8 @@ const WC2026_FIXTURES = [
   })),
   ..._WC2026_KO_ROWS.map(([match_no, stage, homeSlot, awaySlot, kickoff_utc, venue]) => ({
     match_no, stage, group: null, matchday: null, kickoff_utc, venue,
-    home: { slot: homeSlot, label: wcSlotLabel(homeSlot) },
-    away: { slot: awaySlot, label: wcSlotLabel(awaySlot) },
+    home: _isSlot(homeSlot) ? { slot: homeSlot, label: wcSlotLabel(homeSlot) } : { code: homeSlot },
+    away: _isSlot(awaySlot) ? { slot: awaySlot, label: wcSlotLabel(awaySlot) } : { code: awaySlot },
   })),
 ];
 
