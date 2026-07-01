@@ -122,6 +122,14 @@ async function settleMarketRpc(rest, marketId, result) {
   return r.ok;
 }
 
+async function voidMarketRpc(rest, marketId) {
+  const r = await rest('/rpc/void_market', {
+    method: 'POST',
+    body: JSON.stringify({ p_market_id: marketId }),
+  });
+  return r.ok;
+}
+
 module.exports = {
-  teamName, makeRest, verifyAdmin, verifyParticipantAdmin, setMatchTeams, propagateResult, settleMarketRpc,
+  teamName, makeRest, verifyAdmin, verifyParticipantAdmin, setMatchTeams, propagateResult, settleMarketRpc, voidMarketRpc,
 };

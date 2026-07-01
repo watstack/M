@@ -65,6 +65,30 @@ function buildDoubleChanceRow(marketId, matchNo, oddsJson, canBet) {
   </div>`;
 }
 
+// ─── Qualify row helper (knockout only) ──────────────────────────────────────
+
+const KO_QUALIFY_STAGES = new Set(['r32', 'r16', 'qf', 'sf']);
+
+function buildQualifyRow(marketId, matchNo, oddsJson, canBet, isSettled, result, homeLabel, awayLabel) {
+  const o = oddsJson || {};
+  const btn = (sel, label) => {
+    if (canBet && o[sel] != null) {
+      return oddsBtn(marketId, sel, label, o[sel], false, false, matchNo, 'qualify');
+    }
+    if (isSettled && o[sel] != null) {
+      return oddsBtn(marketId, sel, label, o[sel], true, result === sel, matchNo, 'qualify');
+    }
+    return oddsTbc(label);
+  };
+  return `<div class="qualify-section">
+    <div class="qualify-label">To Qualify</div>
+    <div class="qualify-row">
+      ${btn('home', homeLabel)}
+      ${btn('away', awayLabel)}
+    </div>
+  </div>`;
+}
+
 // ─── Market reads ─────────────────────────────────────────────────────────────
 
 async function loadOpenMarkets(tournamentId) {
@@ -340,6 +364,17 @@ function renderMatchCard(fixture, pair) {
       </div>`
     : '';
 
+  const qm = pair.qualify;
+  const qualifySection = (KO_QUALIFY_STAGES.has(fixture.stage) && qm && qm.id && !qm.locked)
+    ? buildQualifyRow(
+        qm.id, fixture.match_no, qm.odds_json,
+        !!(qm.id) && !qm.locked && qm.status === 'open',
+        qm.status === 'settled',
+        qm.result,
+        home.name, away.name
+      )
+    : '';
+
   return `<div class="market-card${locked ? ' locked' : ''}" id="mc-${marketId || 'm' + fixture.match_no}" data-kickoff="${(mr && mr.close_time) || fixture.kickoff_utc || ''}">
     <div class="market-card-header">
       <div class="match-teams">
@@ -366,6 +401,7 @@ function renderMatchCard(fixture, pair) {
       ${resultBtn('draw', 'Draw')}
       ${resultBtn('away', 'Away')}
     </div>
+    ${qualifySection}
     ${otherAccordion}
   </div>`;
 }

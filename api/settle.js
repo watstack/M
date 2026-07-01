@@ -10,7 +10,7 @@
 // advances after extra time / penalties; for group games it is derived from the
 // score and ignored for propagation.
 
-const { makeRest, verifyAdmin, verifyParticipantAdmin, propagateResult, settleMarketRpc } = require('./_lib/settle-lib');
+const { makeRest, verifyAdmin, verifyParticipantAdmin, propagateResult, settleMarketRpc, voidMarketRpc } = require('./_lib/settle-lib');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -51,23 +51,35 @@ module.exports = async function handler(req, res) {
     const markets = await mRes.json();
     if (!markets.length) return res.status(200).json({ settled: 0, reason: 'no_open_markets' });
 
+    const any = markets[0];
+    const isKnockout = any.stage && any.stage !== 'group';
+
+    // Pre-compute who advances (needed for qualify market and bracket propagation).
+    const advSide = isKnockout
+      ? (winner || (h > a ? 'home' : a > h ? 'away' : null))
+      : null;
+
     let settled = 0;
     for (const m of markets) {
-      const result = m.market_type === 'correct_score' ? correctScore : matchResult;
-      if (await settleMarketRpc(rest, m.id, result)) settled++;
+      if (m.market_type === 'qualify') {
+        // DNB market: settles on 90-min result only. Draw → void (refund).
+        if (matchResult === 'draw') {
+          await voidMarketRpc(rest, m.id);
+        } else {
+          if (await settleMarketRpc(rest, m.id, matchResult)) settled++;
+        }
+      } else {
+        const result = m.market_type === 'correct_score' ? correctScore : matchResult;
+        if (await settleMarketRpc(rest, m.id, result)) settled++;
+      }
     }
 
     // Knockout propagation (group matches don't feed BRACKET_FEED slots).
     let propagated = [];
-    const any = markets[0];
-    const isKnockout = any.stage && any.stage !== 'group';
-    if (isKnockout && any.home_code && any.away_code) {
-      const advSide = winner || (h > a ? 'home' : a > h ? 'away' : null);
-      if (advSide) {
-        const winnerCode = advSide === 'home' ? any.home_code : any.away_code;
-        const loserCode  = advSide === 'home' ? any.away_code : any.home_code;
-        propagated = await propagateResult(rest, tournamentId, Number(matchNo), winnerCode, loserCode);
-      }
+    if (isKnockout && any.home_code && any.away_code && advSide) {
+      const winnerCode = advSide === 'home' ? any.home_code : any.away_code;
+      const loserCode  = advSide === 'home' ? any.away_code : any.home_code;
+      propagated = await propagateResult(rest, tournamentId, Number(matchNo), winnerCode, loserCode);
     }
 
     return res.status(200).json({ settled, matchResult, correctScore, propagated });
