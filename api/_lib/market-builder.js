@@ -8,6 +8,10 @@ const { h2hOddsForFixture, codeForName } = require('./odds-match');
 
 const teamName = code => CODE_NAMES[code] || code;
 
+// Knockout stages that get a qualify market (who advances, regardless of ET/pens).
+// third and final are excluded — no team "qualifies" further from those.
+const KO_QUALIFY_STAGES = new Set(['r32', 'r16', 'qf', 'sf']);
+
 function matchNameFor(fx) {
   const h = fx.home.code ? teamName(fx.home.code) : fx.home.label;
   const a = fx.away.code ? teamName(fx.away.code) : fx.away.label;
@@ -18,6 +22,17 @@ function calcDcOdds({ home, draw, away }) {
   const hp = 1 / home, dp = 1 / draw, ap = 1 / away;
   const r = v => Math.round(v * 100) / 100;
   return { '1x': r(1 / (hp + dp)), 'x2': r(1 / (dp + ap)), '12': r(1 / (hp + ap)) };
+}
+
+// Standard Draw No Bet conversion: derive "to qualify" odds from h2h.
+// draw must be non-null. Formula: qual = (side * draw) / (side + draw - 1)
+function calcQualifyOdds({ home, draw, away }) {
+  if (draw == null) return null;
+  const r = v => Math.round(v * 100) / 100;
+  return {
+    home: r((home * draw) / (home + draw - 1)),
+    away: r((away * draw) / (away + draw - 1)),
+  };
 }
 
 // Resolve the authoritative kickoff time from the Odds API event list.
@@ -94,14 +109,26 @@ function buildMarketRows(tournamentId, h2hEvents, fetchedAt) {
         dc.odds_fetched_at = fetchedAt;
       }
       groupRows.push(dc);
+
+      if (KO_QUALIFY_STAGES.has(fx.stage)) {
+        const qm = { ...base, market_type: 'qualify' };
+        if (odds && odds.draw !== null) {
+          qm.odds_json = calcQualifyOdds(odds);
+          qm.odds_fetched_at = fetchedAt;
+        }
+        groupRows.push(qm);
+      }
     } else {
       koRows.push({ ...base, market_type: 'match_result' });
       koRows.push({ ...base, market_type: 'correct_score' });
       koRows.push({ ...base, market_type: 'double_chance' });
+      if (KO_QUALIFY_STAGES.has(fx.stage)) {
+        koRows.push({ ...base, market_type: 'qualify' });
+      }
     }
   }
 
   return { groupRows, koRows, oddsMatched };
 }
 
-module.exports = { buildMarketRows, matchNameFor, commenceTimeForFixture, calcDcOdds };
+module.exports = { buildMarketRows, matchNameFor, commenceTimeForFixture, calcDcOdds, calcQualifyOdds };

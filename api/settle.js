@@ -51,23 +51,33 @@ module.exports = async function handler(req, res) {
     const markets = await mRes.json();
     if (!markets.length) return res.status(200).json({ settled: 0, reason: 'no_open_markets' });
 
+    const any = markets[0];
+    const isKnockout = any.stage && any.stage !== 'group';
+
+    // Pre-compute who advances (needed for qualify market and bracket propagation).
+    const advSide = isKnockout
+      ? (winner || (h > a ? 'home' : a > h ? 'away' : null))
+      : null;
+
     let settled = 0;
     for (const m of markets) {
-      const result = m.market_type === 'correct_score' ? correctScore : matchResult;
-      if (await settleMarketRpc(rest, m.id, result)) settled++;
+      let result;
+      if (m.market_type === 'correct_score') {
+        result = correctScore;
+      } else if (m.market_type === 'qualify') {
+        result = advSide; // who actually advances (may differ from 90-min result)
+      } else {
+        result = matchResult; // match_result and double_chance use 90-min score
+      }
+      if (result && await settleMarketRpc(rest, m.id, result)) settled++;
     }
 
     // Knockout propagation (group matches don't feed BRACKET_FEED slots).
     let propagated = [];
-    const any = markets[0];
-    const isKnockout = any.stage && any.stage !== 'group';
-    if (isKnockout && any.home_code && any.away_code) {
-      const advSide = winner || (h > a ? 'home' : a > h ? 'away' : null);
-      if (advSide) {
-        const winnerCode = advSide === 'home' ? any.home_code : any.away_code;
-        const loserCode  = advSide === 'home' ? any.away_code : any.home_code;
-        propagated = await propagateResult(rest, tournamentId, Number(matchNo), winnerCode, loserCode);
-      }
+    if (isKnockout && any.home_code && any.away_code && advSide) {
+      const winnerCode = advSide === 'home' ? any.home_code : any.away_code;
+      const loserCode  = advSide === 'home' ? any.away_code : any.home_code;
+      propagated = await propagateResult(rest, tournamentId, Number(matchNo), winnerCode, loserCode);
     }
 
     return res.status(200).json({ settled, matchResult, correctScore, propagated });
