@@ -10,7 +10,7 @@
 // advances after extra time / penalties; for group games it is derived from the
 // score and ignored for propagation.
 
-const { makeRest, verifyAdmin, verifyParticipantAdmin, propagateResult, settleMarketRpc } = require('./_lib/settle-lib');
+const { makeRest, verifyAdmin, verifyParticipantAdmin, propagateResult, settleMarketRpc, voidMarketRpc } = require('./_lib/settle-lib');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -61,15 +61,17 @@ module.exports = async function handler(req, res) {
 
     let settled = 0;
     for (const m of markets) {
-      let result;
-      if (m.market_type === 'correct_score') {
-        result = correctScore;
-      } else if (m.market_type === 'qualify') {
-        result = advSide; // who actually advances (may differ from 90-min result)
+      if (m.market_type === 'qualify') {
+        // DNB market: settles on 90-min result only. Draw → void (refund).
+        if (matchResult === 'draw') {
+          await voidMarketRpc(rest, m.id);
+        } else {
+          if (await settleMarketRpc(rest, m.id, matchResult)) settled++;
+        }
       } else {
-        result = matchResult; // match_result and double_chance use 90-min score
+        const result = m.market_type === 'correct_score' ? correctScore : matchResult;
+        if (await settleMarketRpc(rest, m.id, result)) settled++;
       }
-      if (result && await settleMarketRpc(rest, m.id, result)) settled++;
     }
 
     // Knockout propagation (group matches don't feed BRACKET_FEED slots).
