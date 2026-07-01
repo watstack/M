@@ -365,12 +365,14 @@ function renderMatchCard(fixture, pair) {
     : '';
 
   const qm = pair.qualify;
-  const qualifySection = (KO_QUALIFY_STAGES.has(fixture.stage) && qm && qm.id && !qm.locked)
+  const qualifySection = KO_QUALIFY_STAGES.has(fixture.stage)
     ? buildQualifyRow(
-        qm.id, fixture.match_no, qm.odds_json,
-        !!(qm.id) && !qm.locked && qm.status === 'open',
-        qm.status === 'settled',
-        qm.result,
+        qm ? qm.id : null,
+        fixture.match_no,
+        qm ? qm.odds_json : null,
+        !!(qm && qm.id && !qm.locked && qm.status === 'open'),
+        !!(qm && qm.status === 'settled'),
+        qm ? qm.result : null,
         home.name, away.name
       )
     : '';
