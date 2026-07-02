@@ -96,11 +96,14 @@ function normalizeEvent(ev) {
     away_id: String(away.team?.id || ''),
     home_score: homeScore,
     away_score: awayScore,
+    home_score_reg: null,
+    away_score_reg: null,
+    score_duration: null,
     status,
     utc_date: ev.date || comp.date,
     stage,
     group_name: group,
-    goals: JSON.stringify(goals),
+    goals: goals,
     synced_at: new Date().toISOString(),
   };
 }

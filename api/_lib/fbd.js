@@ -43,11 +43,14 @@ function normalizeFBDMatch(m) {
     away_id: String(m.awayTeam?.id || ''),
     home_score: isPlayed ? (m.score?.fullTime?.home ?? null) : null,
     away_score: isPlayed ? (m.score?.fullTime?.away ?? null) : null,
+    home_score_reg: isPlayed ? (m.score?.regularTime?.home ?? m.score?.fullTime?.home ?? null) : null,
+    away_score_reg: isPlayed ? (m.score?.regularTime?.away ?? m.score?.fullTime?.away ?? null) : null,
+    score_duration: m.score?.duration || 'REGULAR',
     status: m.status || 'SCHEDULED',
     utc_date: m.utcDate,
     stage: m.stage || 'GROUP_STAGE',
     group_name: m.group || null,
-    goals: JSON.stringify(goals),
+    goals: goals,
     synced_at: new Date().toISOString(),
   };
 }

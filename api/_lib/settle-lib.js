@@ -114,6 +114,48 @@ async function patchMarkets(rest, tournamentId, matchNo, body) {
   }
 }
 
+// Determine the 90-minute (regulation) score for a wc_matches row, in
+// decreasing order of confidence:
+//   1. home_score_reg/away_score_reg — populated directly from the source
+//      API's regulation-time score (currently: football-data.org's
+//      score.regularTime, see api/_lib/fbd.js).
+//   2. goals array — reconstruct by summing goals with minute <= 90,
+//      attributed to home/away via team.id vs home_id/away_id.
+//   3. final score — assumed to equal the regulation score. Correct for
+//      group-stage matches and any knockout match not decided in ET/pens;
+//      wrong whenever a knockout match's final score already reflects an
+//      ET/pens result and neither of the above sources is available.
+//      Callers must treat this case as "unknown" for knockout matches and
+//      not auto-settle off it.
+function regulationScore(wc) {
+  if (wc.home_score_reg != null && wc.away_score_reg != null) {
+    return { home: wc.home_score_reg, away: wc.away_score_reg, source: 'reg_field' };
+  }
+
+  const goals = Array.isArray(wc.goals) ? wc.goals
+    : (typeof wc.goals === 'string' ? JSON.parse(wc.goals || '[]') : []);
+  if (goals.length) {
+    const homeId = String(wc.home_id || '');
+    const awayId = String(wc.away_id || '');
+    const inReg = g => (g.minute ?? 0) <= 90;
+    const home = goals.filter(g => String(g.team?.id || '') === homeId && inReg(g)).length;
+    const away = goals.filter(g => String(g.team?.id || '') === awayId && inReg(g)).length;
+    return { home, away, source: 'goals' };
+  }
+
+  return { home: wc.home_score, away: wc.away_score, source: 'final_score_assumed' };
+}
+
+// Determine which side actually advances, from the final (ET/pens-inclusive)
+// score. Returns null when the final score is still level — the source API
+// hasn't resolved a penalty-shootout winner yet, which requires the manual
+// admin `winner` override on /api/settle.
+function advancingSide(wc) {
+  if (wc.home_score == null || wc.away_score == null) return null;
+  if (wc.home_score === wc.away_score) return null;
+  return wc.home_score > wc.away_score ? 'home' : 'away';
+}
+
 async function settleMarketRpc(rest, marketId, result) {
   const r = await rest('/rpc/settle_market', {
     method: 'POST',
@@ -132,4 +174,5 @@ async function voidMarketRpc(rest, marketId) {
 
 module.exports = {
   teamName, makeRest, verifyAdmin, verifyParticipantAdmin, setMatchTeams, propagateResult, settleMarketRpc, voidMarketRpc,
+  regulationScore, advancingSide,
 };

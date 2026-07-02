@@ -4,7 +4,7 @@
 // Settlement is idempotent — already-settled markets are skipped by the DB RPC.
 
 const { syncMatchesToSupabase } = require('./_lib/sync-matches');
-const { makeRest, settleMarketRpc, propagateResult } = require('./_lib/settle-lib');
+const { makeRest, settleMarketRpc, propagateResult, regulationScore, advancingSide } = require('./_lib/settle-lib');
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 
@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
     const cutoff = new Date(Date.now() - TWO_HOURS_MS).toISOString();
 
     const [finRes, mkRes] = await Promise.all([
-      rest(`/wc_matches?status=eq.FINISHED&utc_date=lt.${cutoff}&select=home_tla,away_tla,home_score,away_score`),
+      rest(`/wc_matches?status=eq.FINISHED&utc_date=lt.${cutoff}&select=home_tla,away_tla,home_score,away_score,home_score_reg,away_score_reg,score_duration,goals,home_id,away_id`),
       rest(`/bet_markets?status=in.(open,closed)&close_time=lte.${now}&select=id,tournament_id,match_no,market_type,stage,home_code,away_code`),
     ]);
 
@@ -65,22 +65,36 @@ module.exports = async function handler(req, res) {
       if (!wc) { wc = byTeams.get(`${away_code}-${home_code}`); swapped = true; }
       if (!wc || wc.home_score == null || wc.away_score == null) { skipped++; continue; }
 
-      // If ESPN has the teams reversed relative to bet_markets, swap scores so
+      // If ESPN has the teams reversed relative to bet_markets, swap results so
       // home/away still refers to the fixture's home/away team.
-      const h = swapped ? wc.away_score : wc.home_score;
-      const a = swapped ? wc.home_score : wc.away_score;
-      const matchResult  = h > a ? 'home' : a > h ? 'away' : 'draw';
-      const correctScore = `${h}-${a}`;
+      const isKnockout = stage && stage !== 'group';
+      const reg = regulationScore(wc);
+      const regKnown = reg.source !== 'final_score_assumed' || !isKnockout;
+      const regHome = swapped ? reg.away : reg.home;
+      const regAway = swapped ? reg.home : reg.away;
+      const matchResult  = regKnown ? (regHome > regAway ? 'home' : regAway > regHome ? 'away' : 'draw') : null;
+      const correctScore = regKnown ? `${regHome}-${regAway}` : null;
+
+      const adv = advancingSide(wc);
+      const advSide = adv == null ? null : (swapped ? (adv === 'home' ? 'away' : 'home') : adv);
 
       for (const market of group) {
+        if (market.market_type === 'qualify') {
+          if (advSide != null && await settleMarketRpc(rest, market.id, advSide)) settled++;
+          else skipped++;
+          continue;
+        }
+        if (matchResult == null) { skipped++; continue; }
         const result = market.market_type === 'correct_score' ? correctScore : matchResult;
         if (await settleMarketRpc(rest, market.id, result)) settled++;
       }
 
-      const isKnockout = stage && stage !== 'group';
-      if (isKnockout && matchResult !== 'draw') {
-        const winnerCode = matchResult === 'home' ? home_code : away_code;
-        const loserCode  = matchResult === 'home' ? away_code : home_code;
+      // Bracket propagation keys off the final score's advancing side, not the
+      // regulation-time result — a knockout match can legitimately be a
+      // regulation draw while still having a decisive ET/pens winner.
+      if (isKnockout && advSide != null) {
+        const winnerCode = advSide === 'home' ? home_code : away_code;
+        const loserCode  = advSide === 'home' ? away_code : home_code;
         await propagateResult(rest, tournament_id, Number(match_no), winnerCode, loserCode);
       }
     }
