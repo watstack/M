@@ -1151,6 +1151,7 @@
 <script src="js/flag-colors.js?v=17818741" onerror="document.getElementById('loadingStatus').textContent='Error loading flag data — please refresh.'"></script>
 <script src="js/avatars.js?v=17818741" onerror="document.getElementById('loadingStatus').textContent='Error loading avatars — please refresh.'"></script>
 <script src="js/football.js?v=17818741" onerror="document.getElementById('loadingStatus').textContent='Error loading football data — please refresh.'"></script>
+<script src="js/wc2026-fixtures.js?v=17818741"></script>
 <script src="js/draw.js?v=17818741" onerror="document.getElementById('loadingStatus').textContent='Error loading draw logic — please refresh.'"></script>
 <script src="js/music.js?v=17818741"></script>
 <script>
@@ -2070,21 +2071,11 @@ function renderStageView(stageKey) {
     return;
   }
 
-  const stageFilter = {
-    r32:   m => m.stage === 'ROUND_OF_32'    || m.stage === 'LAST_32',
-    r16:   m => m.stage === 'ROUND_OF_16'    || m.stage === 'LAST_16',
-    qf:    m => m.stage === 'QUARTER_FINALS',
-    sf:    m => m.stage === 'SEMI_FINALS',
-    final: m => m.stage === 'THIRD_PLACE'    || m.stage === 'FINAL',
-  }[stageKey];
-
-  if (!stageFilter) { el.innerHTML = ''; return; }
-
-  const stageMatches = matches.filter(stageFilter);
+  const koMap = buildKnockoutBracketMap(matches);
 
   if (stageKey === 'final') {
-    const finalM = stageMatches.find(m => m.stage === 'FINAL')  || null;
-    const thirdM = stageMatches.find(m => m.stage === 'THIRD_PLACE') || null;
+    const finalM = koMap[104] || null;
+    const thirdM = koMap[103] || null;
     el.innerHTML =
       `<div class="smv-section-label" style="color:var(--gold)">🏆 Final</div>
        <div class="smv-grid">${renderSmvMatch(finalM, allocMap, true)}</div>
@@ -2093,12 +2084,141 @@ function renderStageView(stageKey) {
     return;
   }
 
-  const emptyCounts = { r32: 16, r16: 8, qf: 4, sf: 2 };
-  const cards = stageMatches.length
-    ? stageMatches.map(m => renderSmvMatch(m, allocMap, false)).join('')
-    : Array.from({ length: emptyCounts[stageKey] || 4 }, () => renderSmvMatch(null, allocMap, false)).join('');
+  const groups = pairsForStage(stageKey);
+  el.innerHTML = `<div class="ko-pairs">${groups.map(g => renderKoPairRow(g, koMap, allocMap)).join('')}</div>`;
+}
 
-  el.innerHTML = `<div class="smv-grid">${cards}</div>`;
+// ── Knockout bracket resolution ───────────────────────────────────────────────
+// Builds a match_no → resolved-match map for every knockout fixture (73–104),
+// using the static WC2026_FIXTURES/BRACKET_FEED slot structure so each round's
+// "next round" matchup can be shown before ESPN/FBD has synced that fixture —
+// winners/losers are derived from already-loaded live match data as they finish.
+
+const KO_STAGE_API      = { r32: 'ROUND_OF_32', r16: 'ROUND_OF_16', qf: 'QUARTER_FINALS', sf: 'SEMI_FINALS', third: 'THIRD_PLACE', final: 'FINAL' };
+const KO_STAGE_SEQUENCE = ['r32', 'r16', 'qf', 'sf', 'third', 'final'];
+const KO_NEXT_STAGES    = { r32: ['r16'], r16: ['qf'], qf: ['sf'], sf: ['third', 'final'] };
+
+function teamDisplayFromCode(code) {
+  if (!code) return null;
+  const alloc = allAllocations.find(a => normTeamCode(a.team_code) === code);
+  return { tla: code, shortName: alloc?.team_name || code, name: alloc?.team_name || code, crest: null };
+}
+
+function resolveSlotCode(slot, map) {
+  if (!slot) return null;
+  const w = /^W(\d+)$/.exec(slot);
+  if (w) return map[+w[1]]?.winnerCode || null;
+  const l = /^L(\d+)$/.exec(slot);
+  if (l) return map[+l[1]]?.loserCode || null;
+  return null;
+}
+
+function buildKnockoutBracketMap(matches) {
+  const map = {};
+  const fixtures = window.WC2026_FIXTURES || [];
+  for (const stageKey of KO_STAGE_SEQUENCE) {
+    const apiStage = KO_STAGE_API[stageKey];
+    for (const fx of fixtures.filter(f => f.stage === stageKey)) {
+      const homeCode = fx.home.code || resolveSlotCode(fx.home.slot, map);
+      const awayCode = fx.away.code || resolveSlotCode(fx.away.slot, map);
+
+      let live = null;
+      if (homeCode && awayCode) {
+        live = matches.find(m => {
+          if (m.stage !== apiStage) return false;
+          const h = normTeamCode(m.homeTeam?.tla || '');
+          const a = normTeamCode(m.awayTeam?.tla || '');
+          return (h === homeCode && a === awayCode) || (h === awayCode && a === homeCode);
+        }) || null;
+      }
+
+      const homeTeam = live ? live.homeTeam : teamDisplayFromCode(homeCode);
+      const awayTeam = live ? live.awayTeam : teamDisplayFromCode(awayCode);
+      const status   = live ? live.status  : 'TIMED';
+      const utcDate   = live ? live.utcDate : fx.kickoff_utc;
+      const score     = live ? live.score   : { fullTime: { home: null, away: null } };
+
+      let winnerCode = null, loserCode = null;
+      const sc = getScore({ status, score });
+      if (status === 'FINISHED' && sc.home !== null && sc.away !== null && sc.home !== sc.away) {
+        const homeWon = sc.home > sc.away;
+        winnerCode = normTeamCode((homeWon ? homeTeam : awayTeam)?.tla || '') || null;
+        loserCode  = normTeamCode((homeWon ? awayTeam : homeTeam)?.tla || '') || null;
+      }
+
+      map[fx.match_no] = { match_no: fx.match_no, stage: apiStage, homeTeam, awayTeam, status, utcDate, score, winnerCode, loserCode, venue: fx.venue };
+    }
+  }
+  return map;
+}
+
+// Groups a round's matches into { feeders:[matchNoA, matchNoB], destinations:[...] }
+// so each pair of feeder matches can be rendered next to the single next-round
+// match (or two, for semi-finals which feed both 3rd-place and the final).
+function pairsForStage(stageKey) {
+  const nextStages = KO_NEXT_STAGES[stageKey];
+  if (!nextStages) return [];
+  const fixtures = window.WC2026_FIXTURES || [];
+  const destMatchNos = fixtures.filter(f => nextStages.includes(f.stage)).map(f => f.match_no).sort((a, b) => a - b);
+
+  const groups = [];
+  const indexByFeederKey = new Map();
+  for (const d of destMatchNos) {
+    const feed = (window.BRACKET_FEED || {})[d];
+    if (!feed) continue;
+    const feeders = feed.map(tok => parseInt(tok.slice(1), 10)).sort((a, b) => a - b);
+    const key = feeders.join(',');
+    if (indexByFeederKey.has(key)) {
+      groups[indexByFeederKey.get(key)].destinations.push(d);
+    } else {
+      indexByFeederKey.set(key, groups.length);
+      groups.push({ feeders, destinations: [d] });
+    }
+  }
+  groups.forEach(g => g.destinations.sort((a, b) => a - b));
+  groups.sort((a, b) => a.feeders[0] - b.feeders[0]);
+  return groups;
+}
+
+function renderKoPairRow(group, koMap, allocMap) {
+  const [f1, f2] = group.feeders;
+  const nextCards = group.destinations.map(d => renderSmvMatch(koMap[d], allocMap, false)).join('');
+  return `<div class="ko-pair-row">
+    <div class="ko-pair-feeders">
+      ${renderSmvMatch(koMap[f1], allocMap, false)}
+      ${renderSmvMatch(koMap[f2], allocMap, false)}
+    </div>
+    <div class="ko-pair-connector" aria-hidden="true">
+      <svg viewBox="0 0 24 100" preserveAspectRatio="none">
+        <path d="M0,25 H12 V50" />
+        <path d="M0,75 H12 V50" />
+        <path d="M12,50 H24" />
+      </svg>
+    </div>
+    <div class="ko-pair-next">${nextCards}</div>
+  </div>`;
+}
+
+// Today / Yesterday / "Mon, 29 June" — used once a match has a definite result or is live.
+function formatMatchDay(utcDate) {
+  const d = new Date(utcDate);
+  const startOf = x => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+  const diffDays = Math.round((startOf(new Date()) - startOf(d)) / 86400000);
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'long' });
+}
+
+// "Sun, 5 July, 3:00 am" — used for matches that haven't kicked off yet.
+function formatKickoff(utcDate) {
+  const d = new Date(utcDate);
+  const weekday = d.toLocaleDateString(undefined, { weekday: 'short' });
+  const month   = d.toLocaleDateString(undefined, { month: 'long' });
+  let h = d.getHours();
+  const ampm = h >= 12 ? 'pm' : 'am';
+  h = h % 12 || 12;
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${weekday}, ${d.getDate()} ${month}, ${h}:${min} ${ampm}`;
 }
 
 function renderSmvMatch(match, allocMap, isFinal) {
@@ -2108,38 +2228,39 @@ function renderSmvMatch(match, allocMap, isFinal) {
       <div class="smv-match-team"><span class="smv-match-name smv-tbd">TBD</span><span class="smv-match-score">–</span></div>
     </div>`;
   }
-  const score     = getScore(match);
-  const statusCls = matchStatusClass(match);
-  const isLive    = statusCls === 'live';
+  const score      = getScore(match);
+  const statusCls  = matchStatusClass(match);
+  const isLive     = statusCls === 'live';
   const isFinished = statusCls === 'finished';
+  const isDecided  = isFinished && score.home !== null && score.away !== null && score.home !== score.away;
 
   let dateStr = '';
   if (match.utcDate) {
-    const d = new Date(match.utcDate);
-    dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-      + ' · ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    dateStr = (isLive || isFinished) ? formatMatchDay(match.utcDate) : formatKickoff(match.utcDate);
   }
   const badge = isLive
-    ? `<span class="smv-match-meta-badge"><span class="live-badge" style="font-size:0.55rem;padding:1px 6px"><span class="live-dot"></span>LIVE</span></span>`
-    : isFinished ? `<span class="smv-match-meta-badge" style="font-family:var(--font-mono);font-size:0.6rem;font-weight:700;color:var(--muted)">FT</span>` : '';
+    ? `<span class="smv-match-meta-badge"><span class="live-badge" style="font-size:0.55rem;padding:1px 6px"><span class="live-dot"></span>Live</span></span>`
+    : isFinished ? `<span class="smv-match-meta-badge smv-status-badge">FT</span>` : '';
 
   function teamRow(team, scoreVal, isHome) {
     if (!team) return `<div class="smv-match-team"><span class="smv-match-name smv-tbd">TBD</span><span class="smv-match-score">–</span></div>`;
     const tla   = normTeamCode(team.tla || '');
     const alloc = allocMap[tla];
     const isMine = alloc?.participant_id === myParticipantId;
-    const won = score.home !== null && score.away !== null &&
-      ((isHome && score.home > score.away) || (!isHome && score.away > score.home));
+    const won = isDecided && ((isHome && score.home > score.away) || (!isHome && score.away > score.home));
+    const lost = isDecided && !won;
     const flag = team.crest
       ? `<img src="${team.crest}" alt="" style="width:18px;height:13px;object-fit:cover;border-radius:2px;flex-shrink:0">`
       : `<span style="flex-shrink:0">${teamFlagEmoji(tla)}</span>`;
     const owner = alloc?.participants
       ? `<span class="smv-match-owner">${esc(alloc.participants.nickname)}</span>` : '';
-    return `<div class="smv-match-team${won ? ' winner' : ''}${isMine ? ' mine' : ''}">
+    const arrow = won ? `<span class="smv-advance-arrow">◂</span>` : '';
+    return `<div class="smv-match-team${won ? ' winner' : ''}${lost ? ' loser' : ''}${isMine ? ' mine' : ''}">
       ${flag}
       <span class="smv-match-name">${esc(team.shortName || team.name || tla)}</span>
       ${owner}
       <span class="smv-match-score">${scoreVal !== null ? scoreVal : '–'}</span>
+      ${arrow}
     </div>`;
   }
 
