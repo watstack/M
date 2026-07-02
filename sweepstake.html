@@ -405,13 +405,6 @@
       box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.4);
     }
 
-    /* Group stage table */
-    .groups-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-      gap: 16px;
-    }
-
     /* Loading skeleton */
     .skeleton {
       background: linear-gradient(90deg, var(--panel) 25%, var(--mid) 50%, var(--panel) 75%);
@@ -436,51 +429,6 @@
     }
 
     .not-found-icon { font-size: 3rem; margin-bottom: 16px; }
-
-    /* ── Bracket zoom ── */
-    .bracket-zoom-outer { position: relative; }
-
-    .bracket-viewport {
-      overflow: auto;
-      width: 100%;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    #bracketScaleOuter { position: relative; display: block; }
-    #bracketScaleInner { display: inline-block; transform-origin: top left; }
-
-    .bracket-zoom-bar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    .bracket-zoom-btn {
-      background: var(--panel);
-      border: 2px solid #2c3e54;
-      border-radius: var(--radius);
-      color: var(--text);
-      font-family: var(--font-pixel);
-      font-size: 0.6rem;
-      padding: 6px 14px;
-      cursor: pointer;
-      box-shadow: 3px 3px 0 rgba(0,0,0,.6);
-      transition: transform .08s, box-shadow .08s;
-      line-height: 1;
-    }
-    .bracket-zoom-btn:hover { transform: translate(1px,1px); box-shadow: 2px 2px 0 rgba(0,0,0,.6); }
-    .bracket-zoom-btn:active { transform: translate(3px,3px); box-shadow: none; }
-
-    .bracket-zoom-level {
-      font-family: var(--font-pixel);
-      font-size: 0.38rem;
-      color: var(--muted);
-      min-width: 44px;
-      text-align: center;
-      user-select: none;
-    }
 
     /* ── Tournament landing splash ── */
     .landing-splash {
@@ -857,6 +805,12 @@
     #stateBracket .stage-tab:hover:not(.active) {
       color: var(--text);
     }
+    #stateBracket #bracketNav .nav-mode-btn[data-mode="groups"],
+    #stateBracket #bracketNav .nav-mode-btn[data-mode="knockout"] {
+      font-size: 0.52rem;
+      padding: 10px 20px;
+    }
+    #stateBracket .nav-mode-btn.nav-dimmed:not(.active) { opacity: 0.5; }
 
     /* Sticky tab row — mirrors betting's .bet-sticky */
     #stateBracket .stage-tabs-wrap {
@@ -1061,18 +1015,25 @@
       <!-- Bracket column -->
       <div class="live-bracket-col" id="liveBracketPanel">
 
-        <!-- ESPN-style stage pills -->
+        <!-- Top-level nav: Groups / Knockout, plus Players / Highlights -->
         <div class="stage-tabs-wrap">
-          <div class="stage-tabs" id="bracketFilter">
-            <button class="stage-tab bracket-filter-btn active" data-filter="groups"     onclick="setBracketFilter('groups')">Group Stage</button>
-            <button class="stage-tab bracket-filter-btn"        data-filter="r32"        onclick="setBracketFilter('r32')">Round of 32</button>
-            <button class="stage-tab bracket-filter-btn"        data-filter="r16"        onclick="setBracketFilter('r16')">Round of 16</button>
-            <button class="stage-tab bracket-filter-btn"        data-filter="qf"         onclick="setBracketFilter('qf')">Quarterfinals</button>
-            <button class="stage-tab bracket-filter-btn"        data-filter="sf"         onclick="setBracketFilter('sf')">Semifinals</button>
-            <button class="stage-tab bracket-filter-btn"        data-filter="final"      onclick="setBracketFilter('final')">3rd-Place Match &amp; Final</button>
+          <div class="stage-tabs" id="bracketNav">
+            <button class="stage-tab nav-mode-btn active" data-mode="groups"    onclick="setBracketMode('groups')">Groups</button>
+            <button class="stage-tab nav-mode-btn"        data-mode="knockout" onclick="setBracketMode('knockout')">Knockout</button>
             <div class="stage-tab-divider"></div>
-            <button class="stage-tab bracket-filter-btn"        data-filter="players"    onclick="setBracketFilter('players')">Players</button>
-            <button class="stage-tab bracket-filter-btn"        data-filter="highlights" onclick="setBracketFilter('highlights')">Highlights</button>
+            <button class="stage-tab nav-mode-btn"        data-mode="players"    onclick="setBracketMode('players')">Players</button>
+            <button class="stage-tab nav-mode-btn"        data-mode="highlights" onclick="setBracketMode('highlights')">Highlights</button>
+          </div>
+        </div>
+
+        <!-- Round sub-tabs (Knockout mode only) -->
+        <div class="stage-tabs-wrap" id="koSubTabsWrap" style="display:none">
+          <div class="stage-tabs" id="bracketFilter">
+            <button class="stage-tab bracket-filter-btn" data-filter="r32"   onclick="setBracketFilter('r32')">Round of 32</button>
+            <button class="stage-tab bracket-filter-btn" data-filter="r16"   onclick="setBracketFilter('r16')">Round of 16</button>
+            <button class="stage-tab bracket-filter-btn" data-filter="qf"    onclick="setBracketFilter('qf')">Quarterfinals</button>
+            <button class="stage-tab bracket-filter-btn" data-filter="sf"    onclick="setBracketFilter('sf')">Semifinals</button>
+            <button class="stage-tab bracket-filter-btn" data-filter="final" onclick="setBracketFilter('final')">Final</button>
           </div>
         </div>
 
@@ -1082,38 +1043,9 @@
           <div class="my-team-cards" id="myTeamCards"></div>
         </div>
 
-        <!-- Full bracket tree (groups → knockout → final) -->
-        <div class="bracket-zoom-outer">
-          <div class="bracket-viewport" id="bracketViewport">
-            <div id="bracketScaleOuter">
-              <div id="bracketScaleInner">
-                <div class="bracket-tree" id="bracketTree">
-                  <div class="b-col b-groups-col" id="bGroupsLeft"  data-stage="groups"></div>
-                  <div class="b-col b-round-col"  id="bR32Left"     data-stage="r32"></div>
-                  <div class="b-col b-round-col"  id="bR16Left"     data-stage="r16"></div>
-                  <div class="b-col b-round-col"  id="bQFLeft"      data-stage="qf"></div>
-                  <div class="b-col b-round-col"  id="bSFLeft"      data-stage="sf"></div>
-                  <div class="b-col b-final-col"  id="bFinalCenter" data-stage="final"></div>
-                  <div class="b-col b-round-col"  id="bSFRight"     data-stage="sf"></div>
-                  <div class="b-col b-round-col"  id="bQFRight"     data-stage="qf"></div>
-                  <div class="b-col b-round-col"  id="bR16Right"    data-stage="r16"></div>
-                  <div class="b-col b-round-col"  id="bR32Right"    data-stage="r32"></div>
-                  <div class="b-col b-groups-col" id="bGroupsRight" data-stage="groups"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="bracket-zoom-bar">
-            <button class="bracket-zoom-btn" id="bzOut" aria-label="Zoom out">−</button>
-            <span class="bracket-zoom-level" id="bzLevel">100%</span>
-            <button class="bracket-zoom-btn" id="bzIn" aria-label="Zoom in">+</button>
-            <button class="bracket-zoom-btn" id="bzFit">Fit</button>
-          </div>
-        </div>
-
         <p class="muted" style="font-size:0.78rem;margin-top:12px;text-align:center" id="apiUpdateTime"></p>
 
-        <!-- Stage match list (shown for all stage tabs; replaces bracket tree as primary view) -->
+        <!-- Stage match list (rendered for groups + every knockout round) -->
         <div id="stageMatchesView" style="display:none"></div>
 
         <!-- Players grid view (shown instead of bracket when filter = 'players') -->
@@ -2010,14 +1942,15 @@ function renderBracketState() {
 
   _bracketFilter = 'groups';
   _lastStandings = [];
+  _lastKoRound = 'r32';
   document.getElementById('playerView').classList.remove('show');
   document.getElementById('recapPanel').classList.remove('show');
-  document.querySelector('.bracket-zoom-outer').style.display = 'none';
+  document.getElementById('koSubTabsWrap').style.display = 'none';
   const smv = document.getElementById('stageMatchesView');
   if (smv) smv.style.display = '';
-  document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === 'groups'));
+  document.querySelectorAll('.nav-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'groups'));
 
-  loadBracketData().then(() => setTimeout(BracketZoom.fit, 60));
+  loadBracketData();
 }
 
 
@@ -2073,8 +2006,10 @@ let _bracketFilter = 'groups';
 let _lastStandings = [];
 let _lastMatchData = null;
 let _autoHighlightsShown = false;
+let _lastKoRound = 'r32';
 
 const STAGE_ORDER = ['groups', 'r32', 'r16', 'qf', 'sf', 'final'];
+const KO_ROUNDS = ['r32', 'r16', 'qf', 'sf', 'final'];
 
 function updateTabLockState() {
   const currentIdx = STAGE_ORDER.indexOf(_currentBracketStage);
@@ -2084,6 +2019,10 @@ function updateTabLockState() {
     if (stageIdx === -1) return; // players/highlights always unlocked
     btn.classList.toggle('locked', stageIdx > currentIdx);
   });
+  // Dim (but keep clickable) the Knockout pill until the knockout stage begins —
+  // unlike round sub-tabs, it stays clickable so the user can still see the padlock message.
+  const koNavBtn = document.querySelector('.nav-mode-btn[data-mode="knockout"]');
+  if (koNavBtn) koNavBtn.classList.toggle('nav-dimmed', currentIdx <= 0);
 }
 
 function detectBracketStage(matches) {
@@ -2271,11 +2210,25 @@ function renderPlayerView() {
   container.innerHTML = cards || '<p style="color:var(--muted)">No allocations yet.</p>';
 }
 
+// Keep both tab rows' visual state in sync no matter how the filter was reached
+// (direct call, auto-advance, or the recap-panel close buttons).
+function syncBracketNavUI(filter) {
+  document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
+  const koSubTabsWrap = document.getElementById('koSubTabsWrap');
+  if (KO_ROUNDS.includes(filter)) {
+    _lastKoRound = filter;
+    document.querySelectorAll('.nav-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'knockout'));
+    if (koSubTabsWrap) koSubTabsWrap.style.display = '';
+  } else {
+    document.querySelectorAll('.nav-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === filter));
+    if (koSubTabsWrap) koSubTabsWrap.style.display = 'none';
+  }
+}
+
 window.setBracketFilter = function(filter) {
   _bracketFilter = filter;
-  document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
+  syncBracketNavUI(filter);
 
-  const bracketOuter  = document.querySelector('.bracket-zoom-outer');
   const apiTime       = document.getElementById('apiUpdateTime');
   const playerView    = document.getElementById('playerView');
   const recapPanel    = document.getElementById('recapPanel');
@@ -2285,7 +2238,6 @@ window.setBracketFilter = function(filter) {
   const isHighlights = filter === 'highlights';
   const isStage      = !isPlayers && !isHighlights;
 
-  if (bracketOuter) bracketOuter.style.display = 'none';
   if (apiTime)      apiTime.style.display      = isStage ? '' : 'none';
   playerView.classList.remove('show');
   recapPanel.classList.remove('show');
@@ -2304,12 +2256,21 @@ window.setBracketFilter = function(filter) {
   }
 };
 
+window.setBracketMode = function(mode) {
+  document.querySelectorAll('.nav-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  if (mode === 'knockout') {
+    setBracketFilter(_lastKoRound);
+  } else {
+    setBracketFilter(mode); // 'groups' | 'players' | 'highlights'
+  }
+};
+
 async function loadBracketData() {
   try {
     const data = await getAllMatchData();
     allTeams = data.teams;
     _lastMatchData = data;
-    if (data.standings.length) saveGroupCache(data.standings);
+    if (data.standings.length) { saveGroupCache(data.standings); _lastStandings = data.standings; }
     _currentBracketStage = detectBracketStage(data.matches);
 
     // Auto-advance: if current filter is a now-locked stage, jump to the current stage
@@ -2323,11 +2284,9 @@ async function loadBracketData() {
       _bracketFilter = _currentBracketStage;
     }
 
-    renderBracketFull(data);
     applyBracketFilter();
-    document.querySelectorAll('.bracket-filter-btn').forEach(b =>
-      b.classList.toggle('active', b.dataset.filter === _bracketFilter)
-    );
+    syncBracketNavUI(_bracketFilter);
+    document.getElementById('liveIndicator').style.display = hasLiveMatch({ matches: data.matches }) ? 'inline' : 'none';
 
     if (!_autoHighlightsShown && (data.matches || []).some(m => m.status === 'FINISHED')) {
       _autoHighlightsShown = true;
@@ -2335,7 +2294,7 @@ async function loadBracketData() {
     }
 
     startPolling(freshData => {
-      if (freshData.standings.length) saveGroupCache(freshData.standings);
+      if (freshData.standings.length) { saveGroupCache(freshData.standings); _lastStandings = freshData.standings; }
       _lastMatchData = freshData;
       _currentBracketStage = detectBracketStage(freshData.matches);
       // Auto-advance if tournament moved past current filter
@@ -2343,23 +2302,16 @@ async function loadBracketData() {
       const ci = STAGE_ORDER.indexOf(_currentBracketStage);
       if (fi !== -1 && fi > ci) {
         _bracketFilter = _currentBracketStage;
-        document.querySelectorAll('.bracket-filter-btn').forEach(b =>
-          b.classList.toggle('active', b.dataset.filter === _bracketFilter)
-        );
+        syncBracketNavUI(_bracketFilter);
       }
-      renderBracketFull(freshData);
       applyBracketFilter();
-      const live = hasLiveMatch({ matches: freshData.matches });
-      document.getElementById('liveIndicator').style.display = live ? 'inline' : 'none';
-      const liveTag = document.getElementById('bracketLiveTag');
-      if (liveTag) liveTag.style.display = live ? 'inline' : 'none';
+      document.getElementById('liveIndicator').style.display = hasLiveMatch({ matches: freshData.matches }) ? 'inline' : 'none';
       document.getElementById('apiUpdateTime').textContent =
         'Last updated: ' + new Date().toLocaleTimeString();
     });
   } catch (err) {
     _lastMatchData = { teams: [], matches: [], standings: [] };
-    const standings = buildSyntheticStandings();
-    renderBracketFull({ teams: [], matches: [], standings });
+    _lastStandings = buildSyntheticStandings();
     applyBracketFilter();
     document.getElementById('apiUpdateTime').textContent =
       'Showing group positions — scores will update once matches start.';
@@ -2392,125 +2344,6 @@ function renderGroupMini(group, allocMap) {
     </div>`;
   }).join('');
   return `<div class="b-group-card"><div class="b-group-head">${esc(groupName)}</div>${rows}</div>`;
-}
-
-function renderBracketMatch(match, allocMap) {
-  if (!match) {
-    return `<div class="b-match">
-      <div class="b-match-team"><span class="b-match-name" style="color:var(--muted)">TBD</span></div>
-      <div class="b-match-team"><span class="b-match-name" style="color:var(--muted)">TBD</span></div>
-    </div>`;
-  }
-  const score = getScore(match);
-  const statusCls = matchStatusClass(match);
-  const liveBadge = statusCls === 'live'
-    ? `<div style="padding:2px 6px 0;text-align:right"><span class="live-badge" style="font-size:0.58rem;padding:1px 4px"><span class="live-dot"></span>LIVE</span></div>` : '';
-
-  function teamRow(team, scoreVal, isHome) {
-    if (!team) return `<div class="b-match-team"><span class="b-match-name" style="color:var(--muted)">TBD</span></div>`;
-    const tla = normTeamCode(team.tla || '');
-    const alloc = allocMap[tla];
-    const isMine = alloc?.participant_id === myParticipantId;
-    const won = score.home !== null && score.away !== null &&
-      ((isHome && score.home > score.away) || (!isHome && score.away > score.home));
-    const flag = team.crest
-      ? `<img src="${team.crest}" alt="" style="width:14px;height:10px;object-fit:cover;border-radius:1px;flex-shrink:0">`
-      : `<span style="flex-shrink:0">${teamFlagEmoji(tla)}</span>`;
-    const owner = alloc?.participants
-      ? `<div class="b-owner">
-          ${renderAvatar(alloc.participants.avatar_type, tla, 22)}
-          <span class="b-owner-name">${esc(alloc.participants.nickname)}</span>
-        </div>` : '';
-    return `<div class="b-match-team${won ? ' winner' : ''}${isMine ? ' mine' : ''}" data-tla="${tla}">
-      ${flag}
-      <span class="b-match-name">${esc(team.shortName || team.name || tla)}</span>
-      ${owner}
-      <span class="b-match-score">${scoreVal !== null ? scoreVal : '–'}</span>
-    </div>`;
-  }
-  return `<div class="b-match ${statusCls}">
-    ${liveBadge}
-    ${teamRow(match.homeTeam, score.home, true)}
-    ${teamRow(match.awayTeam, score.away, false)}
-  </div>`;
-}
-
-function renderBracketColumn(id, label, matches, allocMap, emptySlots) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  const cards = matches.length
-    ? matches.map(m => renderBracketMatch(m, allocMap))
-    : Array.from({ length: emptySlots }, () => renderBracketMatch(null, allocMap));
-  el.innerHTML = `<div class="b-round-label">${esc(label)}</div>` + cards.join('');
-}
-
-function renderParticipantMini(allocs) {
-  const byPid = {};
-  for (const a of allocs) {
-    if (!byPid[a.participant_id]) byPid[a.participant_id] = { p: a.participants, teams: [] };
-    byPid[a.participant_id].teams.push(a);
-  }
-  return Object.values(byPid).map(({ p, teams }) => {
-    if (!p) return '';
-    const av = renderAvatar(p.avatar_type, teams[0]?.team_code || null, 24);
-    const pills = teams.map(t => {
-      const c = getFlagColors(t.team_code);
-      return `<span class="team-pill" style="background:${c.primary};color:${c.secondary||'#fff'};font-size:0.65rem;padding:2px 6px">${teamFlagEmoji(t.team_code)} ${esc(t.team_name)}</span>`;
-    }).join('');
-    return `<div class="b-group-card" style="padding:10px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">${av}<span style="font-weight:700;font-size:0.8rem">${esc(p.nickname)}</span></div>
-      <div style="display:flex;flex-wrap:wrap;gap:3px">${pills}</div>
-    </div>`;
-  }).join('');
-}
-
-function renderBracketFull(data) {
-  const allocMap = buildAllocMap();
-  const standings = data.standings || [];
-  const matches   = data.matches   || [];
-  if (standings.length) _lastStandings = standings;
-
-  const leftGroups  = standings.slice(0, 6);
-  const rightGroups = standings.slice(6);
-
-  const bGL = document.getElementById('bGroupsLeft');
-  const bGR = document.getElementById('bGroupsRight');
-  if (bGL) bGL.innerHTML = leftGroups.length
-    ? leftGroups.map(g => renderGroupMini(g, allocMap)).join('')
-    : renderParticipantMini(allAllocations);
-  if (bGR) bGR.innerHTML = rightGroups.map(g => renderGroupMini(g, allocMap)).join('');
-
-  const r32 = matches.filter(m => m.stage === 'ROUND_OF_32');
-  const r16 = matches.filter(m => m.stage === 'ROUND_OF_16');
-  const qf  = matches.filter(m => m.stage === 'QUARTER_FINALS');
-  const sf  = matches.filter(m => m.stage === 'SEMI_FINALS');
-  const final3rd = matches.find(m => m.stage === 'THIRD_PLACE');
-  const finalM   = matches.find(m => m.stage === 'FINAL');
-
-  renderBracketColumn('bR32Left',  'Round of 32',    r32.slice(0, 8),  allocMap, 8);
-  renderBracketColumn('bR16Left',  'Round of 16',    r16.slice(0, 4),  allocMap, 4);
-  renderBracketColumn('bQFLeft',   'Quarter-Finals', qf.slice(0, 2),   allocMap, 2);
-  renderBracketColumn('bSFLeft',   'Semi-Finals',    sf.slice(0, 1),   allocMap, 1);
-
-  const bF = document.getElementById('bFinalCenter');
-  if (bF) {
-    const thirdHtml = final3rd
-      ? `<div class="b-round-label" style="margin-top:8px">3rd Place</div>${renderBracketMatch(final3rd, allocMap)}`
-      : '';
-    bF.innerHTML = `<div class="b-round-label" style="color:var(--gold)">🏆 Final</div>
-      <div class="b-final-card">${renderBracketMatch(finalM || null, allocMap).replace('class="b-match', 'class="b-match b-final-inner')}</div>
-      ${thirdHtml}`;
-  }
-
-  renderBracketColumn('bSFRight',  'Semi-Finals',    sf.slice(1, 2),   allocMap, 1);
-  renderBracketColumn('bQFRight',  'Quarter-Finals', qf.slice(2, 4),   allocMap, 2);
-  renderBracketColumn('bR16Right', 'Round of 16',    r16.slice(4, 8),  allocMap, 4);
-  renderBracketColumn('bR32Right', 'Round of 32',    r32.slice(8, 16), allocMap, 8);
-
-  const live = hasLiveMatch({ matches });
-  document.getElementById('liveIndicator').style.display = live ? 'inline' : 'none';
-  document.getElementById('bracketLiveTag').style.display = live ? 'inline' : 'none';
-  if (live) document.getElementById('apiUpdateTime').textContent = 'Updating live...';
 }
 
 // ── Real-time handlers ────────────────────────────────────────────────────────
@@ -2661,86 +2494,6 @@ async function init() {
     showNotFound('Error: ' + (err?.message || String(err)));
   }
 }
-
-// ── Bracket zoom controller ───────────────────────────────────────────────────
-const BracketZoom = (function () {
-  let _zoom = 1, _nw = 0, _nh = 0;
-  let _pinchDist0 = 0, _pinchZoom0 = 1;
-
-  function el(id) { return document.getElementById(id); }
-  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-
-  function measure() {
-    const inner = el('bracketScaleInner');
-    if (!inner) return;
-    const prev = inner.style.transform;
-    inner.style.transform = 'scale(1)';
-    _nw = inner.scrollWidth;
-    _nh = inner.scrollHeight;
-    inner.style.transform = prev;
-  }
-
-  function apply(z) {
-    if (!_nw) return;
-    _zoom = clamp(z, 0.1, 2);
-    const inner  = el('bracketScaleInner');
-    const sOuter = el('bracketScaleOuter');
-    const lvl    = el('bzLevel');
-    if (!inner || !sOuter || !lvl) return;
-    inner.style.transform       = `scale(${_zoom})`;
-    inner.style.transformOrigin = 'top left';
-    sOuter.style.width  = (_nw * _zoom) + 'px';
-    sOuter.style.height = (_nh * _zoom) + 'px';
-    lvl.textContent = Math.round(_zoom * 100) + '%';
-  }
-
-  function fit() {
-    measure();
-    if (!_nw) return;
-    const vp = el('bracketViewport');
-    if (!vp) return;
-    apply(vp.clientWidth / (_nw + 4));
-  }
-
-  function init() {
-    const vp = el('bracketViewport');
-    if (!vp) return;
-
-    el('bzOut').addEventListener('click', () => apply(_zoom / 1.25));
-    el('bzIn').addEventListener('click',  () => apply(_zoom * 1.25));
-    el('bzFit').addEventListener('click', fit);
-
-    vp.addEventListener('wheel', e => {
-      if (!e.ctrlKey && !e.metaKey) return;
-      e.preventDefault();
-      apply(_zoom * (e.deltaY > 0 ? 0.9 : 1.1));
-    }, { passive: false });
-
-    vp.addEventListener('touchstart', e => {
-      if (e.touches.length < 2) return;
-      _pinchDist0 = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      _pinchZoom0 = _zoom;
-    }, { passive: true });
-
-    vp.addEventListener('touchmove', e => {
-      if (e.touches.length < 2) return;
-      const dist = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      );
-      apply(_pinchZoom0 * dist / _pinchDist0);
-    }, { passive: true });
-
-    window.addEventListener('resize', () => {
-      if (el('stateBracket')?.classList.contains('active')) fit();
-    });
-  }
-
-  return { init, fit };
-})();
 
 /* ── RC: Daily Recap battle animation ─────────────────────── */
 const RC = (() => {
@@ -3297,8 +3050,6 @@ const RC = (() => {
     skip(){gen++;clearInterval(tickId);rcFadeNext();},
   };
 })();
-
-BracketZoom.init();
 
 init();
 </script>
