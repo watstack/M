@@ -1,8 +1,13 @@
 -- Qualify market support for knockout stages.
--- The qualify market is Draw No Bet (DNB): settles 'home'/'away' on 90-min result;
--- voids (refunds all bets) when the 90-min result is a draw.
 -- Adds void_market() RPC and extends place_parlay() correlated-legs guard.
 -- Run in: Supabase dashboard → SQL Editor, or via MCP apply_migration.
+--
+-- NOTE: the qualify market settles to the side that actually advances (the
+-- ET/pens winner), never on the 90-minute result, and never voids on a
+-- regulation-time draw (see api/settle.js and api/auto-settle.js). void_market
+-- below is no longer invoked from that settlement path, but is kept as
+-- general-purpose infrastructure for a genuinely voidable scenario (e.g. a
+-- postponed/abandoned match).
 
 -- ─── 1. void_market ──────────────────────────────────────────────────────────
 -- Voids a market: refunds all pending single-bet stakes, marks parlay legs void,

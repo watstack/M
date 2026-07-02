@@ -10,7 +10,7 @@
 // advances after extra time / penalties; for group games it is derived from the
 // score and ignored for propagation.
 
-const { makeRest, verifyAdmin, verifyParticipantAdmin, propagateResult, settleMarketRpc, voidMarketRpc } = require('./_lib/settle-lib');
+const { makeRest, verifyAdmin, verifyParticipantAdmin, propagateResult, settleMarketRpc } = require('./_lib/settle-lib');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -62,11 +62,13 @@ module.exports = async function handler(req, res) {
     let settled = 0;
     for (const m of markets) {
       if (m.market_type === 'qualify') {
-        // DNB market: settles on 90-min result only. Draw → void (refund).
-        if (matchResult === 'draw') {
-          await voidMarketRpc(rest, m.id);
-        } else {
-          if (await settleMarketRpc(rest, m.id, matchResult)) settled++;
+        // Settles to the side that actually advances (ET/pens winner via
+        // advSide). A knockout tie always eventually produces an advancing
+        // team, so this never voids — if advSide is unknown (90-min draw and
+        // no `winner` supplied), leave it unsettled until admin resubmits
+        // with `winner` once the shootout result is known.
+        if (advSide) {
+          if (await settleMarketRpc(rest, m.id, advSide)) settled++;
         }
       } else {
         const result = m.market_type === 'correct_score' ? correctScore : matchResult;
