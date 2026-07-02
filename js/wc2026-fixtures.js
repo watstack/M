@@ -191,6 +191,7 @@ const BRACKET_FEED = {
 if (typeof window !== 'undefined') {
   window.WC2026_FIXTURES = WC2026_FIXTURES;
   window.FIXTURE_BY_NO   = FIXTURE_BY_NO;
+  window.BRACKET_FEED    = BRACKET_FEED;
 }
 
 // CommonJS export so server code (api/) can reuse the same data.
