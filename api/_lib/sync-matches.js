@@ -25,7 +25,7 @@ async function syncMatchesToSupabase({ supaUrl, supaKey }, fbdToken) {
   if (matches.length === 0) return { synced: 0, source };
 
   const r = await fetch(
-    `${supaUrl}/rest/v1/wc_matches?on_conflict=home_tla,away_tla,utc_date`,
+    `${supaUrl}/rest/v1/wc_matches?on_conflict=id`,
     {
       method: 'POST',
       headers: {

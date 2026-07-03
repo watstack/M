@@ -9,8 +9,26 @@
 // 90-minute score may be a draw, so `winner` ('home'|'away') names the side that
 // advances after extra time / penalties; for group games it is derived from the
 // score and ignored for propagation.
+//
+// For knockout matches, homeScore/awayScore are expected to be the 90-minute
+// score, but admins naturally tend to type in the final (ET/pens-inclusive)
+// score instead. To guard against that, when a synced wc_matches row exists
+// for the match we prefer its regulation-time score (same source auto-settle
+// uses) over the submitted score, falling back to homeScore/awayScore as-is
+// when no synced row is available.
 
-const { makeRest, verifyAdmin, verifyParticipantAdmin, propagateResult, settleMarketRpc } = require('./_lib/settle-lib');
+const { makeRest, verifyAdmin, verifyParticipantAdmin, propagateResult, settleMarketRpc, regulationScore } = require('./_lib/settle-lib');
+
+// Look up the most recent wc_matches row for a home/away team-code pair.
+async function lookupMatch(rest, homeCode, awayCode) {
+  const r = await rest(
+    `/wc_matches?home_tla=eq.${homeCode}&away_tla=eq.${awayCode}` +
+    `&order=utc_date.desc&limit=1&select=home_score_reg,away_score_reg,goals,home_id,away_id`
+  );
+  if (!r.ok) return null;
+  const rows = await r.json();
+  return rows[0] || null;
+}
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -39,9 +57,6 @@ module.exports = async function handler(req, res) {
       : await verifyParticipantAdmin(rest, code, participantId);
     if (!tournamentId) return res.status(403).json({ error: 'Unauthorized' });
 
-    const matchResult = h > a ? 'home' : a > h ? 'away' : 'draw';
-    const correctScore = `${h}-${a}`;
-
     // Fetch this match's unsettled markets (+ resolved codes for propagation).
     const mRes = await rest(
       `/bet_markets?tournament_id=eq.${tournamentId}&match_no=eq.${matchNo}` +
@@ -53,6 +68,25 @@ module.exports = async function handler(req, res) {
 
     const any = markets[0];
     const isKnockout = any.stage && any.stage !== 'group';
+
+    // Default to the submitted score; for knockout matches, override with the
+    // synced 90-minute regulation score when available (see file header).
+    let matchResult = h > a ? 'home' : a > h ? 'away' : 'draw';
+    let correctScore = `${h}-${a}`;
+    if (isKnockout && any.home_code && any.away_code) {
+      let wc = await lookupMatch(rest, any.home_code, any.away_code);
+      let swapped = false;
+      if (!wc) { wc = await lookupMatch(rest, any.away_code, any.home_code); swapped = true; }
+      if (wc) {
+        const reg = regulationScore(wc);
+        if (reg.source !== 'final_score_assumed') {
+          const regHome = swapped ? reg.away : reg.home;
+          const regAway = swapped ? reg.home : reg.away;
+          matchResult = regHome > regAway ? 'home' : regAway > regHome ? 'away' : 'draw';
+          correctScore = `${regHome}-${regAway}`;
+        }
+      }
+    }
 
     // Pre-compute who advances (needed for qualify market and bracket propagation).
     const advSide = isKnockout
