@@ -33,6 +33,14 @@ function normalizeFBDMatch(m) {
   const homeTla = (m.homeTeam?.tla || '').toUpperCase();
   const awayTla = (m.awayTeam?.tla || '').toUpperCase();
   const dateKey = (m.utcDate || '').split('T')[0];
+  const duration = m.score?.duration || 'REGULAR';
+  // Only treat the final score as the regulation-time score when the match
+  // actually finished in regulation. When it went to ET/pens and the source
+  // API didn't supply score.regularTime, leave the reg fields null rather
+  // than silently asserting the ET-inclusive score as the 90-minute result
+  // — regulationScore() (settle-lib.js) falls back to goals[] reconstruction
+  // or an explicitly-flagged 'final_score_assumed' instead.
+  const regFallback = duration === 'REGULAR';
   return {
     id: `${homeTla}-${awayTla}-${dateKey}`,
     home_tla: homeTla,
@@ -43,9 +51,9 @@ function normalizeFBDMatch(m) {
     away_id: String(m.awayTeam?.id || ''),
     home_score: isPlayed ? (m.score?.fullTime?.home ?? null) : null,
     away_score: isPlayed ? (m.score?.fullTime?.away ?? null) : null,
-    home_score_reg: isPlayed ? (m.score?.regularTime?.home ?? m.score?.fullTime?.home ?? null) : null,
-    away_score_reg: isPlayed ? (m.score?.regularTime?.away ?? m.score?.fullTime?.away ?? null) : null,
-    score_duration: m.score?.duration || 'REGULAR',
+    home_score_reg: isPlayed ? (m.score?.regularTime?.home ?? (regFallback ? m.score?.fullTime?.home : null) ?? null) : null,
+    away_score_reg: isPlayed ? (m.score?.regularTime?.away ?? (regFallback ? m.score?.fullTime?.away : null) ?? null) : null,
+    score_duration: duration,
     status: m.status || 'SCHEDULED',
     utc_date: m.utcDate,
     stage: m.stage || 'GROUP_STAGE',
@@ -55,4 +63,4 @@ function normalizeFBDMatch(m) {
   };
 }
 
-module.exports = { fetchFBDMatches };
+module.exports = { fetchFBDMatches, normalizeFBDMatch };

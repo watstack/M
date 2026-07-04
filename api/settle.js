@@ -14,8 +14,10 @@
 // score, but admins naturally tend to type in the final (ET/pens-inclusive)
 // score instead. To guard against that, when a synced wc_matches row exists
 // for the match we prefer its regulation-time score (same source auto-settle
-// uses) over the submitted score, falling back to homeScore/awayScore as-is
-// when no synced row is available.
+// uses) over the submitted score. If no regulation score can be verified,
+// match_result/correct_score/double_chance are left unsettled rather than
+// trusting the submitted score as the 90-minute result (see auto-settle.js's
+// matching regKnown gate) — only `qualify` settles in that case.
 
 const { makeRest, verifyAdmin, verifyParticipantAdmin, propagateResult, settleMarketRpc, regulationScore } = require('./_lib/settle-lib');
 
@@ -71,8 +73,14 @@ module.exports = async function handler(req, res) {
 
     // Default to the submitted score; for knockout matches, override with the
     // synced 90-minute regulation score when available (see file header).
+    // If a knockout match's regulation score can't be verified from synced
+    // data, don't trust the submitted score as if it were the 90-minute
+    // result (admins naturally submit the ET/pens-inclusive final score) —
+    // leave match_result/correct_score/double_chance unsettled, same as
+    // auto-settle.js's regKnown gate.
     let matchResult = h > a ? 'home' : a > h ? 'away' : 'draw';
     let correctScore = `${h}-${a}`;
+    let regKnown = !isKnockout;
     if (isKnockout && any.home_code && any.away_code) {
       let wc = await lookupMatch(rest, any.home_code, any.away_code);
       let swapped = false;
@@ -80,6 +88,7 @@ module.exports = async function handler(req, res) {
       if (wc) {
         const reg = regulationScore(wc);
         if (reg.source !== 'final_score_assumed') {
+          regKnown = true;
           const regHome = swapped ? reg.away : reg.home;
           const regAway = swapped ? reg.home : reg.away;
           matchResult = regHome > regAway ? 'home' : regAway > regHome ? 'away' : 'draw';
@@ -104,7 +113,7 @@ module.exports = async function handler(req, res) {
         if (advSide) {
           if (await settleMarketRpc(rest, m.id, advSide)) settled++;
         }
-      } else {
+      } else if (regKnown) {
         const result = m.market_type === 'correct_score' ? correctScore : matchResult;
         if (await settleMarketRpc(rest, m.id, result)) settled++;
       }
