@@ -57,6 +57,12 @@ function commenceTimeForFixture(events, fx) {
  * @param {string}     tournamentId
  * @param {Array|null} h2hEvents   Odds API h2h events, or null/[] to skip odds
  * @param {string|null} fetchedAt  ISO timestamp for odds_fetched_at
+ * @param {Object}     resolvedCodes  match_no -> { homeCode, awayCode } for knockout
+ *   slots the static fixture list can't resolve (it only has placeholder slot
+ *   labels like "W74") but that settle-lib.js has already patched onto the
+ *   live bet_markets rows once the feeder match finished. Without this, every
+ *   knockout-stage market is permanently treated as unresolved and never gets
+ *   odds, even after the teams — and the bookmakers' 1X2 lines — are known.
  * @returns {{ groupRows: object[], koRows: object[], oddsMatched: number }}
  *
  * groupRows: resolved fixtures — merge-upsert so odds refresh
@@ -65,12 +71,20 @@ function commenceTimeForFixture(events, fx) {
  * IMPORTANT: PostgREST requires uniform key sets per batch. Callers must split
  * groupRows into withOdds / noOdds before upserting (see api/markets.js).
  */
-function buildMarketRows(tournamentId, h2hEvents, fetchedAt) {
+function buildMarketRows(tournamentId, h2hEvents, fetchedAt, resolvedCodes = {}) {
   const groupRows = [];
   const koRows = [];
   let oddsMatched = 0;
 
-  for (const fx of WC2026_FIXTURES) {
+  for (const fx0 of WC2026_FIXTURES) {
+    const override = resolvedCodes[fx0.match_no];
+    const fx = override
+      ? {
+          ...fx0,
+          home: { ...fx0.home, code: fx0.home.code || override.homeCode },
+          away: { ...fx0.away, code: fx0.away.code || override.awayCode },
+        }
+      : fx0;
     const resolved = !!(fx.home.code && fx.away.code);
     const base = {
       tournament_id: tournamentId,

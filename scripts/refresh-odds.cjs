@@ -111,9 +111,24 @@ async function main() {
   const tournaments = await tRes.json();
   console.log(`[markets] ${tournaments.length} tournament(s) to refresh`);
 
+  // Knockout slots already resolved on bet_markets (settle-lib patches these in
+  // as each feeder match finishes) but that the static fixture list still shows
+  // as a placeholder slot ("W74") — without this, buildMarketRows can never
+  // match odds for the knockout stage. One query covers every tournament.
+  const rcRes = await rest(
+    `/bet_markets?market_type=eq.match_result&home_code=not.is.null&away_code=not.is.null` +
+    `&select=tournament_id,match_no,home_code,away_code`
+  );
+  if (!rcRes.ok) throw new Error(`Resolved-codes query failed: ${rcRes.status} ${await rcRes.text().catch(() => '')}`);
+  const resolvedByTournament = new Map();
+  for (const row of await rcRes.json()) {
+    if (!resolvedByTournament.has(row.tournament_id)) resolvedByTournament.set(row.tournament_id, {});
+    resolvedByTournament.get(row.tournament_id)[row.match_no] = { homeCode: row.home_code, awayCode: row.away_code };
+  }
+
   let totalMatched = 0;
   for (const t of tournaments) {
-    const { groupRows, koRows, oddsMatched } = buildMarketRows(t.id, h2hEvents, fetchedAt);
+    const { groupRows, koRows, oddsMatched } = buildMarketRows(t.id, h2hEvents, fetchedAt, resolvedByTournament.get(t.id) || {});
     // PostgREST bulk insert requires every object in an array to share the same
     // key set (error PGRST102), so split group rows by whether they carry odds.
     // Both batches merge (so odds refresh); rows without odds simply omit the

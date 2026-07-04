@@ -49,7 +49,7 @@ module.exports = async function handler(req, res) {
     // 2. Decide whether odds are stale (refresh at most every 24h)
     const exRes = await rest(
       `/bet_markets?tournament_id=eq.${tournamentId}` +
-      `&market_type=eq.match_result&select=match_no,odds_fetched_at`
+      `&market_type=eq.match_result&select=match_no,odds_fetched_at,home_code,away_code`
     );
     const existing = exRes.ok ? await exRes.json() : [];
     const newest = existing.reduce((acc, m) => {
@@ -58,13 +58,22 @@ module.exports = async function handler(req, res) {
     }, 0);
     const oddsStale = !existing.length || (Date.now() - newest > ODDS_TTL_MS);
 
+    // Knockout slots the static fixture list still shows as a placeholder
+    // ("W74") but that settle-lib.js has already patched onto bet_markets once
+    // the feeder match finished — pass these through so buildMarketRows can
+    // match odds for the knockout stage instead of treating it as unresolved.
+    const resolvedCodes = {};
+    for (const m of existing) {
+      if (m.home_code && m.away_code) resolvedCodes[m.match_no] = { homeCode: m.home_code, awayCode: m.away_code };
+    }
+
     // Also force a refresh when a newly-resolved fixture has never had odds
     // (e.g. R32 teams just became known within the 24h window).
     const { WC2026_FIXTURES } = require('./_lib/fixtures');
     const pricedNos = new Set(existing.filter(m => m.odds_fetched_at).map(m => m.match_no));
     const hasUnpricedResolved = WC2026_FIXTURES.some(
       fx => fx.home.code && fx.away.code && !pricedNos.has(fx.match_no)
-    );
+    ) || Object.keys(resolvedCodes).some(no => !pricedNos.has(Number(no)));
     const shouldFetchOdds = oddsStale || hasUnpricedResolved;
 
     // 3. Fetch h2h odds when stale (only resolved fixtures get matched).
@@ -88,6 +97,7 @@ module.exports = async function handler(req, res) {
       tournamentId,
       shouldFetchOdds ? h2hEvents : null,
       fetchedAt,
+      resolvedCodes,
     );
 
     // Split for PostgREST uniform-key requirement.
