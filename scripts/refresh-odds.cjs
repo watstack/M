@@ -115,9 +115,15 @@ async function main() {
   // as each feeder match finishes) but that the static fixture list still shows
   // as a placeholder slot ("W74") — without this, buildMarketRows can never
   // match odds for the knockout stage. One query covers every tournament.
+  // Scoped to stages the static list can't resolve itself (group + r32 fixtures
+  // already carry real codes) — across 72+ tournaments even that is thousands
+  // of rows, so an explicit Range avoids a silent PostgREST default-limit
+  // truncation that would drop coverage for later tournaments.
   const rcRes = await rest(
-    `/bet_markets?market_type=eq.match_result&home_code=not.is.null&away_code=not.is.null` +
-    `&select=tournament_id,match_no,home_code,away_code`
+    `/bet_markets?market_type=eq.match_result&stage=in.(r16,qf,sf,third,final)` +
+    `&home_code=not.is.null&away_code=not.is.null` +
+    `&select=tournament_id,match_no,home_code,away_code`,
+    { headers: { Range: '0-19999' } }
   );
   if (!rcRes.ok) throw new Error(`Resolved-codes query failed: ${rcRes.status} ${await rcRes.text().catch(() => '')}`);
   const resolvedByTournament = new Map();
