@@ -1148,6 +1148,25 @@
     .spin-close.hidden { display: none; }
     .spin-close:hover { color: var(--text); }
 
+    /* ── Sunday Funday ── */
+    .sf-coin-wrap { display: flex; justify-content: center; margin-bottom: 18px; }
+    .sf-coin {
+      width: 90px; height: 90px; font-size: 1.6rem;
+      border-color: var(--gold); color: var(--gold);
+    }
+    .sf-coin.tu-coin-hh { border-color: var(--pixel-sky); color: var(--pixel-sky); }
+    .sf-coin.tu-coin-tt { border-color: var(--red); color: var(--red); }
+    .sf-choice { display: flex; gap: 12px; justify-content: center; margin-bottom: 4px; }
+    .sf-choice button {
+      font-family: var(--font-pixel); font-size: 0.6rem;
+      background: var(--mid); color: var(--text);
+      border: 2px solid var(--border); border-radius: var(--radius);
+      padding: 12px 20px; cursor: pointer;
+      box-shadow: 2px 2px 0 rgba(0,0,0,.4);
+      transition: opacity .15s;
+    }
+    .sf-choice button:disabled { opacity: .45; cursor: not-allowed; }
+
     /* ── No markets state ── */
     .no-markets { text-align: center; padding: 48px 0; color: var(--muted); }
     .no-markets-icon { font-size: 2.5rem; margin-bottom: 12px; }
@@ -1207,6 +1226,23 @@
     <button id="spinBtn" class="spin-btn" onclick="doSpin()">SPIN</button>
     <div id="spinResult" class="spin-result hidden"></div>
     <button id="spinCloseBtn" class="spin-close hidden" onclick="closeSpinPromo()">Close</button>
+  </div>
+</div>
+
+<!-- ── Sunday Funday Overlay ── -->
+<div id="sfOverlay" class="spin-promo-overlay hidden">
+  <div class="spin-promo-card">
+    <h2 class="spin-promo-title">☀️ Sunday Funday</h2>
+    <p class="spin-promo-sub">Call it right for +10% odds!</p>
+    <div class="sf-coin-wrap">
+      <div id="sfCoin" class="tu-coin sf-coin">?</div>
+    </div>
+    <div id="sfChoice" class="sf-choice">
+      <button onclick="pickSundayFunday('heads')">HEADS</button>
+      <button onclick="pickSundayFunday('tails')">TAILS</button>
+    </div>
+    <div id="sfResult" class="spin-result hidden"></div>
+    <button id="sfCloseBtn" class="spin-close hidden" onclick="closeSundayFunday()">Close</button>
   </div>
 </div>
 
@@ -2027,6 +2063,7 @@ async function confirmBet() {
   btn.textContent = 'Placing…';
 
   try {
+    let sfEligible = false;
     if (_parlayLegs.length === 1) {
       const leg = _parlayLegs[0];
       let oddsToUse = leg.odds;
@@ -2037,8 +2074,13 @@ async function confirmBet() {
         _boostState.active = false;
         saveBoosts();
       }
-      await placeBet(leg.marketId, _participant.id, leg.selection, stake, oddsToUse);
-      showToast(boosted ? 'Boosted bet placed! 🚀' : 'Bet placed! Good luck 🎰');
+      const bet = await placeBet(leg.marketId, _participant.id, leg.selection, stake, oddsToUse);
+      sfEligible = _sfIsActive() && !boosted;
+      if (sfEligible) {
+        _sfPending = { id: bet.id, type: 'single' };
+      } else {
+        showToast(boosted ? 'Boosted bet placed! 🚀' : 'Bet placed! Good luck 🎰');
+      }
     } else {
       if (_ppIsActive() && _parlayLegs.length >= 3 && _ppHasCustomLeg()) {
         showToast('nice try. on your bike you bastard');
@@ -2052,20 +2094,34 @@ async function confirmBet() {
         selection: l.selection,
         odds:      l.odds,
       }));
-      await placeParlay(_participant.id, legs, stake, totalOdds);
-      showToast(`Multi placed! ${_parlayLegs.length} legs — Good luck 🎰`);
+      const parlay = await placeParlay(_participant.id, legs, stake, totalOdds);
+      sfEligible = _sfIsActive();
+      if (sfEligible) {
+        _sfPending = { id: parlay.id, type: 'parlay' };
+      } else {
+        showToast(`Multi placed! ${_parlayLegs.length} legs — Good luck 🎰`);
+      }
     }
-    closeBetSlip();
-    const { data: fresh } = await db.from('participants').select('coin_balance').eq('id', _participant.id).single();
-    if (fresh) {
-      _participant.coin_balance = fresh.coin_balance;
-      document.getElementById('balanceAmt').textContent = fresh.coin_balance.toLocaleString();
+
+    if (sfEligible) {
+      openSundayFunday();
+    } else {
+      await _finishBetFlow();
     }
   } catch(err) {
     showToast(err.message || 'Failed to place bet');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Place Bet';
+  }
+}
+
+async function _finishBetFlow() {
+  closeBetSlip();
+  const { data: fresh } = await db.from('participants').select('coin_balance').eq('id', _participant.id).single();
+  if (fresh) {
+    _participant.coin_balance = fresh.coin_balance;
+    document.getElementById('balanceAmt').textContent = fresh.coin_balance.toLocaleString();
   }
 }
 
@@ -2250,6 +2306,66 @@ function showSpinResult(won) {
 
 function closeSpinPromo() {
   document.getElementById('spinPromoOverlay').classList.add('hidden');
+}
+
+// ─── Sunday Funday ────────────────────────────────────────────────────────────
+
+let _sfPending = null; // { id, type: 'single'|'parlay' }
+
+function _sfIsActive() {
+  return _tuAESTNow().dow === 0;
+}
+
+function openSundayFunday() {
+  const coin = document.getElementById('sfCoin');
+  coin.textContent = '?';
+  coin.className = 'tu-coin sf-coin';
+  document.getElementById('sfChoice').querySelectorAll('button').forEach(b => b.disabled = false);
+  document.getElementById('sfResult').classList.add('hidden');
+  document.getElementById('sfCloseBtn').classList.add('hidden');
+  document.getElementById('sfOverlay').classList.remove('hidden');
+}
+
+async function pickSundayFunday(choice) {
+  document.getElementById('sfChoice').querySelectorAll('button').forEach(b => b.disabled = true);
+  const coin = document.getElementById('sfCoin');
+  coin.classList.add('tu-coin--spinning');
+
+  setTimeout(async () => {
+    const result = Math.random() < 0.5 ? 'heads' : 'tails';
+    coin.textContent = result === 'heads' ? 'H' : 'T';
+    coin.className = `tu-coin sf-coin ${result === 'heads' ? 'tu-coin-hh' : 'tu-coin-tt'}`;
+
+    const resultEl = document.getElementById('sfResult');
+    resultEl.classList.remove('hidden', 'spin-result--win', 'spin-result--lose');
+
+    if (choice === result) {
+      try {
+        if (_sfPending.type === 'single') {
+          await applySundayFundayBoost(_sfPending.id, _participant.id);
+        } else {
+          await applySundayFundayBoostParlay(_sfPending.id, _participant.id);
+        }
+        resultEl.classList.add('spin-result--win');
+        resultEl.textContent = '🎉 Called it! +10% odds boost applied.';
+      } catch (err) {
+        resultEl.classList.add('spin-result--lose');
+        resultEl.textContent = 'Called it, but the boost failed to apply.';
+      }
+    } else {
+      resultEl.classList.add('spin-result--lose');
+      resultEl.textContent = 'No luck this time — bet stands as placed.';
+    }
+
+    document.getElementById('sfCloseBtn').classList.remove('hidden');
+  }, 800);
+}
+
+async function closeSundayFunday() {
+  document.getElementById('sfOverlay').classList.add('hidden');
+  document.getElementById('sfCoin').classList.remove('tu-coin--spinning');
+  _sfPending = null;
+  await _finishBetFlow();
 }
 
 // ─── Parlay Pump in-slip banner ──────────────────────────────────────────────

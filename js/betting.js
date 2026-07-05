@@ -175,6 +175,24 @@ async function placeParlay(participantId, legs, stake, totalOdds) {
   return data;
 }
 
+// ─── Sunday Funday ────────────────────────────────────────────────────────────
+
+async function applySundayFundayBoost(betId, participantId) {
+  const { data, error } = await db.rpc('apply_sunday_funday_boost', {
+    p_bet_id: betId, p_participant_id: participantId,
+  });
+  if (error) throw error;
+  return data;
+}
+
+async function applySundayFundayBoostParlay(parlayId, participantId) {
+  const { data, error } = await db.rpc('apply_sunday_funday_boost_parlay', {
+    p_parlay_id: parlayId, p_participant_id: participantId,
+  });
+  if (error) throw error;
+  return data;
+}
+
 // ─── Countdown helper ─────────────────────────────────────────────────────────
 
 function formatCountdown(isoDate) {
