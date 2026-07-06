@@ -240,10 +240,14 @@ function sideDisplay(side) {
 }
 
 // Returns false if a fixture's market is closed/settled or kickoff has passed.
+// Prefers the DB market's close_time (corrected from the live odds feed) over
+// the static fixture's placeholder kickoff_utc, since knockout kickoff times
+// often shift after the bracket is seeded.
 function isUpcoming(fixture, marketsByNo) {
   const mr = (marketsByNo[fixture.match_no] || {}).match_result;
   if (mr && (mr.status === 'settled' || mr.status === 'closed')) return false;
-  if (fixture.kickoff_utc && new Date(fixture.kickoff_utc) < new Date()) return false;
+  const kickoff = (mr && mr.close_time) || fixture.kickoff_utc;
+  if (kickoff && new Date(kickoff) < new Date()) return false;
   return true;
 }
 
@@ -262,18 +266,23 @@ function renderFixturesView(marketsByNo, sortMode) {
 
   if (sortMode === 'upcoming') {
     // Future/open matches only, chronological, grouped under date headers.
+    const kickoffFor = f => {
+      const mr = (marketsByNo[f.match_no] || {}).match_result;
+      return (mr && mr.close_time) || f.kickoff_utc;
+    };
     const sorted = allFixtures
       .filter(f => isUpcoming(f, marketsByNo))
       .sort((a, b) => {
-        const ta = a.kickoff_utc || '';
-        const tb = b.kickoff_utc || '';
+        const ta = kickoffFor(a) || '';
+        const tb = kickoffFor(b) || '';
         return ta < tb ? -1 : ta > tb ? 1 : 0;
       });
     let html = '';
     let lastDate = null;
     for (const f of sorted) {
-      const dateStr = f.kickoff_utc
-        ? new Date(f.kickoff_utc).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+      const ko = kickoffFor(f);
+      const dateStr = ko
+        ? new Date(ko).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
         : 'TBC';
       if (dateStr !== lastDate) {
         html += `<div class="bet-section-title">${dateStr}</div>`;
@@ -336,7 +345,7 @@ function renderMatchCard(fixture, pair) {
   const isClosed  = status !== 'open';
   const o = (mr && mr.odds_json) || {};
   const matchName = `${home.name} vs ${away.name}`;
-  const kickoff   = formatKickoff(fixture.kickoff_utc);
+  const kickoff   = formatKickoff((mr && mr.close_time) || fixture.kickoff_utc);
   const venue     = fixture.venue ? `<span class="match-venue">${escapeHtml(fixture.venue)}</span>` : '';
 
   const statusChip = locked

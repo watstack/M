@@ -307,7 +307,7 @@
         db.from('bets').select('selection, stake, potential_payout, odds, bet_markets(match_no)').eq('participant_id', myParticipantId).eq('tournament_id', tid).eq('status', 'pending'),
         db.from('bets').select('status, stake, potential_payout').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('placed_at', { ascending: false }),
         db.from('parlay_bets').select('status, stake, potential_payout').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('placed_at', { ascending: false }),
-        db.from('wc_matches').select('home_tla, away_tla, home_score, away_score, status').order('synced_at', { ascending: false }),
+        db.from('wc_matches').select('home_tla, away_tla, home_score, away_score, status, utc_date').order('synced_at', { ascending: false }),
       ]);
 
       const myP         = myPRes.data;
