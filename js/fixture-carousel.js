@@ -14,20 +14,30 @@
    * @param {function} [opts.flagFn]         (side) → emoji; defaults to teamFlagEmoji global
    * @returns {string[]} one HTML string per fixture, sorted by kickoff_utc
    */
+  // Static WC2026_FIXTURES kickoff_utc is a pre-tournament placeholder; the
+  // broadcast schedule can shift once knockout slots are seeded, so prefer the
+  // live-synced wc_matches.utc_date (ESPN/FBD) whenever it's available.
+  function kickoffFor(f, matchData) {
+    return (matchData && matchData.utc_date) || f.kickoff_utc;
+  }
+
   function buildCarouselCards({ matchesByKey, teamSet, pendingByMatchNo, flagFn }) {
     const now = Date.now();
+    const matchDataFor = f => {
+      const matchKey = f.home.code && f.away.code ? `${f.home.code}_${f.away.code}` : null;
+      return matchKey ? (matchesByKey || {})[matchKey] : null;
+    };
     const all = (window.WC2026_FIXTURES || [])
       .slice()
-      .sort((a, b) => new Date(a.kickoff_utc) - new Date(b.kickoff_utc));
+      .sort((a, b) => new Date(kickoffFor(a, matchDataFor(a))) - new Date(kickoffFor(b, matchDataFor(b))));
 
     const flag = flagFn ||
       ((side) => (side && side.code && typeof teamFlagEmoji === 'function')
         ? teamFlagEmoji(side.code) : '🏳');
 
     return all.map(f => {
-      const ko        = new Date(f.kickoff_utc).getTime();
-      const matchKey  = f.home.code && f.away.code ? `${f.home.code}_${f.away.code}` : null;
-      const matchData = matchKey ? (matchesByKey || {})[matchKey] : null;
+      const matchData = matchDataFor(f);
+      const ko        = new Date(kickoffFor(f, matchData)).getTime();
       const dbStatus  = matchData?.status;
       // Treat SCHEDULED/TIMED as absent so time-based fallback fires for stale rows
       const effectiveStatus = (dbStatus && dbStatus !== 'SCHEDULED' && dbStatus !== 'TIMED') ? dbStatus : null;
@@ -44,7 +54,7 @@
         isMy   ? 'my-card'   : '',
       ].filter(Boolean).join(' ');
 
-      const d = new Date(f.kickoff_utc);
+      const d = new Date(ko);
       const todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
       const tomMid = new Date(todayMid); tomMid.setDate(todayMid.getDate() + 1);
       const dayAfterMid = new Date(tomMid); dayAfterMid.setDate(tomMid.getDate() + 1);
