@@ -39,6 +39,11 @@ module.exports = async function handler(req, res) {
     });
     if (!state) return res.status(404).json({ error: 'No market for that match_no — create markets first' });
 
+    // Trigger odds refresh for newly-resolved matches (async, don't block)
+    if (state.home_code && state.away_code && !state.locked) {
+      triggerOddsRefresh(code).catch(err => console.error('[resolve] Odds refresh failed:', err.message));
+    }
+
     return res.status(200).json({
       ok: true,
       matchNo: Number(matchNo),
@@ -51,3 +56,13 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 };
+
+// Async odds refresh for newly-resolved matches (non-blocking)
+async function triggerOddsRefresh(code) {
+  try {
+    const host = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    await fetch(`${host}/api/markets?code=${encodeURIComponent(code)}`, { method: 'POST' });
+  } catch (err) {
+    // Silently fail — odds will be refreshed on next /api/markets call
+  }
+}
