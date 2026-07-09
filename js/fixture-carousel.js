@@ -12,6 +12,9 @@
    * @param {Set}      opts.teamSet          user's allocated team codes
    * @param {object}   [opts.pendingByMatchNo] match_no → truthy when user has pending bet
    * @param {function} [opts.flagFn]         (side) → emoji; defaults to teamFlagEmoji global
+   * @param {object}   [opts.codesByMatchNo] match_no → { home_code, away_code }; DB-resolved
+   *   knockout teams (from bet_markets, filled in once a draw/bracket advance happens),
+   *   overlaid onto the static WC2026_FIXTURES slot placeholders (e.g. "Winner Match 74").
    * @returns {string[]} one HTML string per fixture, sorted by kickoff_utc
    */
   // Static WC2026_FIXTURES kickoff_utc is a pre-tournament placeholder; the
@@ -21,10 +24,20 @@
     return (matchData && matchData.utc_date) || f.kickoff_utc;
   }
 
-  function buildCarouselCards({ matchesByKey, teamSet, pendingByMatchNo, flagFn }) {
+  function buildCarouselCards({ matchesByKey, teamSet, pendingByMatchNo, flagFn, codesByMatchNo }) {
     const now = Date.now();
+    // Knockout fixtures start as slot placeholders ({slot, label}, no .code) until
+    // the draw/bracket advance resolves them; the resolved code only ever lands in
+    // bet_markets, never in the static WC2026_FIXTURES row, so overlay it here.
+    const resolvedSide = (f, side) => {
+      const codes = (codesByMatchNo || {})[f.match_no];
+      const code = codes && codes[`${side}_code`];
+      return code ? { code } : f[side];
+    };
     const matchDataFor = f => {
-      const matchKey = f.home.code && f.away.code ? `${f.home.code}_${f.away.code}` : null;
+      const home = resolvedSide(f, 'home');
+      const away = resolvedSide(f, 'away');
+      const matchKey = home.code && away.code ? `${home.code}_${away.code}` : null;
       return matchKey ? (matchesByKey || {})[matchKey] : null;
     };
     const all = (window.WC2026_FIXTURES || [])
@@ -36,6 +49,8 @@
         ? teamFlagEmoji(side.code) : '🏳');
 
     return all.map(f => {
+      const home = resolvedSide(f, 'home');
+      const away = resolvedSide(f, 'away');
       const matchData = matchDataFor(f);
       const ko        = new Date(kickoffFor(f, matchData)).getTime();
       const dbStatus  = matchData?.status;
@@ -45,7 +60,7 @@
                      (!effectiveStatus && ko <= now && (now - ko) >= CAROUSEL_LIVE_MS);
       const isLive = (effectiveStatus === 'IN_PLAY' || effectiveStatus === 'PAUSED') ||
                      (!effectiveStatus && ko <= now && (now - ko) < CAROUSEL_LIVE_MS);
-      const isMy   = (f.home.code && teamSet.has(f.home.code)) || (f.away.code && teamSet.has(f.away.code));
+      const isMy   = (home.code && teamSet.has(home.code)) || (away.code && teamSet.has(away.code));
       const hasBet = !!(pendingByMatchNo || {})[f.match_no];
 
       const classes = ['fix-card',
@@ -78,7 +93,7 @@
       }
 
       return `<div class="${classes}">
-        <div class="fix-card-teams"><span>${flag(f.home)}</span><span>${flag(f.away)}</span></div>
+        <div class="fix-card-teams"><span>${flag(home)}</span><span>${flag(away)}</span></div>
         ${scoreHtml}
         <div class="fix-card-time">${dateLabel}</div>
         ${hasBet ? `<div class="fix-card-bet">🪙</div>` : ''}

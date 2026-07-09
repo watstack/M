@@ -301,13 +301,14 @@
         ]);
       } catch {}
 
-      const [myPRes, allocRes, pendingRes, settledRes, settledParlaysRes, matchesRes] = await Promise.all([
+      const [myPRes, allocRes, pendingRes, settledRes, settledParlaysRes, matchesRes, marketCodesRes] = await Promise.all([
         db.from('participants').select('coin_balance, nickname, is_admin').eq('id', myParticipantId).single(),
         db.from('allocations').select('team_code, team_name').eq('tournament_id', tid).eq('participant_id', myParticipantId),
         db.from('bets').select('selection, stake, potential_payout, odds, bet_markets(match_no)').eq('participant_id', myParticipantId).eq('tournament_id', tid).eq('status', 'pending'),
         db.from('bets').select('status, stake, potential_payout').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('placed_at', { ascending: false }),
         db.from('parlay_bets').select('status, stake, potential_payout').eq('participant_id', myParticipantId).eq('tournament_id', tid).in('status', ['won', 'lost']).order('placed_at', { ascending: false }),
         db.from('wc_matches').select('home_tla, away_tla, home_score, away_score, status, utc_date').order('synced_at', { ascending: false }),
+        db.from('bet_markets').select('match_no, home_code, away_code').eq('tournament_id', tid).eq('market_type', 'match_result'),
       ]);
 
       const myP         = myPRes.data;
@@ -356,8 +357,15 @@
         const key = `${m.home_tla}_${m.away_tla}`;
         if (!matchesByKey[key]) matchesByKey[key] = m; // most recent (synced_at DESC) wins
       }
-      _heroCtx = { teamSet, pendingByMatchNo, matchesByKey };
-      renderFixtureCarousel(teamSet, pendingByMatchNo, matchesByKey);
+      // Knockout slots ("Winner Match 74") only resolve to real team codes once a
+      // draw/bracket advance happens; that resolution lands in bet_markets, never
+      // in the static WC2026_FIXTURES scaffold, so overlay it for the carousel.
+      const codesByMatchNo = {};
+      for (const m of (marketCodesRes.data || [])) {
+        if (m.match_no != null) codesByMatchNo[m.match_no] = { home_code: m.home_code, away_code: m.away_code };
+      }
+      _heroCtx = { teamSet, pendingByMatchNo, matchesByKey, codesByMatchNo };
+      renderFixtureCarousel(teamSet, pendingByMatchNo, matchesByKey, codesByMatchNo);
       startTicker();
     } catch (err) {
       console.error('[overview] hydrate error', err);
@@ -388,7 +396,7 @@
   }
 
   // Horizontal fixture carousel — all 104 fixtures, auto-scrolled to current position.
-  function renderFixtureCarousel(teamSet, pendingByMatchNo, matchesByKey) {
+  function renderFixtureCarousel(teamSet, pendingByMatchNo, matchesByKey, codesByMatchNo) {
     const el = document.getElementById('ovFixCarousel');
     if (!el) return;
     if (!(window.WC2026_FIXTURES || []).length) { el.innerHTML = ''; return; }
@@ -397,6 +405,7 @@
       matchesByKey,
       teamSet,
       pendingByMatchNo,
+      codesByMatchNo,
     }).join('');
 
     const firstCurrent = el.querySelector('.fix-card:not(.past-card)');

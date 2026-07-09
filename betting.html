@@ -1529,6 +1529,21 @@ async function init() {
 
 // ── Fixture carousel ──────────────────────────────────────────────────────────
 
+// Knockout slots ("Winner Match 74") only resolve to real team codes once a
+// draw/bracket advance happens; that resolution lands in bet_markets
+// (match_result.home_code/away_code), never in the static WC2026_FIXTURES
+// scaffold, so overlay it for the carousel — same as renderMatchCard does.
+function codesFromMarketsByNo(marketsByNo) {
+  const codesByMatchNo = {};
+  for (const matchNo in (marketsByNo || {})) {
+    const mr = marketsByNo[matchNo].match_result;
+    if (mr && (mr.home_code || mr.away_code)) {
+      codesByMatchNo[matchNo] = { home_code: mr.home_code, away_code: mr.away_code };
+    }
+  }
+  return codesByMatchNo;
+}
+
 function renderBetCarousel() {
   const el = document.getElementById('betFixCarousel');
   if (!el) return;
@@ -1539,6 +1554,7 @@ function renderBetCarousel() {
     matchesByKey: _matchesByKey,
     teamSet: _teamSet,
     pendingByMatchNo: _pendingByMatchNo,
+    codesByMatchNo: codesFromMarketsByNo(_marketsByNo),
   }).join('');
 
   if (!_carouselInitScrollDone) {
@@ -1615,6 +1631,7 @@ function renderMarketsView(markets) {
   const marketsByNo = indexMarketsByMatchNo(markets);
   _marketsByNo = marketsByNo;
   _customMarkets = loadCustomMarkets(markets);
+  renderBetCarousel(); // pick up any newly-resolved knockout team codes
 
   const html = _matchSort === 'custom'
     ? renderPromoCarousel() + renderAllCustomMarketsSection(_customMarkets)
