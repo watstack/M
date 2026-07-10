@@ -493,7 +493,12 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 .smv-advance-arrow { color: var(--muted); font-size: 0.65rem; flex-shrink: 0; }
 .smv-match-name { flex: 1; font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .smv-match-score { font-family: var(--font-mono); font-weight: 800; font-size: 0.9rem; min-width: 18px; text-align: right; flex-shrink: 0; }
-.smv-match-owner { font-size: 0.65rem; color: var(--muted); font-family: var(--font-body); flex-shrink: 0; }
+.smv-match-owner { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.smv-match-owner-name {
+  font-size: 0.65rem; color: var(--muted); font-weight: 600;
+  font-family: var(--font-body); max-width: 46px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .smv-tbd { color: var(--muted); }
 
 /* ── Share box ───────────────────────────────────────────────────────────── */

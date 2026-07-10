@@ -855,7 +855,7 @@
     #bracketTree .smv-match-name { font-size: 0.68rem; }
     #bracketTree .smv-match-score { font-size: 0.75rem; }
     #bracketTree .smv-match-meta { padding: 4px 7px; font-size: 0.55rem; }
-    #bracketTree .smv-match-owner { display: none; }
+    #bracketTree .smv-match-owner-name { max-width: 32px; font-size: 0.58rem; }
 
     /* Sticky tab row — mirrors betting's .bet-sticky */
     #stateBracket .stage-tabs-wrap {
@@ -2200,7 +2200,10 @@ function renderSmvMatch(match, allocMap, isFinal) {
       ? `<img src="${team.crest}" alt="" style="width:18px;height:13px;object-fit:cover;border-radius:2px;flex-shrink:0">`
       : `<span style="flex-shrink:0">${teamFlagEmoji(tla)}</span>`;
     const owner = alloc?.participants
-      ? `<span class="smv-match-owner">${esc(alloc.participants.nickname)}</span>` : '';
+      ? `<span class="smv-match-owner">
+          ${renderAvatar(alloc.participants.avatar_type, tla, 14)}
+          <span class="smv-match-owner-name">${esc(alloc.participants.nickname)}</span>
+        </span>` : '';
     const arrow = won ? `<span class="smv-advance-arrow">◂</span>` : '';
     return `<div class="smv-match-team${won ? ' winner' : ''}${lost ? ' loser' : ''}${isMine ? ' mine' : ''}">
       ${flag}
