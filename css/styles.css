@@ -390,6 +390,17 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 .slot-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-weight: 700; }
 
 /* ── Bracket ─────────────────────────────────────────────────────────────── */
+.bracket-tree { display: flex; align-items: stretch; gap: 6px; min-width: max-content; }
+.b-col { display: flex; flex-direction: column; gap: 6px; }
+.b-groups-col { width: 188px; }
+.b-round-col  { width: 168px; justify-content: space-around; }
+.b-final-col  { width: 188px; justify-content: center; gap: 10px; }
+
+.b-round-label {
+  font-family: var(--font-pixel); font-size: 0.38rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+  text-align: center; padding-bottom: 4px; flex-shrink: 0;
+}
 .b-group-card {
   background: var(--panel); border: 2px solid #2c3e54;
   border-radius: var(--radius); overflow: hidden; flex-shrink: 0;
@@ -447,46 +458,7 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 }
 .stage-tab:hover:not(.active):not(.locked) { border-color: var(--muted); color: var(--text); }
 .stage-tab.active { background: var(--text); border-color: var(--text); color: var(--dark); box-shadow: 1px 1px 0 rgba(0,0,0,.4); }
-.stage-tab.locked { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
 .stage-tab-divider { width: 1px; background: var(--border); margin: 2px 4px; flex-shrink: 0; align-self: stretch; }
-
-/* ── Stage match view ─────────────────────────────────────────────────────── */
-#stageMatchesView { padding-bottom: 40px; }
-
-.smv-section-label {
-  font-family: var(--font-pixel); font-size: 0.38rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
-  padding-bottom: 10px; margin-bottom: 10px;
-  border-bottom: 1px solid var(--border);
-}
-.smv-section-label + .smv-section-label { margin-top: 24px; }
-
-.smv-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin: 0 auto 8px;
-  max-width: 480px;
-}
-.smv-groups-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
-  gap: 14px;
-}
-
-/* ── Knockout round: feeder matches + next-round preview, bracket-connected ── */
-.ko-pairs { display: flex; flex-direction: column; gap: 26px; max-width: 760px; margin: 0 auto; }
-.ko-pair-row { display: flex; align-items: stretch; gap: 0; }
-.ko-pair-feeders { flex: 1 1 56%; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
-.ko-pair-connector { flex: 0 0 26px; width: 26px; }
-.ko-pair-connector svg { width: 100%; height: 100%; display: block; }
-.ko-pair-connector path { fill: none; stroke: var(--muted); stroke-width: 2.5; opacity: 0.55; }
-.ko-pair-next { flex: 1 1 40%; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 12px; }
-
-@media (max-width: 380px) {
-  .ko-pair-row { flex-direction: column; gap: 10px; }
-  .ko-pair-connector { display: none; }
-}
 
 .smv-match {
   background: var(--panel); border: 2px solid #2c3e54;
@@ -710,6 +682,9 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
 
 /* Tablet */
 @media (max-width: 768px) {
+  .b-groups-col { width: 170px; }
+  .b-round-col  { width: 148px; }
+  .b-final-col  { width: 168px; }
   .arena-grid   { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); }
 }
 
@@ -741,6 +716,11 @@ button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,
   .draw-arena { min-height: 480px; }
   .scene-fg { height: 40%; max-width: 30%; }
   .scene-fg-r { height: 34%; }
+
+  /* Bracket */
+  .b-groups-col { width: 155px; }
+  .b-round-col  { width: 136px; }
+  .b-final-col  { width: 155px; }
 
   .my-team-cards   { gap: 8px; }
 }

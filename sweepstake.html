@@ -338,7 +338,7 @@
     @media (max-width:640px) {
       #recapPanel.show { padding-bottom:16px; }
       #rc-wrap { border-left:none;border-right:none; }
-      .bracket-filter-btn { padding:7px 9px;font-size:0.36rem; }
+      .bracket-view-btn { padding:7px 9px;font-size:0.36rem; }
       #rc-skip { padding:14px 22px; }
     }
 
@@ -429,6 +429,51 @@
     }
 
     .not-found-icon { font-size: 3rem; margin-bottom: 16px; }
+
+    /* ── Bracket zoom ── */
+    .bracket-zoom-outer { position: relative; }
+
+    .bracket-viewport {
+      overflow: auto;
+      width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    #bracketScaleOuter { position: relative; display: block; }
+    #bracketScaleInner { display: inline-block; transform-origin: top left; }
+
+    .bracket-zoom-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .bracket-zoom-btn {
+      background: var(--panel);
+      border: 2px solid #2c3e54;
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font-pixel);
+      font-size: 0.6rem;
+      padding: 6px 14px;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 rgba(0,0,0,.6);
+      transition: transform .08s, box-shadow .08s;
+      line-height: 1;
+    }
+    .bracket-zoom-btn:hover { transform: translate(1px,1px); box-shadow: 2px 2px 0 rgba(0,0,0,.6); }
+    .bracket-zoom-btn:active { transform: translate(3px,3px); box-shadow: none; }
+
+    .bracket-zoom-level {
+      font-family: var(--font-pixel);
+      font-size: 0.38rem;
+      color: var(--muted);
+      min-width: 44px;
+      text-align: center;
+      user-select: none;
+    }
 
     /* ── Tournament landing splash ── */
     .landing-splash {
@@ -805,12 +850,12 @@
     #stateBracket .stage-tab:hover:not(.active) {
       color: var(--text);
     }
-    #stateBracket #bracketNav .nav-mode-btn[data-mode="groups"],
-    #stateBracket #bracketNav .nav-mode-btn[data-mode="knockout"] {
-      font-size: 0.52rem;
-      padding: 10px 20px;
-    }
-    #stateBracket .nav-mode-btn.nav-dimmed:not(.active) { opacity: 0.5; }
+    /* Tree bracket: shrink the reused .smv-match cards to fit narrow columns */
+    #bracketTree .smv-match-team { padding: 5px 7px; min-height: 34px; gap: 5px; }
+    #bracketTree .smv-match-name { font-size: 0.68rem; }
+    #bracketTree .smv-match-score { font-size: 0.75rem; }
+    #bracketTree .smv-match-meta { padding: 4px 7px; font-size: 0.55rem; }
+    #bracketTree .smv-match-owner { display: none; }
 
     /* Sticky tab row — mirrors betting's .bet-sticky */
     #stateBracket .stage-tabs-wrap {
@@ -1015,25 +1060,18 @@
       <!-- Bracket column -->
       <div class="live-bracket-col" id="liveBracketPanel">
 
-        <!-- Top-level nav: Groups / Knockout, plus Players / Highlights -->
+        <!-- ESPN-style stage pills -->
         <div class="stage-tabs-wrap">
           <div class="stage-tabs" id="bracketNav">
-            <button class="stage-tab nav-mode-btn active" data-mode="groups"    onclick="setBracketMode('groups')">Groups</button>
-            <button class="stage-tab nav-mode-btn"        data-mode="knockout" onclick="setBracketMode('knockout')">Knockout</button>
+            <button class="stage-tab bracket-view-btn active" data-view="groups"     onclick="setBracketView('groups')">Group Stage</button>
+            <button class="stage-tab bracket-view-btn"        data-view="r32"        onclick="setBracketView('r32')">Round of 32</button>
+            <button class="stage-tab bracket-view-btn"        data-view="r16"        onclick="setBracketView('r16')">Round of 16</button>
+            <button class="stage-tab bracket-view-btn"        data-view="qf"         onclick="setBracketView('qf')">Quarterfinals</button>
+            <button class="stage-tab bracket-view-btn"        data-view="sf"         onclick="setBracketView('sf')">Semifinals</button>
+            <button class="stage-tab bracket-view-btn"        data-view="final"      onclick="setBracketView('final')">3rd-Place Match &amp; Final</button>
             <div class="stage-tab-divider"></div>
-            <button class="stage-tab nav-mode-btn"        data-mode="players"    onclick="setBracketMode('players')">Players</button>
-            <button class="stage-tab nav-mode-btn"        data-mode="highlights" onclick="setBracketMode('highlights')">Highlights</button>
-          </div>
-        </div>
-
-        <!-- Round sub-tabs (Knockout mode only) -->
-        <div class="stage-tabs-wrap" id="koSubTabsWrap" style="display:none">
-          <div class="stage-tabs" id="bracketFilter">
-            <button class="stage-tab bracket-filter-btn" data-filter="r32"   onclick="setBracketFilter('r32')">Round of 32</button>
-            <button class="stage-tab bracket-filter-btn" data-filter="r16"   onclick="setBracketFilter('r16')">Round of 16</button>
-            <button class="stage-tab bracket-filter-btn" data-filter="qf"    onclick="setBracketFilter('qf')">Quarterfinals</button>
-            <button class="stage-tab bracket-filter-btn" data-filter="sf"    onclick="setBracketFilter('sf')">Semifinals</button>
-            <button class="stage-tab bracket-filter-btn" data-filter="final" onclick="setBracketFilter('final')">Final</button>
+            <button class="stage-tab bracket-view-btn"        data-view="players"    onclick="setBracketView('players')">Players</button>
+            <button class="stage-tab bracket-view-btn"        data-view="highlights" onclick="setBracketView('highlights')">Highlights</button>
           </div>
         </div>
 
@@ -1045,8 +1083,34 @@
 
         <p class="muted" style="font-size:0.78rem;margin-top:12px;text-align:center" id="apiUpdateTime"></p>
 
-        <!-- Stage match list (rendered for groups + every knockout round) -->
-        <div id="stageMatchesView" style="display:none"></div>
+        <!-- Full bracket tree (groups → knockout → final) -->
+        <div class="bracket-zoom-outer">
+          <div class="bracket-viewport" id="bracketViewport">
+            <div id="bracketScaleOuter">
+              <div id="bracketScaleInner">
+                <div class="bracket-tree" id="bracketTree">
+                  <div class="b-col b-groups-col" id="bGroupsLeft"  data-stage="groups"></div>
+                  <div class="b-col b-round-col"  id="bR32Left"     data-stage="r32"></div>
+                  <div class="b-col b-round-col"  id="bR16Left"     data-stage="r16"></div>
+                  <div class="b-col b-round-col"  id="bQFLeft"      data-stage="qf"></div>
+                  <div class="b-col b-round-col"  id="bSFLeft"      data-stage="sf"></div>
+                  <div class="b-col b-final-col"  id="bFinalCenter" data-stage="final"></div>
+                  <div class="b-col b-round-col"  id="bSFRight"     data-stage="sf"></div>
+                  <div class="b-col b-round-col"  id="bQFRight"     data-stage="qf"></div>
+                  <div class="b-col b-round-col"  id="bR16Right"    data-stage="r16"></div>
+                  <div class="b-col b-round-col"  id="bR32Right"    data-stage="r32"></div>
+                  <div class="b-col b-groups-col" id="bGroupsRight" data-stage="groups"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bracket-zoom-bar">
+            <button class="bracket-zoom-btn" id="bzOut" aria-label="Zoom out">−</button>
+            <span class="bracket-zoom-level" id="bzLevel">100%</span>
+            <button class="bracket-zoom-btn" id="bzIn" aria-label="Zoom in">+</button>
+            <button class="bracket-zoom-btn" id="bzFit">Fit</button>
+          </div>
+        </div>
 
         <!-- Players grid view (shown instead of bracket when filter = 'players') -->
         <div id="playerView"></div>
@@ -1054,7 +1118,7 @@
         <!-- Highlights / daily recap battle view -->
         <div id="recapPanel">
           <div id="rc-close-bar">
-            <button id="rc-close-btn" onclick="setBracketFilter(_currentBracketStage)">✕ CLOSE</button>
+            <button id="rc-close-btn" onclick="setBracketView(_currentBracketStage)">✕ CLOSE</button>
           </div>
           <div id="rc-wrap">
             <div class="rc-sky"></div>
@@ -1086,7 +1150,7 @@
               <div class="rc-end-h">RECAP COMPLETE</div>
               <div class="rc-end-s" id="rc-end-s">ALL RESULTS SHOWN</div>
               <button class="rc-replay-btn" onclick="RC.replay()">▶ REPLAY</button>
-              <button class="rc-replay-btn" style="background:none;color:var(--muted);border-color:#444" onclick="setBracketFilter(_currentBracketStage)">✕ CLOSE</button>
+              <button class="rc-replay-btn" style="background:none;color:var(--muted);border-color:#444" onclick="setBracketView(_currentBracketStage)">✕ CLOSE</button>
             </div>
 
             <div id="rc-hud">
@@ -1941,17 +2005,14 @@ function renderBracketState() {
     }
   }
 
-  _bracketFilter = 'groups';
+  _bracketView = 'groups';
   _lastStandings = [];
-  _lastKoRound = 'r32';
   document.getElementById('playerView').classList.remove('show');
   document.getElementById('recapPanel').classList.remove('show');
-  document.getElementById('koSubTabsWrap').style.display = 'none';
-  const smv = document.getElementById('stageMatchesView');
-  if (smv) smv.style.display = '';
-  document.querySelectorAll('.nav-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'groups'));
+  document.querySelector('.bracket-zoom-outer').style.display = '';
+  document.querySelectorAll('.bracket-view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === 'groups'));
 
-  loadBracketData();
+  loadBracketData().then(() => setTimeout(BracketZoom.fit, 60));
 }
 
 
@@ -2003,28 +2064,12 @@ function buildSyntheticStandings() {
 }
 
 let _currentBracketStage = 'groups';
-let _bracketFilter = 'groups';
+let _bracketView = 'groups';
 let _lastStandings = [];
 let _lastMatchData = null;
 let _autoHighlightsShown = false;
-let _lastKoRound = 'r32';
 
 const STAGE_ORDER = ['groups', 'r32', 'r16', 'qf', 'sf', 'final'];
-const KO_ROUNDS = ['r32', 'r16', 'qf', 'sf', 'final'];
-
-function updateTabLockState() {
-  const currentIdx = STAGE_ORDER.indexOf(_currentBracketStage);
-  document.querySelectorAll('.bracket-filter-btn[data-filter]').forEach(btn => {
-    const f = btn.dataset.filter;
-    const stageIdx = STAGE_ORDER.indexOf(f);
-    if (stageIdx === -1) return; // players/highlights always unlocked
-    btn.classList.toggle('locked', stageIdx > currentIdx);
-  });
-  // Dim (but keep clickable) the Knockout pill until the knockout stage begins —
-  // unlike round sub-tabs, it stays clickable so the user can still see the padlock message.
-  const koNavBtn = document.querySelector('.nav-mode-btn[data-mode="knockout"]');
-  if (koNavBtn) koNavBtn.classList.toggle('nav-dimmed', currentIdx <= 0);
-}
 
 function detectBracketStage(matches) {
   const order = ['groups', 'r32', 'r16', 'qf', 'sf', 'final'];
@@ -2038,56 +2083,6 @@ function detectBracketStage(matches) {
   return active.size ? order.find(s => active.has(s)) || 'groups' : 'groups';
 }
 
-function applyBracketFilter() {
-  updateTabLockState();
-  if (!['players', 'highlights'].includes(_bracketFilter)) {
-    renderStageView(_bracketFilter);
-  }
-}
-
-// ── Stage match list view ─────────────────────────────────────────────────────
-
-function renderStageView(stageKey) {
-  const el = document.getElementById('stageMatchesView');
-  if (!el) return;
-
-  const currentIdx = STAGE_ORDER.indexOf(_currentBracketStage);
-  const tabIdx     = STAGE_ORDER.indexOf(stageKey);
-
-  if (tabIdx > currentIdx) {
-    el.innerHTML = `<div style="text-align:center;padding:48px 24px;color:var(--muted)">
-      <div style="font-size:2rem;opacity:0.4;margin-bottom:14px">🔒</div>
-      <div style="font-family:var(--font-pixel);font-size:0.42rem;letter-spacing:0.1em;text-transform:uppercase">Unlocks when this stage begins</div>
-    </div>`;
-    return;
-  }
-
-  const allocMap = buildAllocMap();
-  const matches  = (_lastMatchData?.matches) || [];
-
-  if (stageKey === 'groups') {
-    const standings = _lastStandings.length ? _lastStandings : buildSyntheticStandings();
-    el.innerHTML = `<div class="smv-groups-grid">${standings.map(g => renderGroupMini(g, allocMap)).join('')}</div>`;
-    return;
-  }
-
-  const koMap = buildKnockoutBracketMap(matches);
-
-  if (stageKey === 'final') {
-    const finalM = koMap[104] || null;
-    const thirdM = koMap[103] || null;
-    el.innerHTML =
-      `<div class="smv-section-label" style="color:var(--gold)">🏆 Final</div>
-       <div class="smv-grid">${renderSmvMatch(finalM, allocMap, true)}</div>
-       <div class="smv-section-label" style="margin-top:24px">3rd-Place Match</div>
-       <div class="smv-grid">${renderSmvMatch(thirdM, allocMap, false)}</div>`;
-    return;
-  }
-
-  const groups = pairsForStage(stageKey);
-  el.innerHTML = `<div class="ko-pairs">${groups.map(g => renderKoPairRow(g, koMap, allocMap)).join('')}</div>`;
-}
-
 // ── Knockout bracket resolution ───────────────────────────────────────────────
 // Builds a match_no → resolved-match map for every knockout fixture (73–104),
 // using the static WC2026_FIXTURES/BRACKET_FEED slot structure so each round's
@@ -2096,7 +2091,6 @@ function renderStageView(stageKey) {
 
 const KO_STAGE_API      = { r32: 'ROUND_OF_32', r16: 'ROUND_OF_16', qf: 'QUARTER_FINALS', sf: 'SEMI_FINALS', third: 'THIRD_PLACE', final: 'FINAL' };
 const KO_STAGE_SEQUENCE = ['r32', 'r16', 'qf', 'sf', 'third', 'final'];
-const KO_NEXT_STAGES    = { r32: ['r16'], r16: ['qf'], qf: ['sf'], sf: ['third', 'final'] };
 
 function teamDisplayFromCode(code) {
   if (!code) return null;
@@ -2150,53 +2144,6 @@ function buildKnockoutBracketMap(matches) {
     }
   }
   return map;
-}
-
-// Groups a round's matches into { feeders:[matchNoA, matchNoB], destinations:[...] }
-// so each pair of feeder matches can be rendered next to the single next-round
-// match (or two, for semi-finals which feed both 3rd-place and the final).
-function pairsForStage(stageKey) {
-  const nextStages = KO_NEXT_STAGES[stageKey];
-  if (!nextStages) return [];
-  const fixtures = window.WC2026_FIXTURES || [];
-  const destMatchNos = fixtures.filter(f => nextStages.includes(f.stage)).map(f => f.match_no).sort((a, b) => a - b);
-
-  const groups = [];
-  const indexByFeederKey = new Map();
-  for (const d of destMatchNos) {
-    const feed = (window.BRACKET_FEED || {})[d];
-    if (!feed) continue;
-    const feeders = feed.map(tok => parseInt(tok.slice(1), 10)).sort((a, b) => a - b);
-    const key = feeders.join(',');
-    if (indexByFeederKey.has(key)) {
-      groups[indexByFeederKey.get(key)].destinations.push(d);
-    } else {
-      indexByFeederKey.set(key, groups.length);
-      groups.push({ feeders, destinations: [d] });
-    }
-  }
-  groups.forEach(g => g.destinations.sort((a, b) => a - b));
-  groups.sort((a, b) => a.feeders[0] - b.feeders[0]);
-  return groups;
-}
-
-function renderKoPairRow(group, koMap, allocMap) {
-  const [f1, f2] = group.feeders;
-  const nextCards = group.destinations.map(d => renderSmvMatch(koMap[d], allocMap, false)).join('');
-  return `<div class="ko-pair-row">
-    <div class="ko-pair-feeders">
-      ${renderSmvMatch(koMap[f1], allocMap, false)}
-      ${renderSmvMatch(koMap[f2], allocMap, false)}
-    </div>
-    <div class="ko-pair-connector" aria-hidden="true">
-      <svg viewBox="0 0 24 100" preserveAspectRatio="none">
-        <path d="M0,25 H12 V50" />
-        <path d="M0,75 H12 V50" />
-        <path d="M12,50 H24" />
-      </svg>
-    </div>
-    <div class="ko-pair-next">${nextCards}</div>
-  </div>`;
 }
 
 // Today / Yesterday / "Mon, 29 June" — used once a match has a definite result or is live.
@@ -2331,40 +2278,36 @@ function renderPlayerView() {
   container.innerHTML = cards || '<p style="color:var(--muted)">No allocations yet.</p>';
 }
 
-// Keep both tab rows' visual state in sync no matter how the filter was reached
-// (direct call, auto-advance, or the recap-panel close buttons).
-function syncBracketNavUI(filter) {
-  document.querySelectorAll('.bracket-filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
-  const koSubTabsWrap = document.getElementById('koSubTabsWrap');
-  if (KO_ROUNDS.includes(filter)) {
-    _lastKoRound = filter;
-    document.querySelectorAll('.nav-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === 'knockout'));
-    if (koSubTabsWrap) koSubTabsWrap.style.display = '';
-  } else {
-    document.querySelectorAll('.nav-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === filter));
-    if (koSubTabsWrap) koSubTabsWrap.style.display = 'none';
-  }
+// Which .b-col holds a given stage tab's content — 'r32'/'r16'/'qf'/'sf' all have
+// a left+right pair, so the left column is the scroll target for that stage.
+const STAGE_SCROLL_COL = { groups: 'bGroupsLeft', r32: 'bR32Left', r16: 'bR16Left', qf: 'bQFLeft', sf: 'bSFLeft', final: 'bFinalCenter' };
+
+function scrollToColumn(view) {
+  const colId = STAGE_SCROLL_COL[view];
+  const viewport = document.getElementById('bracketViewport');
+  const col = colId && document.getElementById(colId);
+  if (!viewport || !col) return;
+  const target = col.offsetLeft - (viewport.clientWidth - col.offsetWidth) / 2;
+  viewport.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
 }
 
-window.setBracketFilter = function(filter) {
-  _bracketFilter = filter;
-  syncBracketNavUI(filter);
+window.setBracketView = function(view) {
+  _bracketView = view;
+  document.querySelectorAll('.bracket-view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
 
+  const bracketOuter  = document.querySelector('.bracket-zoom-outer');
   const apiTime       = document.getElementById('apiUpdateTime');
   const playerView    = document.getElementById('playerView');
   const recapPanel    = document.getElementById('recapPanel');
-  const stageView     = document.getElementById('stageMatchesView');
 
-  const isPlayers    = filter === 'players';
-  const isHighlights = filter === 'highlights';
-  const isStage      = !isPlayers && !isHighlights;
+  const isPlayers    = view === 'players';
+  const isHighlights = view === 'highlights';
+  const isTree       = !isPlayers && !isHighlights;
 
-  if (apiTime)      apiTime.style.display      = isStage ? '' : 'none';
+  if (bracketOuter) bracketOuter.style.display = isTree ? '' : 'none';
+  if (apiTime)      apiTime.style.display      = isTree ? '' : 'none';
   playerView.classList.remove('show');
   recapPanel.classList.remove('show');
-  if (stageView) stageView.style.display = isStage ? '' : 'none';
-
-  updateTabLockState();
 
   if (isPlayers) {
     playerView.classList.add('show');
@@ -2373,16 +2316,7 @@ window.setBracketFilter = function(filter) {
     recapPanel.classList.add('show');
     RC.start();
   } else {
-    renderStageView(filter);
-  }
-};
-
-window.setBracketMode = function(mode) {
-  document.querySelectorAll('.nav-mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-  if (mode === 'knockout') {
-    setBracketFilter(_lastKoRound);
-  } else {
-    setBracketFilter(mode); // 'groups' | 'players' | 'highlights'
+    scrollToColumn(view);
   }
 };
 
@@ -2394,38 +2328,27 @@ async function loadBracketData() {
     if (data.standings.length) { saveGroupCache(data.standings); _lastStandings = data.standings; }
     _currentBracketStage = detectBracketStage(data.matches);
 
-    // Auto-advance: if current filter is a now-locked stage, jump to the current stage
-    const filterIdx  = STAGE_ORDER.indexOf(_bracketFilter);
-    const currentIdx = STAGE_ORDER.indexOf(_currentBracketStage);
-    if (filterIdx !== -1 && filterIdx > currentIdx) {
-      _bracketFilter = _currentBracketStage;
-    }
     // On first load, jump straight to current tournament stage
-    if (_bracketFilter === 'groups' && _currentBracketStage !== 'groups') {
-      _bracketFilter = _currentBracketStage;
+    if (_bracketView === 'groups' && _currentBracketStage !== 'groups') {
+      _bracketView = _currentBracketStage;
     }
 
-    applyBracketFilter();
-    syncBracketNavUI(_bracketFilter);
+    renderBracketTree(data);
+    document.querySelectorAll('.bracket-view-btn').forEach(b => b.classList.toggle('active', b.dataset.view === _bracketView));
     document.getElementById('liveIndicator').style.display = hasLiveMatch({ matches: data.matches }) ? 'inline' : 'none';
 
     if (!_autoHighlightsShown && (data.matches || []).some(m => m.status === 'FINISHED')) {
       _autoHighlightsShown = true;
-      setBracketFilter('highlights');
+      setBracketView('highlights');
+    } else {
+      scrollToColumn(_bracketView);
     }
 
     startPolling(freshData => {
       if (freshData.standings.length) { saveGroupCache(freshData.standings); _lastStandings = freshData.standings; }
       _lastMatchData = freshData;
       _currentBracketStage = detectBracketStage(freshData.matches);
-      // Auto-advance if tournament moved past current filter
-      const fi = STAGE_ORDER.indexOf(_bracketFilter);
-      const ci = STAGE_ORDER.indexOf(_currentBracketStage);
-      if (fi !== -1 && fi > ci) {
-        _bracketFilter = _currentBracketStage;
-        syncBracketNavUI(_bracketFilter);
-      }
-      applyBracketFilter();
+      renderBracketTree(freshData);
       document.getElementById('liveIndicator').style.display = hasLiveMatch({ matches: freshData.matches }) ? 'inline' : 'none';
       document.getElementById('apiUpdateTime').textContent =
         'Last updated: ' + new Date().toLocaleTimeString();
@@ -2433,13 +2356,76 @@ async function loadBracketData() {
   } catch (err) {
     _lastMatchData = { teams: [], matches: [], standings: [] };
     _lastStandings = buildSyntheticStandings();
-    applyBracketFilter();
+    renderBracketTree(_lastMatchData);
     document.getElementById('apiUpdateTime').textContent =
       'Showing group positions — scores will update once matches start.';
   }
 }
 
 // ── Bracket tree rendering ────────────────────────────────────────────────────
+
+// True bracket-tree column order, derived from BRACKET_FEED (NOT the same as
+// sorting a round's fixtures by match_no — e.g. R32's left half is
+// [74,77,73,75,83,84,81,82], not a contiguous match_no range).
+function feederMatchNos(matchNo) {
+  return (window.BRACKET_FEED?.[matchNo] || []).map(tok => parseInt(tok.slice(1), 10));
+}
+function bracketColumnOrder() {
+  const sf  = feederMatchNos(104);        // [101,102]
+  const qf  = sf.flatMap(feederMatchNos); // [97,98,99,100]
+  const r16 = qf.flatMap(feederMatchNos); // [89,90,93,94, 91,92,95,96]
+  const r32 = r16.flatMap(feederMatchNos);
+  const half = a => [a.slice(0, a.length / 2), a.slice(a.length / 2)];
+  const [sfL, sfR]   = half(sf);
+  const [qfL, qfR]   = half(qf);
+  const [r16L, r16R] = half(r16);
+  const [r32L, r32R] = half(r32);
+  return { sfL, sfR, qfL, qfR, r16L, r16R, r32L, r32R };
+}
+
+function renderBracketColumn(id, label, matchNos, koMap, allocMap) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const cards = matchNos.map(no => renderSmvMatch(koMap[no] || null, allocMap, false));
+  el.innerHTML = `<div class="b-round-label">${esc(label)}</div>` + cards.join('');
+}
+
+function renderBracketTree(data) {
+  const allocMap  = buildAllocMap();
+  const standings = data.standings?.length ? data.standings : (_lastStandings.length ? _lastStandings : buildSyntheticStandings());
+  const matches   = data.matches || [];
+  if (data.standings?.length) _lastStandings = data.standings;
+
+  // Groups have no canonical bracket half (a group's two qualifiers can land on
+  // either side of the draw) — alphabetical bisection is the correct approach.
+  const leftGroups  = standings.slice(0, 6);
+  const rightGroups = standings.slice(6);
+  document.getElementById('bGroupsLeft').innerHTML  = leftGroups.map(g => renderGroupMini(g, allocMap)).join('');
+  document.getElementById('bGroupsRight').innerHTML = rightGroups.map(g => renderGroupMini(g, allocMap)).join('');
+
+  const koMap = buildKnockoutBracketMap(matches);
+  const { sfL, sfR, qfL, qfR, r16L, r16R, r32L, r32R } = bracketColumnOrder();
+
+  renderBracketColumn('bR32Left',  'Round of 32',    r32L, koMap, allocMap);
+  renderBracketColumn('bR16Left',  'Round of 16',    r16L, koMap, allocMap);
+  renderBracketColumn('bQFLeft',   'Quarter-Finals', qfL,  koMap, allocMap);
+  renderBracketColumn('bSFLeft',   'Semi-Finals',    sfL,  koMap, allocMap);
+  renderBracketColumn('bSFRight',  'Semi-Finals',    sfR,  koMap, allocMap);
+  renderBracketColumn('bQFRight',  'Quarter-Finals', qfR,  koMap, allocMap);
+  renderBracketColumn('bR16Right', 'Round of 16',    r16R, koMap, allocMap);
+  renderBracketColumn('bR32Right', 'Round of 32',    r32R, koMap, allocMap);
+
+  const bF = document.getElementById('bFinalCenter');
+  const finalM = koMap[104] || null, thirdM = koMap[103] || null;
+  bF.innerHTML =
+    `<div class="b-round-label" style="color:var(--gold)">🏆 Final</div>
+     ${renderSmvMatch(finalM, allocMap, true)}
+     <div class="b-round-label" style="margin-top:8px">3rd Place</div>
+     ${renderSmvMatch(thirdM, allocMap, false)}`;
+
+  const live = hasLiveMatch({ matches });
+  document.getElementById('liveIndicator').style.display = live ? 'inline' : 'none';
+}
 
 function renderGroupMini(group, allocMap) {
   const groupName = (group.group || group.stage || '').replace(/^GROUP_/i, 'Group ');
@@ -3171,6 +3157,88 @@ const RC = (() => {
     skip(){gen++;clearInterval(tickId);rcFadeNext();},
   };
 })();
+
+// ── Bracket zoom controller ───────────────────────────────────────────────────
+const BracketZoom = (function () {
+  let _zoom = 1, _nw = 0, _nh = 0;
+  let _pinchDist0 = 0, _pinchZoom0 = 1;
+
+  function el(id) { return document.getElementById(id); }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  function measure() {
+    const inner = el('bracketScaleInner');
+    if (!inner) return;
+    const prev = inner.style.transform;
+    inner.style.transform = 'scale(1)';
+    _nw = inner.scrollWidth;
+    _nh = inner.scrollHeight;
+    inner.style.transform = prev;
+  }
+
+  function apply(z) {
+    if (!_nw) return;
+    _zoom = clamp(z, 0.1, 2);
+    const inner  = el('bracketScaleInner');
+    const sOuter = el('bracketScaleOuter');
+    const lvl    = el('bzLevel');
+    if (!inner || !sOuter || !lvl) return;
+    inner.style.transform       = `scale(${_zoom})`;
+    inner.style.transformOrigin = 'top left';
+    sOuter.style.width  = (_nw * _zoom) + 'px';
+    sOuter.style.height = (_nh * _zoom) + 'px';
+    lvl.textContent = Math.round(_zoom * 100) + '%';
+  }
+
+  function fit() {
+    measure();
+    if (!_nw) return;
+    const vp = el('bracketViewport');
+    if (!vp) return;
+    apply(vp.clientWidth / (_nw + 4));
+  }
+
+  function init() {
+    const vp = el('bracketViewport');
+    if (!vp) return;
+
+    el('bzOut').addEventListener('click', () => apply(_zoom / 1.25));
+    el('bzIn').addEventListener('click',  () => apply(_zoom * 1.25));
+    el('bzFit').addEventListener('click', fit);
+
+    vp.addEventListener('wheel', e => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      apply(_zoom * (e.deltaY > 0 ? 0.9 : 1.1));
+    }, { passive: false });
+
+    vp.addEventListener('touchstart', e => {
+      if (e.touches.length < 2) return;
+      _pinchDist0 = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      _pinchZoom0 = _zoom;
+    }, { passive: true });
+
+    vp.addEventListener('touchmove', e => {
+      if (e.touches.length < 2) return;
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      apply(_pinchZoom0 * dist / _pinchDist0);
+    }, { passive: true });
+
+    window.addEventListener('resize', () => {
+      if (el('stateBracket')?.classList.contains('active')) fit();
+    });
+  }
+
+  return { init, fit };
+})();
+
+BracketZoom.init();
 
 init();
 </script>
