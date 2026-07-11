@@ -2091,6 +2091,16 @@ function detectBracketStage(matches) {
 
 const KO_STAGE_API      = { r32: 'ROUND_OF_32', r16: 'ROUND_OF_16', qf: 'QUARTER_FINALS', sf: 'SEMI_FINALS', third: 'THIRD_PLACE', final: 'FINAL' };
 const KO_STAGE_SEQUENCE = ['r32', 'r16', 'qf', 'sf', 'third', 'final'];
+// Some providers (football-data.org) label these rounds LAST_32/LAST_16
+// instead of ROUND_OF_32/ROUND_OF_16 — accept both when matching live data.
+const API_STAGE_ALIASES = {
+  ROUND_OF_32: 'r32', LAST_32: 'r32',
+  ROUND_OF_16: 'r16', LAST_16: 'r16',
+  QUARTER_FINALS: 'qf',
+  SEMI_FINALS: 'sf',
+  THIRD_PLACE: 'third',
+  FINAL: 'final',
+};
 
 function teamDisplayFromCode(code) {
   if (!code) return null;
@@ -2119,7 +2129,7 @@ function buildKnockoutBracketMap(matches) {
       let live = null;
       if (homeCode && awayCode) {
         live = matches.find(m => {
-          if (m.stage !== apiStage) return false;
+          if (API_STAGE_ALIASES[m.stage] !== stageKey) return false;
           const h = normTeamCode(m.homeTeam?.tla || '');
           const a = normTeamCode(m.awayTeam?.tla || '');
           return (h === homeCode && a === awayCode) || (h === awayCode && a === homeCode);
@@ -2912,7 +2922,7 @@ const RC = (() => {
           ai++;return{t:'away',sc:'GOAL  '+min+"'"};
         });
       }
-      const stageLabel={GROUP_STAGE:'Group Stage',ROUND_OF_32:'Rd of 32',ROUND_OF_16:'Rd of 16',QUARTER_FINALS:'Quarter Final',SEMI_FINALS:'Semi Final',FINAL:'Final',THIRD_PLACE:'3rd Place'}[m.stage]||m.stage||'';
+      const stageLabel={GROUP_STAGE:'Group Stage',ROUND_OF_32:'Rd of 32',LAST_32:'Rd of 32',ROUND_OF_16:'Rd of 16',LAST_16:'Rd of 16',QUARTER_FINALS:'Quarter Final',SEMI_FINALS:'Semi Final',FINAL:'Final',THIRD_PLACE:'3rd Place'}[m.stage]||m.stage||'';
       const dateLabel=m.utcDate?new Date(m.utcDate).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
       const hAvType=hAlloc?.participants?.avatar_type||1;
       const aAvType=aAlloc?.participants?.avatar_type||2;
