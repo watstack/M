@@ -2366,6 +2366,7 @@ async function pickSundayFunday(choice) {
         resultEl.classList.add('spin-result--win');
         resultEl.textContent = '🎉 Called it! +10% odds boost applied.';
       } catch (err) {
+        console.error('Sunday Funday boost failed:', err);
         resultEl.classList.add('spin-result--lose');
         resultEl.textContent = 'Called it, but the boost failed to apply.';
       }
