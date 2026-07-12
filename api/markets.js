@@ -49,6 +49,15 @@ module.exports = async function handler(req, res) {
     if (!tourns.length) return res.status(404).json({ error: 'Tournament not found' });
     const tournamentId = tourns[0].id;
 
+    // 1b. Self-heal any market row for a newer market_type that was scaffolded
+    // locked after its match had already been resolved elsewhere in this
+    // tournament (see supabase/reconcile-locked-markets.sql). Cheap, idempotent,
+    // non-fatal if it hiccups.
+    const reconcileRes = await rest('/rpc/reconcile_locked_markets', { method: 'POST' });
+    if (!reconcileRes.ok) {
+      console.warn(`[markets] reconcile_locked_markets failed: ${reconcileRes.status}`);
+    }
+
     // 2. Build market rows from the static fixture list via shared builder.
     // No odds events passed — this endpoint only scaffolds; the cron owns odds.
     const { groupRows, koRows, oddsMatched } = buildMarketRows(tournamentId, null, null, null);
