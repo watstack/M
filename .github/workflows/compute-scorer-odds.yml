@@ -1,0 +1,24 @@
+name: Compute semi-final first-goalscorer odds
+
+# One-time calculation (workflow_dispatch only, no schedule) — see
+# scripts/compute-scorer-odds.cjs for why this isn't part of the recurring
+# refresh-odds.yml cron. Trigger manually from the Actions tab, or again
+# later (e.g. once starting lineups are confirmed closer to kickoff).
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  compute:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node scripts/compute-scorer-odds.cjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
