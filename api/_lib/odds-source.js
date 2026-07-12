@@ -2,17 +2,33 @@
 // first-goalscorer odds — replaces The Odds API, which this app no longer has
 // a key for. Source: Oddschecker (oddschecker.com) World Cup fixture pages,
 // picked because it aggregates many bookmakers' prices for many markets
-// (1X2 + First Goalscorer specials) on one page.
+// (1X2 + First/Anytime Goalscorer specials) on one page.
 //
-// IMPORTANT — Step 0 not yet done: this module was written without live
-// network access to oddschecker.com (sandboxed dev environment). The URLs and
-// selectors below are best-effort, not verified against the real page. Before
-// relying on this in production: run it from an environment with normal
-// internet access, inspect the actual page (embedded JSON blob vs rendered
-// HTML, real selectors, whether SF-stage fixtures carry a first-goalscorer
-// market at all), and adjust discoverFixtureLinks/parseMatchWinnerPage/
-// parseFirstScorerSection accordingly. See docs/ODDS_SCRAPE.md for the full
-// checklist. Until that's done, treat any odds this module returns as unverified.
+// Verified against a live fixture page (2026-07-12, via a manually-shared
+// screenshot + confirmed behavior — this sandbox has no network access to
+// oddschecker.com itself):
+//   - Fixture URL shape: /football/world-cup/{team-a}-v-{team-b}/winner
+//     (nested under /football/world-cup/, not directly under /football/).
+//   - "Win Markets" / "Player Betting" / "Stats Betting" are client-side tabs
+//     that do NOT change the URL — confirmed by the user tapping through on
+//     their phone. This means one fetch per fixture page can plausibly serve
+//     both match-winner and player-goalscorer odds, on the assumption the tab
+//     panels are server-rendered and just CSS/JS-toggled (the standard
+//     implementation for a URL-stable tab UI) rather than lazy-loaded via a
+//     separate XHR on tab click — unconfirmed, but the fail-soft design below
+//     means a wrong guess here just yields empty scorer results, not a crash.
+//   - Player markets include both "Anytime Goalscorer" (with an AI-probability
+//     feature) and "First Goalscorer" — this module targets "First
+//     Goalscorer" specifically, falling back to "Anytime Goalscorer" only if
+//     no First Goalscorer section exists on the page.
+//   - Odds are fractional (e.g. "6/5", "49/20"), not decimal.
+//   - The on-page match heading reads "France vs Spain Betting Odds" — "vs"
+//     (not " v ") plus trailing site text; the <title> tag's exact format is
+//     still unconfirmed, so team-name extraction accepts both separators and
+//     strips known trailing phrases.
+// See docs/ODDS_SCRAPE.md for the full verification checklist — remaining
+// unconfirmed items are noted there (in particular, whether the goalscorer
+// markup is truly present in the initial HTML response for every fixture).
 //
 // Normalizes output to the same shapes The Odds API used to return, so
 // api/_lib/odds-match.js's h2hOddsForFixture/firstScorerOddsForFixture need no
@@ -58,7 +74,8 @@ function extractEmbeddedJson(html) {
 }
 
 // Decimal odds cells on odds-comparison sites are typically rendered as plain
-// "1.85" or fractional "17/20" — accept either, always normalize to decimal.
+// "1.85" or fractional "17/20" (confirmed live: Oddschecker uses fractional,
+// e.g. "6/5", "49/20") — accept either, always normalize to decimal.
 function parsePrice(raw) {
   const s = String(raw || '').trim();
   if (!s) return null;
@@ -74,17 +91,47 @@ function parsePrice(raw) {
   return null;
 }
 
+// Strip trailing site furniture from a candidate title/heading string before
+// team-name extraction: " - Odds Comparison" / " | Oddschecker" style
+// suffixes (split on hyphen/pipe), and the confirmed live H1 pattern
+// "Team A vs Team B Betting Odds" (strip trailing "Betting Odds").
+function stripTrailingFurniture(text) {
+  return String(text || '')
+    .split(/\s[-|]\s/)[0]
+    .replace(/\s+Betting\s+Odds\s*$/i, '')
+    .trim();
+}
+
+// Extract { home, away } team names from a fixture page's <title> or <h1>,
+// accepting both " v " and " vs " as the separator (confirmed live: the H1
+// uses "vs", the <title> tag's exact format is unconfirmed).
+function extractTeamsFromPage($) {
+  const candidates = [
+    $('title').first().text(),
+    $('h1').first().text(),
+  ];
+  for (const raw of candidates) {
+    const text = stripTrailingFurniture(raw);
+    const m = text.match(/([A-Za-z .']+?)\s+vs?\s+([A-Za-z .']+)$/i);
+    if (m) return { home: m[1].trim(), away: m[2].trim() };
+  }
+  return null;
+}
+
 // Best-effort discovery of individual World Cup fixture page URLs from the
 // tournament hub page. Prefers an embedded JSON listing; falls back to
-// scanning anchors for a "/football/team-a-v-team-b" style path.
+// scanning anchors for a "/football/world-cup/team-a-v-team-b(/market)" style
+// path (confirmed live shape, e.g. ".../france-v-spain/winner").
 async function discoverFixtureLinks() {
   const html = await fetchHtml(FIXTURES_URL);
+  const linkPattern = /\/football\/world-cup\/[a-z0-9-]+-v-[a-z0-9-]+(?:\/[a-z0-9-]+)?/i;
+
   const next = extractEmbeddedJson(html);
   if (next) {
     const links = new Set();
     const walk = (node) => {
       if (!node || typeof node !== 'object') return;
-      if (typeof node.url === 'string' && /\/football\/[a-z0-9-]+-v-[a-z0-9-]+/i.test(node.url)) {
+      if (typeof node.url === 'string' && linkPattern.test(node.url)) {
         links.add(node.url.startsWith('http') ? node.url : `https://www.oddschecker.com${node.url}`);
       }
       for (const v of Object.values(node)) {
@@ -97,9 +144,9 @@ async function discoverFixtureLinks() {
 
   const $ = cheerio.load(html);
   const links = new Set();
-  $('a[href*="/football/"]').each((_, el) => {
+  $('a[href*="/football/world-cup/"]').each((_, el) => {
     const href = $(el).attr('href');
-    if (href && /\/football\/[a-z0-9-]+-v-[a-z0-9-]+/i.test(href)) {
+    if (href && linkPattern.test(href)) {
       links.add(href.startsWith('http') ? href : `https://www.oddschecker.com${href}`);
     }
   });
@@ -108,19 +155,15 @@ async function discoverFixtureLinks() {
 
 // Parse one fixture page's "Match Betting" (1X2) table into an Odds-API-shaped
 // h2h event. Returns null if the page doesn't look like a match-odds page.
-function parseMatchWinnerPage(html, fallbackTeams) {
+function parseMatchWinnerPage(html) {
   const $ = cheerio.load(html);
 
-  // Strip trailing site furniture (" - Odds Comparison", " | Oddschecker", …)
-  // before splitting on " v " so the away-team capture doesn't swallow it.
-  const title = ($('title').first().text() || '').split(/\s[-|]\s/)[0];
-  const titleMatch = title.match(/([A-Za-z .']+?)\s+v\s+([A-Za-z .']+)$/i);
-  const homeTeam = (titleMatch && titleMatch[1].trim()) || fallbackTeams?.home || null;
-  const awayTeam = (titleMatch && titleMatch[2].trim()) || fallbackTeams?.away || null;
-  if (!homeTeam || !awayTeam) return null;
+  const teams = extractTeamsFromPage($);
+  if (!teams) return null;
+  const { home: homeTeam, away: awayTeam } = teams;
 
-  // Fallback HTML table scan: rows with a team/draw label + one or more
-  // decimal-odds cells. Take the best (highest) price offered per outcome.
+  // HTML table scan: rows with a team/draw label + one or more odds cells.
+  // Take the best (highest) price offered per outcome across bookmakers.
   const best = { [homeTeam]: null, Draw: null, [awayTeam]: null };
   $('tr').each((_, row) => {
     const cells = $(row).find('td, th').toArray().map(c => $(c).text().trim());
@@ -156,27 +199,29 @@ function parseMatchWinnerPage(html, fallbackTeams) {
   };
 }
 
-// Parse a fixture page's "First Goalscorer" specials table (or sub-page) into
-// { home_team, away_team, players: [{ name, price }] }. Returns null if no
-// first-goalscorer market is found on the page.
+// Parse a fixture page's "First Goalscorer" specials table into
+// { home_team, away_team, players: [{ name, price }] }. Falls back to
+// "Anytime Goalscorer" only if no First Goalscorer section exists on the page
+// (confirmed live: both markets can appear on the same page, with Anytime
+// Goalscorer listed first — prefer First Goalscorer specifically since that's
+// the market this feature targets). Returns null if neither is found.
 function parseFirstScorerSection(html, homeTeam, awayTeam) {
   const $ = cheerio.load(html);
-  const players = [];
 
-  // Look for a section headed "First Goalscorer" (or "Anytime Goalscorer" as
-  // a fallback) and read player-name + best-price rows beneath it.
-  const heading = $('*').filter((_, el) => {
-    const t = $(el).text().trim();
-    return /^first\s+goalscorer$/i.test(t) || /^anytime\s+goalscorer$/i.test(t);
-  }).first();
+  const findHeading = (pattern) =>
+    $('*').filter((_, el) => pattern.test($(el).text().trim())).first();
+
+  let heading = findHeading(/^first\s+goal\s*scorer$/i);
+  if (!heading.length) heading = findHeading(/^anytime\s+goal\s*scorer$/i);
   if (!heading.length) return null;
 
+  const players = [];
   const section = heading.closest('section, div').length ? heading.closest('section, div') : heading.parent();
   section.find('tr').each((_, row) => {
     const cells = $(row).find('td, th').toArray().map(c => $(c).text().trim());
     if (cells.length < 2) return;
     const name = cells[0];
-    if (!name || /^first\s+goalscorer$/i.test(name)) return;
+    if (!name || /goal\s*scorer/i.test(name)) return;
     let best = null;
     for (const cell of cells.slice(1)) {
       const price = parsePrice(cell);
@@ -189,52 +234,73 @@ function parseFirstScorerSection(html, homeTeam, awayTeam) {
   return { home_team: homeTeam, away_team: awayTeam, players };
 }
 
+// Fetches every fixture page exactly once and parses both team-winner and
+// first-scorer odds from the same HTML response (tabs share one URL — see
+// module header), then caches the result for the lifetime of the process so
+// fetchTeamOdds()/fetchFirstScorerOdds() calling this within the same cron
+// run only scrapes the site once. Never rejects — internal fetch/parse
+// failures degrade to empty results with a logged warning.
+let _cachedScrapePromise = null;
+
+function _scrapeAllFixtures() {
+  if (_cachedScrapePromise) return _cachedScrapePromise;
+  _cachedScrapePromise = (async () => {
+    let links = [];
+    try {
+      links = await discoverFixtureLinks();
+    } catch (e) {
+      console.warn('[odds-source] fixture discovery failed:', e.message);
+      return { teamOdds: [], scorerOdds: [] };
+    }
+
+    const teamOdds = [];
+    const scorerOdds = [];
+    for (const url of links) {
+      try {
+        const html = await fetchHtml(url);
+        const mw = parseMatchWinnerPage(html);
+        if (!mw) continue;
+        teamOdds.push(mw);
+        const fs = parseFirstScorerSection(html, mw.home_team, mw.away_team);
+        if (fs) scorerOdds.push(fs);
+      } catch (e) {
+        console.warn(`[odds-source] parse failed for ${url}:`, e.message);
+      }
+    }
+    return { teamOdds, scorerOdds };
+  })();
+  return _cachedScrapePromise;
+}
+
+// Exposed only so tests can isolate scrape runs — production always runs as a
+// fresh process per cron invocation, so no reset is needed there.
+function _resetCacheForTests() {
+  _cachedScrapePromise = null;
+}
+
 async function fetchTeamOdds() {
-  const events = [];
-  let links = [];
   try {
-    links = await discoverFixtureLinks();
+    const { teamOdds } = await _scrapeAllFixtures();
+    return teamOdds;
   } catch (e) {
-    console.warn('[odds-source] fixture discovery failed:', e.message);
+    console.warn('[odds-source] fetchTeamOdds failed:', e.message);
     return [];
   }
-  for (const url of links) {
-    try {
-      const html = await fetchHtml(url);
-      const ev = parseMatchWinnerPage(html);
-      if (ev) events.push(ev);
-    } catch (e) {
-      console.warn(`[odds-source] team-odds parse failed for ${url}:`, e.message);
-    }
-  }
-  return events;
 }
 
 async function fetchFirstScorerOdds() {
-  const events = [];
-  let links = [];
   try {
-    links = await discoverFixtureLinks();
+    const { scorerOdds } = await _scrapeAllFixtures();
+    return scorerOdds;
   } catch (e) {
-    console.warn('[odds-source] fixture discovery failed:', e.message);
+    console.warn('[odds-source] fetchFirstScorerOdds failed:', e.message);
     return [];
   }
-  for (const url of links) {
-    try {
-      const html = await fetchHtml(url);
-      const mw = parseMatchWinnerPage(html);
-      if (!mw) continue;
-      const fs = parseFirstScorerSection(html, mw.home_team, mw.away_team);
-      if (fs) events.push(fs);
-    } catch (e) {
-      console.warn(`[odds-source] scorer-odds parse failed for ${url}:`, e.message);
-    }
-  }
-  return events;
 }
 
 module.exports = {
   fetchTeamOdds, fetchFirstScorerOdds,
   // exported for tests / Step 0 debugging
   extractEmbeddedJson, parsePrice, parseMatchWinnerPage, parseFirstScorerSection,
+  extractTeamsFromPage, stripTrailingFurniture, _resetCacheForTests,
 };
