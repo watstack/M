@@ -45,11 +45,35 @@
 const cheerio = require('cheerio');
 
 const FIXTURES_URL = 'https://www.oddschecker.com/football/world-cup';
-const UA = 'Mozilla/5.0 (compatible; wc26-sweepstake-odds-bot/1.0)';
 
-async function fetchHtml(url) {
+// A plain fetch() with just a User-Agent got a 403 from Oddschecker on the
+// very first request (confirmed live via a GitHub Actions run — see
+// docs/ODDS_SCRAPE.md), before any parsing logic even ran. This is a fuller,
+// more browser-realistic header set in case it's a naive bot filter rather
+// than a JS challenge (which no header set can pass without actually
+// executing JS — see the module header for that caveat).
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+
+function browserHeaders(referer) {
+  return {
+    'User-Agent': UA,
+    Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Upgrade-Insecure-Requests': '1',
+    'sec-ch-ua': '"Chromium";v="126", "Google Chrome";v="126", "Not.A/Brand";v="24"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"',
+    'sec-fetch-dest': 'document',
+    'sec-fetch-mode': 'navigate',
+    'sec-fetch-site': referer ? 'same-origin' : 'none',
+    'sec-fetch-user': '?1',
+    ...(referer ? { Referer: referer } : {}),
+  };
+}
+
+async function fetchHtml(url, referer) {
   const r = await fetch(url, {
-    headers: { 'User-Agent': UA, Accept: 'text/html' },
+    headers: browserHeaders(referer),
     signal: AbortSignal.timeout(8000),
   });
   if (!r.ok) throw new Error(`fetch ${url} -> ${r.status}`);
@@ -257,7 +281,7 @@ function _scrapeAllFixtures() {
     const scorerOdds = [];
     for (const url of links) {
       try {
-        const html = await fetchHtml(url);
+        const html = await fetchHtml(url, FIXTURES_URL);
         const mw = parseMatchWinnerPage(html);
         if (!mw) continue;
         teamOdds.push(mw);
