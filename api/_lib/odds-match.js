@@ -132,7 +132,38 @@ function outrightOddsMap(outrightEvents) {
   return null;
 }
 
+// ─── First-scorer price extraction ───────────────────────────────────────────
+// scorerEvents: [{ home_team, away_team, players: [{ name, price }] }], the
+// shape api/_lib/odds-source.js normalizes scraped first-goalscorer odds to.
+// Matches a fixture the same way h2hOddsForFixture does (resolve both sides to
+// codes via TEAM_ALIAS, match either order), then returns a flat
+// { "Player Name": price, ... } map, or null if no event matches.
+function firstScorerOddsForFixture(scorerEvents, fixture) {
+  const fHome = fixture?.home?.code;
+  const fAway = fixture?.away?.code;
+  if (!fHome || !fAway || !Array.isArray(scorerEvents)) return null;
+
+  for (const ev of scorerEvents) {
+    const evHome = codeForName(ev.home_team);
+    const evAway = codeForName(ev.away_team);
+    if (!evHome || !evAway) continue;
+
+    const sameOrder = evHome === fHome && evAway === fAway;
+    const swapped   = evHome === fAway && evAway === fHome;
+    if (!sameOrder && !swapped) continue;
+
+    const players = Array.isArray(ev.players) ? ev.players : [];
+    if (!players.length) return null;
+    const map = {};
+    for (const p of players) {
+      if (p && p.name && p.price != null) map[p.name] = +Number(p.price).toFixed(2);
+    }
+    return Object.keys(map).length ? map : null;
+  }
+  return null;
+}
+
 module.exports = {
   TEAM_ALIAS, normName, codeForName,
-  extractH2HOdds, h2hOddsForFixture, outrightOddsMap,
+  extractH2HOdds, h2hOddsForFixture, outrightOddsMap, firstScorerOddsForFixture,
 };

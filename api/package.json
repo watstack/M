@@ -1,6 +1,7 @@
 {
   "type": "commonjs",
   "dependencies": {
+    "cheerio": "^1.2.0",
     "web-push": "^3.6.7"
   }
 }

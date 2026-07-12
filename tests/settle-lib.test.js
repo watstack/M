@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const require = createRequire(import.meta.url);
-const { regulationScore, advancingSide } = require(
+const { regulationScore, advancingSide, firstScorerName } = require(
   join(dirname(fileURLToPath(import.meta.url)), '..', 'api', '_lib', 'settle-lib.js')
 );
 
@@ -95,5 +95,42 @@ describe('regression: knockout 90-min draw decided in extra time', () => {
 
   it('grades qualify to the actual ET winner ("home")', () => {
     expect(advancingSide(wc)).toBe('home');
+  });
+});
+
+describe('firstScorerName', () => {
+  it('returns the earliest scorer by minute, even if listed out of order', () => {
+    const wc = {
+      goals: [
+        { minute: 88, scorer: { name: 'Late Sub' } },
+        { minute: 12, scorer: { name: 'Early Striker' } },
+        { minute: 50, scorer: { name: 'Midfielder' } },
+      ],
+    };
+    expect(firstScorerName(wc)).toBe('Early Striker');
+  });
+
+  it('returns null for an empty goals array', () => {
+    expect(firstScorerName({ goals: [] })).toBeNull();
+  });
+
+  it('returns null when all goals have an empty scorer name (own-goal/unknown-scorer case)', () => {
+    const wc = { goals: [{ minute: 30, scorer: { name: '' } }, { minute: 60, team: { id: 'H' } }] };
+    expect(firstScorerName(wc)).toBeNull();
+  });
+
+  it('skips unnamed goals and returns the earliest named one', () => {
+    const wc = {
+      goals: [
+        { minute: 10, scorer: { name: '' } },
+        { minute: 40, scorer: { name: 'Real Scorer' } },
+      ],
+    };
+    expect(firstScorerName(wc)).toBe('Real Scorer');
+  });
+
+  it('parses goals when stored as a JSON string', () => {
+    const wc = { goals: JSON.stringify([{ minute: 5, scorer: { name: 'Striker' } }]) };
+    expect(firstScorerName(wc)).toBe('Striker');
   });
 });

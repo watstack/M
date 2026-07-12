@@ -4,7 +4,7 @@
 // Settlement is idempotent — already-settled markets are skipped by the DB RPC.
 
 const { syncMatchesToSupabase } = require('./_lib/sync-matches');
-const { makeRest, settleMarketRpc, propagateResult, regulationScore, advancingSide } = require('./_lib/settle-lib');
+const { makeRest, settleMarketRpc, voidMarketRpc, propagateResult, regulationScore, advancingSide, firstScorerName } = require('./_lib/settle-lib');
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 
@@ -82,6 +82,18 @@ module.exports = async function handler(req, res) {
         if (market.market_type === 'qualify') {
           if (advSide != null && await settleMarketRpc(rest, market.id, advSide)) settled++;
           else skipped++;
+          continue;
+        }
+        if (market.market_type === 'first_scorer') {
+          const scorer = firstScorerName(wc);
+          if (scorer != null) {
+            if (await settleMarketRpc(rest, market.id, scorer)) settled++; else skipped++;
+          } else if (matchResult === 'draw' && correctScore === '0-0') {
+            // Genuine scoreless draw — there is definitionally no first scorer.
+            await voidMarketRpc(rest, market.id); settled++;
+          } else {
+            skipped++; // scorer not yet resolved from the data source — retry next run
+          }
           continue;
         }
         if (matchResult == null) { skipped++; continue; }

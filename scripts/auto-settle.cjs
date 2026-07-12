@@ -5,7 +5,7 @@
 // for matches finished ≥ 3 hours ago.
 
 const { syncMatchesToSupabase } = require('../api/_lib/sync-matches.js');
-const { makeRest, settleMarketRpc, propagateResult, regulationScore, advancingSide } = require('../api/_lib/settle-lib.js');
+const { makeRest, settleMarketRpc, voidMarketRpc, propagateResult, regulationScore, advancingSide, firstScorerName } = require('../api/_lib/settle-lib.js');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -83,6 +83,18 @@ async function main() {
       if (market.market_type === 'qualify') {
         if (advSide != null && await settleMarketRpc(rest, market.id, advSide)) settled++;
         else skipped++;
+        continue;
+      }
+      if (market.market_type === 'first_scorer') {
+        const scorer = firstScorerName(wc);
+        if (scorer != null) {
+          if (await settleMarketRpc(rest, market.id, scorer)) settled++; else skipped++;
+        } else if (matchResult === 'draw' && correctScore === '0-0') {
+          // Genuine scoreless draw — there is definitionally no first scorer.
+          await voidMarketRpc(rest, market.id); settled++;
+        } else {
+          skipped++; // scorer not yet resolved from the data source — retry next run
+        }
         continue;
       }
       if (matchResult == null) { skipped++; continue; }
