@@ -46,6 +46,18 @@ async function upsert(payload, resolution) {
   }
 }
 
+// Self-heals market rows for a new market_type that were scaffolded locked
+// after their match had already been resolved elsewhere (see
+// supabase/reconcile-locked-markets.sql for why this can happen). Cheap,
+// idempotent, safe to call every run.
+async function reconcileLockedMarkets() {
+  const r = await rest('/rpc/reconcile_locked_markets', { method: 'POST' });
+  if (!r.ok) {
+    const body = await r.text().catch(() => '');
+    console.warn(`[scrape-odds] reconcile_locked_markets failed: ${r.status} ${body}`);
+  }
+}
+
 async function main() {
   const missing = [];
   if (!SUPABASE_URL) missing.push('SUPABASE_URL');
@@ -54,6 +66,8 @@ async function main() {
     console.error(`Missing required env: ${missing.join(', ')}`);
     process.exit(1);
   }
+
+  await reconcileLockedMarkets();
 
   // 1. All tournaments share the same fixtures, so scrape odds once. Each
   // fetch is independently try/caught so a broken scorer-page selector never
