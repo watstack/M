@@ -27,6 +27,22 @@ async function fetchESPNMatches() {
   return all.filter(m => !seen.has(m.id) && seen.add(m.id));
 }
 
+// Targeted fetch for a specific list of dates (YYYY-MM-DD or YYYYMMDD),
+// rather than fetchESPNMatches()'s rolling ±14/+30-day window — needed to
+// pull historical group-stage matches that have already scrolled outside
+// that window by the time a later knockout round is being priced.
+async function fetchESPNMatchesForDates(dates) {
+  const normalized = [...new Set(dates.map(d => String(d).replace(/-/g, '')))];
+  const all = [];
+  for (let i = 0; i < normalized.length; i += 5) {
+    const batch = normalized.slice(i, i + 5);
+    const results = await Promise.all(batch.map(fetchDate));
+    all.push(...results.flat());
+  }
+  const seen = new Set();
+  return all.filter(m => !seen.has(m.id) && seen.add(m.id));
+}
+
 async function fetchDate(dateStr) {
   try {
     const r = await fetch(`${ESPN}/scoreboard?limit=50&dates=${dateStr}`, {
@@ -108,4 +124,4 @@ function normalizeEvent(ev) {
   };
 }
 
-module.exports = { fetchESPNMatches, normalizeEvent };
+module.exports = { fetchESPNMatches, fetchESPNMatchesForDates, normalizeEvent };
