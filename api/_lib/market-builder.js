@@ -1,10 +1,11 @@
-// Shared market row builder for api/markets.js and scripts/refresh-odds.cjs.
-// Covers all 3 market types: match_result, correct_score, double_chance.
-// Applies commenceTimeForFixture correction from Odds API when events are provided.
+// Shared market row builder for api/markets.js and scripts/scrape-odds.cjs.
+// Covers match_result, correct_score, double_chance, qualify (knockout only),
+// and first_scorer (semi-final only).
+// Applies commenceTimeForFixture correction from odds events when provided.
 // Calls h2hOddsForFixture once per fixture (reused for both match_result and double_chance).
 
 const { WC2026_FIXTURES, CODE_NAMES } = require('./fixtures');
-const { h2hOddsForFixture, codeForName } = require('./odds-match');
+const { h2hOddsForFixture, codeForName, firstScorerOddsForFixture } = require('./odds-match');
 
 const teamName = code => CODE_NAMES[code] || code;
 
@@ -54,9 +55,10 @@ function commenceTimeForFixture(events, fx) {
 /**
  * Build market rows for all 104 WC2026 fixtures.
  *
- * @param {string}     tournamentId
- * @param {Array|null} h2hEvents   Odds API h2h events, or null/[] to skip odds
- * @param {string|null} fetchedAt  ISO timestamp for odds_fetched_at
+ * @param {string}      tournamentId
+ * @param {Array|null}  h2hEvents     h2h odds events, or null/[] to skip odds
+ * @param {Array|null}  scorerEvents  first-goalscorer odds events, or null/[] to skip
+ * @param {string|null} fetchedAt     ISO timestamp for odds_fetched_at
  * @returns {{ groupRows: object[], koRows: object[], oddsMatched: number }}
  *
  * groupRows: resolved fixtures — merge-upsert so odds refresh
@@ -65,7 +67,7 @@ function commenceTimeForFixture(events, fx) {
  * IMPORTANT: PostgREST requires uniform key sets per batch. Callers must split
  * groupRows into withOdds / noOdds before upserting (see api/markets.js).
  */
-function buildMarketRows(tournamentId, h2hEvents, fetchedAt) {
+function buildMarketRows(tournamentId, h2hEvents, scorerEvents, fetchedAt) {
   const groupRows = [];
   const koRows = [];
   let oddsMatched = 0;
@@ -118,12 +120,25 @@ function buildMarketRows(tournamentId, h2hEvents, fetchedAt) {
         }
         groupRows.push(qm);
       }
+
+      if (fx.stage === 'sf') {
+        const fsRow = { ...base, market_type: 'first_scorer' };
+        const scorerOdds = Array.isArray(scorerEvents) ? firstScorerOddsForFixture(scorerEvents, fx) : null;
+        if (scorerOdds && Object.keys(scorerOdds).length) {
+          fsRow.odds_json = scorerOdds;
+          fsRow.odds_fetched_at = fetchedAt;
+        }
+        groupRows.push(fsRow);
+      }
     } else {
       koRows.push({ ...base, market_type: 'match_result' });
       koRows.push({ ...base, market_type: 'correct_score' });
       koRows.push({ ...base, market_type: 'double_chance' });
       if (KO_QUALIFY_STAGES.has(fx.stage)) {
         koRows.push({ ...base, market_type: 'qualify' });
+      }
+      if (fx.stage === 'sf') {
+        koRows.push({ ...base, market_type: 'first_scorer' });
       }
     }
   }

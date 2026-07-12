@@ -1,12 +1,13 @@
 name: Refresh betting odds
 
-# GitHub Pages can't run the /api/markets serverless function, so 1X2 odds were
-# never written to Supabase (every price showed "TBC"). This job does that work
-# on a daily schedule instead — odds only need a 24h refresh.
+# GitHub Pages can't run the /api/markets serverless function, so odds were
+# never written to Supabase (every price showed "TBC"). This job does that
+# work on a schedule instead by scraping public odds (no API key required —
+# see docs/ODDS_SCRAPE.md), refreshed every 4 hours.
 
 on:
   schedule:
-    - cron: '15 6 * * *'   # 06:15 UTC daily
+    - cron: '0 */4 * * *'   # every 4 hours
   workflow_dispatch: {}      # allow manual runs from the Actions tab
 
 concurrency:
@@ -23,8 +24,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: node scripts/refresh-odds.cjs
+      - run: node scripts/scrape-odds.cjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}

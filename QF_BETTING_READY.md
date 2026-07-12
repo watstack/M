@@ -13,7 +13,7 @@ The betting system for World Cup 2026 Quarter-Finals (Matches 97-100) is fully i
 - Match 100: W95 vs W96 | 2026-07-12 01:00 UTC | Arrowhead Stadium, Kansas City
 
 ### Betting Markets (4 per match)
-1. **Match Result** - Home/Draw/Away with live odds from The Odds API
+1. **Match Result** - Home/Draw/Away with odds refreshed every 4h by scripts/scrape-odds.cjs
 2. **Correct Score** - Fixed odds for specific final scores
 3. **Double Chance** - Derived odds for any 2 of 3 outcomes
 4. **Qualify** - Bet on who advances (includes extra time/penalties)

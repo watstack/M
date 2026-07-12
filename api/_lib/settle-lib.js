@@ -156,6 +156,18 @@ function advancingSide(wc) {
   return wc.home_score > wc.away_score ? 'home' : 'away';
 }
 
+// Earliest goal's scorer name from a wc_matches goals[] array, or null if no
+// named goal has been recorded yet (own-goal / unknown-scorer entries have
+// scorer.name === '', and a genuinely scoreless match has no goals at all).
+function firstScorerName(wc) {
+  const goals = Array.isArray(wc.goals) ? wc.goals
+    : (typeof wc.goals === 'string' ? JSON.parse(wc.goals || '[]') : []);
+  const named = goals.filter(g => g.scorer && g.scorer.name);
+  if (!named.length) return null;
+  named.sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999));
+  return named[0].scorer.name;
+}
+
 async function settleMarketRpc(rest, marketId, result) {
   const r = await rest('/rpc/settle_market', {
     method: 'POST',
@@ -174,5 +186,5 @@ async function voidMarketRpc(rest, marketId) {
 
 module.exports = {
   teamName, makeRest, verifyAdmin, verifyParticipantAdmin, setMatchTeams, propagateResult, settleMarketRpc, voidMarketRpc,
-  regulationScore, advancingSide,
+  regulationScore, advancingSide, firstScorerName,
 };

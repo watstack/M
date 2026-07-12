@@ -89,6 +89,24 @@ function buildQualifyRow(marketId, matchNo, oddsJson, canBet, isSettled, result,
   </div>`;
 }
 
+// ─── First-scorer row helper (semi-finals only) ──────────────────────────────
+
+function buildFirstScorerRow(marketId, matchNo, oddsJson, canBet, isSettled, result) {
+  const entries = Object.entries(oddsJson || {});
+  if (!entries.length) {
+    return `<div style="padding:8px 0;color:var(--muted);font-size:0.8rem">Odds not yet available</div>`;
+  }
+  return `<div class="score-btns">` + entries.map(([player, price]) => {
+    if (canBet && price != null) {
+      return oddsBtn(marketId, player, player, price, false, false, matchNo, 'first_scorer');
+    }
+    if (isSettled && price != null) {
+      return oddsBtn(marketId, player, player, price, true, result === player, matchNo, 'first_scorer');
+    }
+    return oddsTbc(player);
+  }).join('') + `</div>`;
+}
+
 // ─── Market reads ─────────────────────────────────────────────────────────────
 
 async function loadOpenMarkets(tournamentId) {
@@ -404,6 +422,19 @@ function renderMatchCard(fixture, pair) {
       )
     : '';
 
+  const fs = pair.first_scorer;
+  const showFirstScorerAccordion = fixture.stage === 'sf' && home.resolved && away.resolved && fs && fs.id;
+  const firstScorerAccordion = showFirstScorerAccordion
+    ? `<div class="cs-toggle" onclick="toggleFirstScorer(this)">
+        <span>First Goalscorer</span><span class="cs-arrow">▾</span>
+      </div>
+      <div class="cs-content hidden">
+        ${buildFirstScorerRow(fs.id, fixture.match_no, fs.odds_json,
+            !!(fs.id && !fs.locked && fs.status === 'open'),
+            fs.status === 'settled', fs.result)}
+      </div>`
+    : '';
+
   return `<div class="market-card${locked ? ' locked' : ''}" id="mc-${marketId || 'm' + fixture.match_no}" data-kickoff="${(mr && mr.close_time) || fixture.kickoff_utc || ''}">
     <div class="market-card-header">
       <div class="match-teams">
@@ -432,6 +463,7 @@ function renderMatchCard(fixture, pair) {
     </div>
     ${qualifySection}
     ${otherAccordion}
+    ${firstScorerAccordion}
   </div>`;
 }
 

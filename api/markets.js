@@ -1,18 +1,21 @@
-// Server-side market creation + 24h odds refresh for a tournament.
+// Server-side market scaffolding for a tournament.
 //
 // The browser POSTs /api/markets?code=XXX on load. This deterministically
-// ensures a match_result + correct_score + double_chance market exists for every
-// one of the 104 static WC2026 fixtures (keyed by match_no — no wc_matches, no
-// fuzzy sync), and refreshes 1X2 odds at most once per 24h.
+// ensures a match_result + correct_score + double_chance (+ qualify for
+// knockout, + first_scorer for semi-finals) market exists for every one of
+// the 104 static WC2026 fixtures (keyed by match_no — no wc_matches, no fuzzy
+// sync).
 //
-// Knockout fixtures whose teams aren't resolved yet are created `locked` and get
-// no odds. Odds are fetched through this app's own /api/odds proxy so its 24h CDN
-// cache dedupes the upstream Odds API call across all tournaments.
+// Odds are NOT fetched here. This is a request/response function, the wrong
+// place for a scrape-and-cache job — odds are 100% owned by the
+// scripts/scrape-odds.cjs GitHub Actions cron (every 4h), which writes
+// straight to Supabase. Both this Vercel deployment and the GitHub Pages
+// mirror read whatever odds_json that cron last cached.
+//
+// Knockout fixtures whose teams aren't resolved yet are created `locked` and
+// get no odds.
 
 const { buildMarketRows } = require('./_lib/market-builder');
-
-const SPORT = 'soccer_fifa_world_cup_2026';
-const ODDS_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -46,49 +49,9 @@ module.exports = async function handler(req, res) {
     if (!tourns.length) return res.status(404).json({ error: 'Tournament not found' });
     const tournamentId = tourns[0].id;
 
-    // 2. Decide whether odds are stale (refresh at most every 24h)
-    const exRes = await rest(
-      `/bet_markets?tournament_id=eq.${tournamentId}` +
-      `&market_type=eq.match_result&select=match_no,odds_fetched_at`
-    );
-    const existing = exRes.ok ? await exRes.json() : [];
-    const newest = existing.reduce((acc, m) => {
-      const t = m.odds_fetched_at ? new Date(m.odds_fetched_at).getTime() : 0;
-      return t > acc ? t : acc;
-    }, 0);
-    const oddsStale = !existing.length || (Date.now() - newest > ODDS_TTL_MS);
-
-    // Also force a refresh when a newly-resolved fixture has never had odds
-    // (e.g. R32 teams just became known within the 24h window).
-    const { WC2026_FIXTURES } = require('./_lib/fixtures');
-    const pricedNos = new Set(existing.filter(m => m.odds_fetched_at).map(m => m.match_no));
-    const hasUnpricedResolved = WC2026_FIXTURES.some(
-      fx => fx.home.code && fx.away.code && !pricedNos.has(fx.match_no)
-    );
-    const shouldFetchOdds = oddsStale || hasUnpricedResolved;
-
-    // 3. Fetch h2h odds when stale (only resolved fixtures get matched).
-    // Call The Odds API directly to bypass the 24h CDN cache on /api/odds —
-    // that cache can predate R32 team announcements and stall odds indefinitely.
-    let h2hEvents = null;
-    let fetchedAt = null;
-    if (shouldFetchOdds) {
-      const oddsKey = process.env.ODDS_API_KEY;
-      if (oddsKey) {
-        const p = new URLSearchParams({ apiKey: oddsKey, regions: 'uk', oddsFormat: 'decimal', markets: 'h2h' });
-        h2hEvents = await fetchJson(`https://api.the-odds-api.com/v4/sports/${SPORT}/odds/?${p}`);
-      } else {
-        h2hEvents = await fetchJson(`${selfBase(req)}/api/odds?sport=${SPORT}&markets=h2h`);
-      }
-      fetchedAt = new Date().toISOString();
-    }
-
-    // 4. Build market rows from the static fixture list via shared builder.
-    const { groupRows, koRows, oddsMatched } = buildMarketRows(
-      tournamentId,
-      shouldFetchOdds ? h2hEvents : null,
-      fetchedAt,
-    );
+    // 2. Build market rows from the static fixture list via shared builder.
+    // No odds events passed — this endpoint only scaffolds; the cron owns odds.
+    const { groupRows, koRows, oddsMatched } = buildMarketRows(tournamentId, null, null, null);
 
     // Split for PostgREST uniform-key requirement.
     const withOdds = groupRows.filter(r => 'odds_json' in r);
@@ -101,7 +64,6 @@ module.exports = async function handler(req, res) {
       ok: true,
       fixtures: groupRows.length / 3 + koRows.length / 3,
       markets: groupRows.length + koRows.length,
-      oddsRefreshed: oddsStale,
       oddsMatched,
     });
   } catch (err) {
@@ -120,19 +82,4 @@ async function upsert(rest, payload, resolution) {
     const body = await r.text().catch(() => '');
     throw new Error(`bet_markets upsert ${r.status}: ${body}`);
   }
-}
-
-async function fetchJson(url) {
-  try {
-    const r = await fetch(url);
-    if (!r.ok) return null;
-    return await r.json();
-  } catch { return null; }
-}
-
-function selfBase(req) {
-  const host = req.headers.host || '';
-  const proto = req.headers['x-forwarded-proto']
-    || (host.startsWith('localhost') || host.startsWith('127.') ? 'http' : 'https');
-  return `${proto}://${host}`;
 }
