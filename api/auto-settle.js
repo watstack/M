@@ -4,7 +4,7 @@
 // Settlement is idempotent — already-settled markets are skipped by the DB RPC.
 
 const { syncMatchesToSupabase } = require('./_lib/sync-matches');
-const { makeRest, settleMarketRpc, voidMarketRpc, propagateResult, regulationScore, advancingSide, firstScorerName } = require('./_lib/settle-lib');
+const { makeRest, settleMarketRpc, settleMarketMultiRpc, voidMarketRpc, propagateResult, regulationScore, advancingSide, firstScorerName, allScorers } = require('./_lib/settle-lib');
 
 const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
 
@@ -94,6 +94,16 @@ module.exports = async function handler(req, res) {
             await voidMarketRpc(rest, market.id); settled++;
           } else {
             skipped++; // scorer not yet resolved from the data source — retry next run
+          }
+          continue;
+        }
+        if (market.market_type === 'anytime_scorer') {
+          const scorers = allScorers(wc);
+          if (scorers.length) {
+            if (await settleMarketMultiRpc(rest, market.id, scorers)) settled++; else skipped++;
+          } else {
+            // Genuine 0-0 through full time — no anytime scorer exists.
+            await voidMarketRpc(rest, market.id); settled++;
           }
           continue;
         }

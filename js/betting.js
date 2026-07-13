@@ -138,6 +138,27 @@ function buildFirstScorerRow(marketId, matchNo, oddsJson, canBet, isSettled, res
   }).join('') + `</div>`;
 }
 
+// ─── Anytime-scorer row helper (semi-finals only) ────────────────────────────
+// Multi-winner: every player who scores anytime wins, so the settled highlight
+// checks membership in resultsList (bet_markets.results_json) rather than
+// equality against a single result string.
+function buildAnytimeScorerRow(marketId, matchNo, oddsJson, canBet, isSettled, resultsList) {
+  const entries = Object.entries(oddsJson || {});
+  if (!entries.length) {
+    return `<div style="padding:8px 0;color:var(--muted);font-size:0.8rem">Odds not yet available</div>`;
+  }
+  const winners = resultsList || [];
+  return `<div class="score-btns">` + entries.map(([player, price]) => {
+    if (canBet && price != null) {
+      return oddsBtn(marketId, player, player, price, false, false, matchNo, 'anytime_scorer');
+    }
+    if (isSettled && price != null) {
+      return oddsBtn(marketId, player, player, price, true, winners.includes(player), matchNo, 'anytime_scorer');
+    }
+    return oddsTbc(player);
+  }).join('') + `</div>`;
+}
+
 // ─── Market reads ─────────────────────────────────────────────────────────────
 
 async function loadOpenMarkets(tournamentId) {
@@ -476,6 +497,19 @@ function renderMatchCard(fixture, pair) {
       </div>`
     : '';
 
+  const as_ = pair.anytime_scorer;
+  const showAnytimeScorerAccordion = fixture.stage === 'sf' && home.resolved && away.resolved && as_ && as_.id;
+  const anytimeScorerAccordion = showAnytimeScorerAccordion
+    ? `<div class="cs-toggle" onclick="toggleAnytimeScorer(this)">
+        <span>Anytime Goal Scorer</span><span class="cs-arrow">▾</span>
+      </div>
+      <div class="cs-content hidden">
+        ${buildAnytimeScorerRow(as_.id, fixture.match_no, as_.odds_json,
+            !!(as_.id && !as_.locked && as_.status === 'open'),
+            as_.status === 'settled', as_.results_json)}
+      </div>`
+    : '';
+
   return `<div class="market-card${locked ? ' locked' : ''}" id="mc-${marketId || 'm' + fixture.match_no}" data-kickoff="${(mr && mr.close_time) || fixture.kickoff_utc || ''}">
     <div class="market-card-header">
       <div class="match-teams">
@@ -506,6 +540,7 @@ function renderMatchCard(fixture, pair) {
     ${overUnderSection}
     ${otherAccordion}
     ${firstScorerAccordion}
+    ${anytimeScorerAccordion}
   </div>`;
 }
 

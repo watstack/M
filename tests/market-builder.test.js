@@ -79,3 +79,55 @@ describe('buildMarketRows: first_scorer market', () => {
     expect(koRows.some(r => r.match_no === TEST_MATCH_NO && r.market_type === 'first_scorer')).toBe(false);
   });
 });
+
+describe('buildMarketRows: anytime_scorer market', () => {
+  it('gives a resolved sf-stage fixture an anytime_scorer row with the static merged odds map', () => {
+    pushFakeFixture({ home: { code: 'FRA' }, away: { code: 'ESP' } });
+    const { groupRows, koRows } = buildMarketRows('t1', null, null, '2026-07-12T00:00:00Z');
+    const row = groupRows.find(r => r.match_no === TEST_MATCH_NO && r.market_type === 'anytime_scorer');
+    expect(row).toBeTruthy();
+    expect(row.odds_json['Kylian Mbappe']).toBe(2.00);
+    expect(row.odds_json['Mikel Oyarzabal']).toBe(2.88);
+    expect(row.odds_fetched_at).toBe('2026-07-12T00:00:00Z');
+    expect(koRows.some(r => r.match_no === TEST_MATCH_NO)).toBe(false);
+  });
+
+  it('gives the other sf pairing (ENG v ARG) its own merged odds map', () => {
+    pushFakeFixture({ home: { code: 'ENG' }, away: { code: 'ARG' } });
+    const { groupRows } = buildMarketRows('t1', null, null, '2026-07-12T00:00:00Z');
+    const row = groupRows.find(r => r.match_no === TEST_MATCH_NO && r.market_type === 'anytime_scorer');
+    expect(row).toBeTruthy();
+    expect(row.odds_json['Harry Kane']).toBe(2.30);
+    expect(row.odds_json['Lionel Messi']).toBe(2.30);
+  });
+
+  it('gives a resolved sf-stage fixture with no matching static odds a locked scaffold row', () => {
+    pushFakeFixture({ home: { code: 'FRA' }, away: { code: 'ARG' } }); // not a static-odds pairing
+    const { groupRows } = buildMarketRows('t1', null, null, '2026-07-12T00:00:00Z');
+    const row = groupRows.find(r => r.match_no === TEST_MATCH_NO && r.market_type === 'anytime_scorer');
+    expect(row).toBeTruthy();
+    expect('odds_json' in row).toBe(false);
+  });
+
+  it('does not give a resolved non-sf fixture an anytime_scorer row', () => {
+    pushFakeFixture({ stage: 'qf', home: { code: 'FRA' }, away: { code: 'ESP' } });
+    const { groupRows } = buildMarketRows('t1', null, null, '2026-07-12T00:00:00Z');
+    expect(groupRows.some(r => r.match_no === TEST_MATCH_NO && r.market_type === 'anytime_scorer')).toBe(false);
+  });
+
+  it('gives an unresolved sf-stage fixture a locked anytime_scorer scaffold with no odds_json', () => {
+    pushFakeFixture(); // default: unresolved slots
+    const { koRows, groupRows } = buildMarketRows('t1', null, null, '2026-07-12T00:00:00Z');
+    const row = koRows.find(r => r.match_no === TEST_MATCH_NO && r.market_type === 'anytime_scorer');
+    expect(row).toBeTruthy();
+    expect(row.locked).toBe(true);
+    expect('odds_json' in row).toBe(false);
+    expect(groupRows.some(r => r.match_no === TEST_MATCH_NO)).toBe(false);
+  });
+
+  it('does not give an unresolved non-sf knockout fixture an anytime_scorer scaffold', () => {
+    pushFakeFixture({ stage: 'qf' }); // default: unresolved slots
+    const { koRows } = buildMarketRows('t1', null, null, '2026-07-12T00:00:00Z');
+    expect(koRows.some(r => r.match_no === TEST_MATCH_NO && r.market_type === 'anytime_scorer')).toBe(false);
+  });
+});

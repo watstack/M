@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const require = createRequire(import.meta.url);
-const { regulationScore, advancingSide, firstScorerName } = require(
+const { regulationScore, advancingSide, firstScorerName, allScorers } = require(
   join(dirname(fileURLToPath(import.meta.url)), '..', 'api', '_lib', 'settle-lib.js')
 );
 
@@ -132,5 +132,42 @@ describe('firstScorerName', () => {
   it('parses goals when stored as a JSON string', () => {
     const wc = { goals: JSON.stringify([{ minute: 5, scorer: { name: 'Striker' } }]) };
     expect(firstScorerName(wc)).toBe('Striker');
+  });
+});
+
+describe('allScorers', () => {
+  it('returns every named scorer, deduped, regardless of minute order', () => {
+    const wc = {
+      goals: [
+        { minute: 88, scorer: { name: 'Late Sub' } },
+        { minute: 12, scorer: { name: 'Early Striker' } },
+        { minute: 50, scorer: { name: 'Early Striker' } }, // brace — deduped
+      ],
+    };
+    expect(allScorers(wc)).toEqual(['Late Sub', 'Early Striker']);
+  });
+
+  it('includes extra-time goals (minute <= 120)', () => {
+    const wc = { goals: [{ minute: 105, scorer: { name: 'ET Hero' } }] };
+    expect(allScorers(wc)).toEqual(['ET Hero']);
+  });
+
+  it('excludes goals past minute 120 (penalty-shootout kicks, if ever tagged that way)', () => {
+    const wc = { goals: [{ minute: 130, scorer: { name: 'Shootout Taker' } }] };
+    expect(allScorers(wc)).toEqual([]);
+  });
+
+  it('returns [] for a genuine scoreless match', () => {
+    expect(allScorers({ goals: [] })).toEqual([]);
+  });
+
+  it('skips unnamed goals (own-goal/unknown-scorer case)', () => {
+    const wc = { goals: [{ minute: 30, scorer: { name: '' } }, { minute: 60, team: { id: 'H' } }] };
+    expect(allScorers(wc)).toEqual([]);
+  });
+
+  it('parses goals when stored as a JSON string', () => {
+    const wc = { goals: JSON.stringify([{ minute: 5, scorer: { name: 'Striker' } }]) };
+    expect(allScorers(wc)).toEqual(['Striker']);
   });
 });

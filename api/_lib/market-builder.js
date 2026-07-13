@@ -1,6 +1,6 @@
 // Shared market row builder for api/markets.js and scripts/scrape-odds.cjs.
 // Covers match_result, correct_score, double_chance, qualify (knockout only),
-// and first_scorer + over_under (semi-final only).
+// and first_scorer + over_under + anytime_scorer (semi-final only).
 // Applies commenceTimeForFixture correction from odds events when provided.
 // Calls h2hOddsForFixture once per fixture (reused for both match_result and double_chance).
 
@@ -8,6 +8,39 @@ const { WC2026_FIXTURES, CODE_NAMES } = require('./fixtures');
 const { h2hOddsForFixture, codeForName, firstScorerOddsForFixture } = require('./odds-match');
 
 const teamName = code => CODE_NAMES[code] || code;
+
+// ─── Anytime Goalscorer — static, hand-set odds (one-off manual capture from
+// a competitor site's screenshots), not scraped. Keyed by sorted team-code
+// pair; flat player→decimal-price map, same odds_json shape as first_scorer.
+// Eligible for extra time, NOT penalty shootouts (see settle-lib.js allScorers).
+const SF_ANYTIME_SCORER_ODDS = {
+  'ESP|FRA': { // France v Spain
+    'Kylian Mbappe': 2.00, 'Ousmane Dembele': 3.30, 'Michael Olise': 3.75,
+    'Bradley Barcola': 4.00, 'Desire Doue': 4.00, 'Adrien Rabiot': 7.00,
+    'Manu Kone': 10.00, 'Aurelien Tchouameni': 12.00, 'Lucas Digne': 14.00,
+    'Jules Kounde': 15.00, 'William Saliba': 15.00,
+    'Mikel Oyarzabal': 2.88, 'Lamine Yamal': 3.30, 'Nico Williams': 4.33,
+    'Alex Baena': 5.00, 'Dani Olmo': 5.00, 'Fabian Ruiz': 7.00,
+    'Pedri': 10.00, 'Rodri': 10.00, 'Pedro Porro': 12.00,
+    'Marc Cucurella': 14.00, 'Aymeric Laporte': 18.00, 'Pau Cubarsi': 18.00,
+  },
+  'ARG|ENG': { // England v Argentina
+    'Harry Kane': 2.30, 'Jude Bellingham': 4.00, 'Marcus Rashford': 4.50,
+    'Anthony Gordon': 5.00, 'Bukayo Saka': 5.00, 'Noni Madueke': 5.00,
+    'Declan Rice': 9.00, "Nico O'Reilly": 10.00, 'Elliot Anderson': 11.00,
+    'Reece James': 12.00, 'Djed Spence': 14.00, 'Ezri Konsa': 15.00,
+    'John Stones': 18.00, 'Marc Guehi': 18.00,
+    'Lionel Messi': 2.30, 'Julian Alvarez': 3.30, 'Enzo Fernandez': 6.50,
+    'Leandro Paredes': 8.00, 'Alexis Mac Allister': 8.50,
+    'Rodrigo De Paul': 11.00, 'Nicolas Tagliafico': 12.00,
+    'Cristian Romero': 14.00, 'Nahuel Molina': 15.00, 'Lisandro Martinez': 17.00,
+  },
+};
+
+function sfAnytimeScorerOdds(homeCode, awayCode) {
+  if (!homeCode || !awayCode) return null;
+  return SF_ANYTIME_SCORER_ODDS[[homeCode, awayCode].sort().join('|')] || null;
+}
 
 // Knockout stages that get a qualify market (who advances, regardless of ET/pens).
 // third and final are excluded — no team "qualifies" further from those.
@@ -133,6 +166,14 @@ function buildMarketRows(tournamentId, h2hEvents, scorerEvents, fetchedAt) {
         // Odds are static (client-side SF_OVER_UNDER_ODDS in betting.js), same
         // shape as correct_score — no odds_json computed here.
         groupRows.push({ ...base, market_type: 'over_under' });
+
+        const asRow = { ...base, market_type: 'anytime_scorer' };
+        const anytimeOdds = sfAnytimeScorerOdds(fx.home.code, fx.away.code);
+        if (anytimeOdds) {
+          asRow.odds_json = anytimeOdds;
+          asRow.odds_fetched_at = fetchedAt;
+        }
+        groupRows.push(asRow);
       }
     } else {
       koRows.push({ ...base, market_type: 'match_result' });
@@ -144,6 +185,7 @@ function buildMarketRows(tournamentId, h2hEvents, scorerEvents, fetchedAt) {
       if (fx.stage === 'sf') {
         koRows.push({ ...base, market_type: 'first_scorer' });
         koRows.push({ ...base, market_type: 'over_under' });
+        koRows.push({ ...base, market_type: 'anytime_scorer' });
       }
     }
   }
@@ -151,4 +193,4 @@ function buildMarketRows(tournamentId, h2hEvents, scorerEvents, fetchedAt) {
   return { groupRows, koRows, oddsMatched };
 }
 
-module.exports = { buildMarketRows, matchNameFor, commenceTimeForFixture, calcDcOdds, calcQualifyOdds };
+module.exports = { buildMarketRows, matchNameFor, commenceTimeForFixture, calcDcOdds, calcQualifyOdds, sfAnytimeScorerOdds };

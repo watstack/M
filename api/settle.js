@@ -115,10 +115,12 @@ module.exports = async function handler(req, res) {
         if (advSide) {
           if (await settleMarketRpc(rest, m.id, advSide)) settled++;
         }
-      } else if (m.market_type === 'first_scorer') {
+      } else if (m.market_type === 'first_scorer' || m.market_type === 'anytime_scorer') {
         // Graded only by auto-settle off the ESPN/FBD goals feed, never from
         // a submitted score — settling it here would write a nonsense result
-        // (home/away/draw/score-string can never equal a player name).
+        // (home/away/draw/score-string can never equal a player name), and
+        // anytime_scorer additionally needs a full winners *list*, which a
+        // single submitted score can never provide.
       } else if (regKnown) {
         const result = m.market_type === 'correct_score' ? correctScore
           : m.market_type === 'over_under' ? overUnderResult
