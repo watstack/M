@@ -58,6 +58,15 @@ module.exports = async function handler(req, res) {
       console.warn(`[markets] reconcile_locked_markets failed: ${reconcileRes.status}`);
     }
 
+    // 1c. Self-heal anytime_scorer's odds_json once its match's teams are
+    // known (reconcile_locked_markets above unlocks + codes the row but
+    // deliberately never sets odds — see supabase/anytime-scorer-market.sql).
+    // Static odds, so no live data needed; cheap, idempotent, non-fatal.
+    const backfillRes = await rest('/rpc/backfill_anytime_scorer_odds', { method: 'POST' });
+    if (!backfillRes.ok) {
+      console.warn(`[markets] backfill_anytime_scorer_odds failed: ${backfillRes.status}`);
+    }
+
     // 2. Build market rows from the static fixture list via shared builder.
     // No odds events passed — this endpoint only scaffolds; the cron owns odds.
     const { groupRows, koRows, oddsMatched } = buildMarketRows(tournamentId, null, null, null);
