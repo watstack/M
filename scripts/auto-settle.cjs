@@ -5,7 +5,7 @@
 // for matches finished ≥ 3 hours ago.
 
 const { syncMatchesToSupabase } = require('../api/_lib/sync-matches.js');
-const { makeRest, settleMarketRpc, voidMarketRpc, propagateResult, regulationScore, advancingSide, firstScorerName } = require('../api/_lib/settle-lib.js');
+const { makeRest, settleMarketRpc, settleMarketMultiRpc, voidMarketRpc, propagateResult, regulationScore, advancingSide, firstScorerName, allScorers } = require('../api/_lib/settle-lib.js');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -94,6 +94,16 @@ async function main() {
           await voidMarketRpc(rest, market.id); settled++;
         } else {
           skipped++; // scorer not yet resolved from the data source — retry next run
+        }
+        continue;
+      }
+      if (market.market_type === 'anytime_scorer') {
+        const scorers = allScorers(wc);
+        if (scorers.length) {
+          if (await settleMarketMultiRpc(rest, market.id, scorers)) settled++; else skipped++;
+        } else {
+          // Genuine 0-0 through full time — no anytime scorer exists.
+          await voidMarketRpc(rest, market.id); settled++;
         }
         continue;
       }

@@ -168,10 +168,32 @@ function firstScorerName(wc) {
   return named[0].scorer.name;
 }
 
+// Deduped list of every named scorer in a wc_matches goals[] array, including
+// extra time (minute <= 120) but not penalty shootouts — the ESPN feed's
+// "goal"-type detail events (which is all `goals` is built from, see
+// api/_lib/espn.js) don't include shootout kicks, so no separate filtering
+// for those is needed beyond the same trust boundary firstScorerName/
+// regulationScore already rely on. Returns [] for a genuine 0-0 through
+// full time (anytime_scorer voids in that case, see auto-settle.js).
+function allScorers(wc) {
+  const goals = Array.isArray(wc.goals) ? wc.goals
+    : (typeof wc.goals === 'string' ? JSON.parse(wc.goals || '[]') : []);
+  const named = goals.filter(g => g.scorer && g.scorer.name && (g.minute ?? 0) <= 120);
+  return [...new Set(named.map(g => g.scorer.name))];
+}
+
 async function settleMarketRpc(rest, marketId, result) {
   const r = await rest('/rpc/settle_market', {
     method: 'POST',
     body: JSON.stringify({ p_market_id: marketId, p_result: result }),
+  });
+  return r.ok;
+}
+
+async function settleMarketMultiRpc(rest, marketId, results) {
+  const r = await rest('/rpc/settle_market_multi', {
+    method: 'POST',
+    body: JSON.stringify({ p_market_id: marketId, p_results: results }),
   });
   return r.ok;
 }
@@ -185,6 +207,6 @@ async function voidMarketRpc(rest, marketId) {
 }
 
 module.exports = {
-  teamName, makeRest, verifyAdmin, verifyParticipantAdmin, setMatchTeams, propagateResult, settleMarketRpc, voidMarketRpc,
-  regulationScore, advancingSide, firstScorerName,
+  teamName, makeRest, verifyAdmin, verifyParticipantAdmin, setMatchTeams, propagateResult, settleMarketRpc, settleMarketMultiRpc, voidMarketRpc,
+  regulationScore, advancingSide, firstScorerName, allScorers,
 };
