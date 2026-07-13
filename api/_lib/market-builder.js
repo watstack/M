@@ -1,6 +1,6 @@
 // Shared market row builder for api/markets.js and scripts/scrape-odds.cjs.
 // Covers match_result, correct_score, double_chance, qualify (knockout only),
-// and first_scorer (semi-final only).
+// and first_scorer + over_under (semi-final only).
 // Applies commenceTimeForFixture correction from odds events when provided.
 // Calls h2hOddsForFixture once per fixture (reused for both match_result and double_chance).
 
@@ -129,6 +129,10 @@ function buildMarketRows(tournamentId, h2hEvents, scorerEvents, fetchedAt) {
           fsRow.odds_fetched_at = fetchedAt;
         }
         groupRows.push(fsRow);
+
+        // Odds are static (client-side SF_OVER_UNDER_ODDS in betting.js), same
+        // shape as correct_score — no odds_json computed here.
+        groupRows.push({ ...base, market_type: 'over_under' });
       }
     } else {
       koRows.push({ ...base, market_type: 'match_result' });
@@ -139,6 +143,7 @@ function buildMarketRows(tournamentId, h2hEvents, scorerEvents, fetchedAt) {
       }
       if (fx.stage === 'sf') {
         koRows.push({ ...base, market_type: 'first_scorer' });
+        koRows.push({ ...base, market_type: 'over_under' });
       }
     }
   }

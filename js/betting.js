@@ -17,6 +17,20 @@ const DEFAULT_CS_ODDS = 50;
 
 function csOdds(score) { return CORRECT_SCORE_ODDS[score] ?? DEFAULT_CS_ODDS; }
 
+// ─── Semi-final Over/Under 2.5 Goals fixed odds lookup ───────────────────────
+// Static, hand-set odds (not scraped) keyed by sorted team-code pair so they
+// apply regardless of which match_no (101 or 102) a pairing lands on.
+
+const SF_OVER_UNDER_ODDS = {
+  'ESP|FRA': { over: 1.84, under: 1.92 },  // France v Spain
+  'ARG|ENG': { over: 2.27, under: 1.61 },  // England v Argentina
+};
+
+function sfOverUnderOdds(homeCode, awayCode) {
+  if (!homeCode || !awayCode) return null;
+  return SF_OVER_UNDER_ODDS[[homeCode, awayCode].sort().join('|')] || null;
+}
+
 // ─── Score grid helper ────────────────────────────────────────────────────────
 
 function buildScoreGrid(matchId, matchNo) {
@@ -85,6 +99,23 @@ function buildQualifyRow(marketId, matchNo, oddsJson, canBet, isSettled, result,
     <div class="qualify-row">
       ${btn('home', homeLabel)}
       ${btn('away', awayLabel)}
+    </div>
+  </div>`;
+}
+
+// ─── Over/Under 2.5 Goals row helper (semi-finals only, fixed odds) ──────────
+
+function buildOverUnderRow(marketId, matchNo, ouOdds, canBet, isSettled, result) {
+  const btn = (sel, label) => {
+    if (canBet) return oddsBtn(marketId, sel, label, ouOdds[sel], false, false, matchNo, 'over_under');
+    if (isSettled) return oddsBtn(marketId, sel, label, ouOdds[sel], true, result === sel, matchNo, 'over_under');
+    return oddsTbc(label);
+  };
+  return `<div class="qualify-section">
+    <div class="qualify-label">Over/Under 2.5 Goals</div>
+    <div class="qualify-row">
+      ${btn('over', 'Over 2.5')}
+      ${btn('under', 'Under 2.5')}
     </div>
   </div>`;
 }
@@ -422,6 +453,16 @@ function renderMatchCard(fixture, pair) {
       )
     : '';
 
+  const ou = pair.over_under;
+  const ouOdds = fixture.stage === 'sf' ? sfOverUnderOdds(home.code, away.code) : null;
+  const overUnderSection = (ou && ou.id && ouOdds)
+    ? buildOverUnderRow(
+        ou.id, fixture.match_no, ouOdds,
+        !!(ou.id && !ou.locked && ou.status === 'open'),
+        ou.status === 'settled', ou.result
+      )
+    : '';
+
   const fs = pair.first_scorer;
   const showFirstScorerAccordion = fixture.stage === 'sf' && home.resolved && away.resolved && fs && fs.id;
   const firstScorerAccordion = showFirstScorerAccordion
@@ -462,6 +503,7 @@ function renderMatchCard(fixture, pair) {
       ${resultBtn('away', 'Away')}
     </div>
     ${qualifySection}
+    ${overUnderSection}
     ${otherAccordion}
     ${firstScorerAccordion}
   </div>`;
