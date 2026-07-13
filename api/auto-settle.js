@@ -74,6 +74,7 @@ module.exports = async function handler(req, res) {
       const regAway = swapped ? reg.home : reg.away;
       const matchResult  = regKnown ? (regHome > regAway ? 'home' : regAway > regHome ? 'away' : 'draw') : null;
       const correctScore = regKnown ? `${regHome}-${regAway}` : null;
+      const overUnderResult = regKnown ? ((regHome + regAway) > 2.5 ? 'over' : 'under') : null;
 
       const adv = advancingSide(wc);
       const advSide = adv == null ? null : (swapped ? (adv === 'home' ? 'away' : 'home') : adv);
@@ -97,7 +98,9 @@ module.exports = async function handler(req, res) {
           continue;
         }
         if (matchResult == null) { skipped++; continue; }
-        const result = market.market_type === 'correct_score' ? correctScore : matchResult;
+        const result = market.market_type === 'correct_score' ? correctScore
+          : market.market_type === 'over_under' ? overUnderResult
+          : matchResult;
         if (await settleMarketRpc(rest, market.id, result)) settled++;
       }
 

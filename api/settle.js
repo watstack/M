@@ -80,6 +80,7 @@ module.exports = async function handler(req, res) {
     // auto-settle.js's regKnown gate.
     let matchResult = h > a ? 'home' : a > h ? 'away' : 'draw';
     let correctScore = `${h}-${a}`;
+    let overUnderResult = (h + a) > 2.5 ? 'over' : 'under';
     let regKnown = !isKnockout;
     if (isKnockout && any.home_code && any.away_code) {
       let wc = await lookupMatch(rest, any.home_code, any.away_code);
@@ -93,6 +94,7 @@ module.exports = async function handler(req, res) {
           const regAway = swapped ? reg.home : reg.away;
           matchResult = regHome > regAway ? 'home' : regAway > regHome ? 'away' : 'draw';
           correctScore = `${regHome}-${regAway}`;
+          overUnderResult = (regHome + regAway) > 2.5 ? 'over' : 'under';
         }
       }
     }
@@ -118,7 +120,9 @@ module.exports = async function handler(req, res) {
         // a submitted score — settling it here would write a nonsense result
         // (home/away/draw/score-string can never equal a player name).
       } else if (regKnown) {
-        const result = m.market_type === 'correct_score' ? correctScore : matchResult;
+        const result = m.market_type === 'correct_score' ? correctScore
+          : m.market_type === 'over_under' ? overUnderResult
+          : matchResult;
         if (await settleMarketRpc(rest, m.id, result)) settled++;
       }
     }
