@@ -1943,15 +1943,13 @@ function selectBet(btn) {
   const matchName  = marketCard?.querySelector('.match-name')?.textContent?.trim() || '';
   const label      = labelForSelection(selection, matchName, marketType);
 
-  // Block correlated same-match legs (match_result / correct_score / double_chance)
+  // Block a second leg on the same match once a different market is already
+  // selected there — mirrors the guard in place_parlay()
+  // (supabase/fix-parlay-conflict-guard.sql). Every market on a match settles
+  // off the same match data, so combining two different ones is always a
+  // correlated "free money" combo.
   if (matchNo && marketType) {
-    const CORRELATED = ['match_result', 'correct_score', 'double_chance'];
-    const conflict = _parlayLegs.find(l =>
-      l.matchNo === matchNo &&
-      CORRELATED.includes(marketType) &&
-      CORRELATED.includes(l.marketType) &&
-      (l.marketType !== marketType || marketType === 'double_chance')
-    );
+    const conflict = _parlayLegs.find(l => l.matchNo === matchNo && l.marketType !== marketType);
     if (conflict) {
       showToast('nice try you cheeky bastard.\n\non ya bike 🚲');
       return;
