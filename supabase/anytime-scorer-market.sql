@@ -213,3 +213,57 @@ BEGIN
 
   RETURN v_parlay;
 END; $$;
+
+-- ─── 4. backfill_anytime_scorer_odds ─────────────────────────────────────────
+-- anytime_scorer's odds_json is 100% static (a one-off manual capture, see
+-- js/betting.js-adjacent SF_ANYTIME_SCORER_ODDS in api/_lib/market-builder.js
+-- — same values copied here), so unlike first_scorer (whose odds are
+-- computed from real match history by scripts/compute-scorer-odds.cjs and
+-- need a separate manual/cron step) this can self-heal entirely in SQL.
+--
+-- Why this is needed at all: buildMarketRows() only ever computes
+-- anytime_scorer's odds_json in its "resolved" branch, which is driven
+-- purely by the static WC2026_FIXTURES file's home/away `code` — never
+-- populated for knockout slots (see supabase/reconcile-locked-markets.sql's
+-- header for the identical class of bug). Real team codes for these SF
+-- matches only ever land in the DB via propagateResult()/setMatchTeams(),
+-- which only patches rows that already existed at that moment. So every
+-- anytime_scorer row is scaffolded locked/uncoded/odds-less no matter when
+-- /api/markets runs, and reconcile_locked_markets() (generic, deliberately
+-- market-agnostic) unlocks + codes it but never sets odds_json.
+--
+-- Call on every /api/markets load, right after reconcile_locked_markets()
+-- (see api/markets.js) — cheap and idempotent: the WHERE clause only ever
+-- touches rows that are genuinely stuck (odds_json still null once their
+-- team codes are known).
+CREATE OR REPLACE FUNCTION backfill_anytime_scorer_odds() RETURNS void LANGUAGE sql AS $$
+  UPDATE bet_markets bm
+  SET odds_json = pair.odds, odds_fetched_at = NOW()
+  FROM (VALUES
+    ('ESP|FRA', '{
+      "Kylian Mbappe": 2.00, "Ousmane Dembele": 3.30, "Michael Olise": 3.75,
+      "Bradley Barcola": 4.00, "Desire Doue": 4.00, "Adrien Rabiot": 7.00,
+      "Manu Kone": 10.00, "Aurelien Tchouameni": 12.00, "Lucas Digne": 14.00,
+      "Jules Kounde": 15.00, "William Saliba": 15.00,
+      "Mikel Oyarzabal": 2.88, "Lamine Yamal": 3.30, "Nico Williams": 4.33,
+      "Alex Baena": 5.00, "Dani Olmo": 5.00, "Fabian Ruiz": 7.00,
+      "Pedri": 10.00, "Rodri": 10.00, "Pedro Porro": 12.00,
+      "Marc Cucurella": 14.00, "Aymeric Laporte": 18.00, "Pau Cubarsi": 18.00
+    }'::jsonb),
+    ('ARG|ENG', '{
+      "Harry Kane": 2.30, "Jude Bellingham": 4.00, "Marcus Rashford": 4.50,
+      "Anthony Gordon": 5.00, "Bukayo Saka": 5.00, "Noni Madueke": 5.00,
+      "Declan Rice": 9.00, "Nico O''Reilly": 10.00, "Elliot Anderson": 11.00,
+      "Reece James": 12.00, "Djed Spence": 14.00, "Ezri Konsa": 15.00,
+      "John Stones": 18.00, "Marc Guehi": 18.00,
+      "Lionel Messi": 2.30, "Julian Alvarez": 3.30, "Enzo Fernandez": 6.50,
+      "Leandro Paredes": 8.00, "Alexis Mac Allister": 8.50,
+      "Rodrigo De Paul": 11.00, "Nicolas Tagliafico": 12.00,
+      "Cristian Romero": 14.00, "Nahuel Molina": 15.00, "Lisandro Martinez": 17.00
+    }'::jsonb)
+  ) AS pair(key, odds)
+  WHERE bm.market_type = 'anytime_scorer'
+    AND bm.odds_json IS NULL
+    AND bm.home_code IS NOT NULL AND bm.away_code IS NOT NULL
+    AND pair.key = (SELECT string_agg(c, '|' ORDER BY c) FROM unnest(ARRAY[bm.home_code, bm.away_code]) AS c);
+$$;
