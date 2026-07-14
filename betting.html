@@ -1943,13 +1943,27 @@ function selectBet(btn) {
   const matchName  = marketCard?.querySelector('.match-name')?.textContent?.trim() || '';
   const label      = labelForSelection(selection, matchName, marketType);
 
-  // Block a second leg on the same match once a different market is already
-  // selected there — mirrors the guard in place_parlay()
-  // (supabase/fix-parlay-conflict-guard.sql). Every market on a match settles
-  // off the same match data, so combining two different ones is always a
-  // correlated "free money" combo.
+  // Block correlated same-match legs. match_result/correct_score/
+  // double_chance/qualify are mutually exclusive (each restates, or is a
+  // coarser/finer view of, "which side won"); over_under is additionally
+  // blocked against correct_score (total goals is determined by the two
+  // numbers in a correct-score pick); first_scorer and anytime_scorer are
+  // blocked against each other (scoring first also counts as scoring
+  // anytime), but not against anything else — who scores first/anytime
+  // doesn't determine the winner or the total goals, so e.g. first_scorer +
+  // over_under + match_result on one match is legitimate.
+  // Mirrors the guard in place_parlay() (supabase/relax-parlay-scorer-conflicts.sql).
   if (matchNo && marketType) {
-    const conflict = _parlayLegs.find(l => l.matchNo === matchNo && l.marketType !== marketType);
+    const EXCLUSIVE = ['match_result', 'correct_score', 'double_chance', 'qualify'];
+    const SCORER_PAIR = ['first_scorer', 'anytime_scorer'];
+    const conflict = _parlayLegs.find(l =>
+      l.matchNo === matchNo && (
+        (EXCLUSIVE.includes(marketType) && EXCLUSIVE.includes(l.marketType)) ||
+        (marketType === 'correct_score' && l.marketType === 'over_under') ||
+        (marketType === 'over_under' && l.marketType === 'correct_score') ||
+        (SCORER_PAIR.includes(marketType) && SCORER_PAIR.includes(l.marketType) && marketType !== l.marketType)
+      )
+    );
     if (conflict) {
       showToast('nice try you cheeky bastard.\n\non ya bike 🚲');
       return;
