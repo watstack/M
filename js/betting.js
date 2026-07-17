@@ -118,16 +118,22 @@ function buildDoubleChanceRow(marketId, matchNo, oddsJson, canBet) {
   </div>`;
 }
 
-// ─── Qualify row helper (knockout only) ──────────────────────────────────────
+// ─── Qualify row helper (knockout: To Qualify / To Lift the Cup / To Finish
+// Third — same market shape, stage-dependent label) ───────────────────────
 
-const KO_QUALIFY_STAGES = new Set(['r32', 'r16', 'qf', 'sf']);
+const KO_QUALIFY_STAGES = new Set(['r32', 'r16', 'qf', 'sf', 'third', 'final']);
 
 // Stages that get the "extra" markets: over_under, first_scorer,
 // anytime_scorer, btts, over_under_cards, total_corners. Mirrors
 // EXTRA_MARKET_STAGES in api/_lib/market-builder.js.
 const EXTRA_MARKET_STAGES = new Set(['sf', 'third', 'final']);
 
-function buildQualifyRow(marketId, matchNo, oddsJson, canBet, isSettled, result, homeLabel, awayLabel) {
+const QUALIFY_LABELS = {
+  final: 'To Lift the Cup',
+  third: 'To Finish Third',
+};
+
+function buildQualifyRow(marketId, matchNo, oddsJson, canBet, isSettled, result, homeLabel, awayLabel, stage) {
   const o = oddsJson || {};
   const btn = (sel, label) => {
     if (canBet && o[sel] != null) {
@@ -139,7 +145,7 @@ function buildQualifyRow(marketId, matchNo, oddsJson, canBet, isSettled, result,
     return oddsTbc(label);
   };
   return `<div class="qualify-section">
-    <div class="qualify-label">To Qualify</div>
+    <div class="qualify-label">${QUALIFY_LABELS[stage] || 'To Qualify'}</div>
     <div class="qualify-row">
       ${btn('home', homeLabel)}
       ${btn('away', awayLabel)}
@@ -559,7 +565,7 @@ function renderMatchCard(fixture, pair) {
         !!(qm && qm.id && !qm.locked && qm.status === 'open'),
         !!(qm && qm.status === 'settled'),
         qm ? qm.result : null,
-        home.name, away.name
+        home.name, away.name, fixture.stage
       )
     : '';
 
