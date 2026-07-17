@@ -58,6 +58,28 @@ async function reconcileLockedMarkets() {
   }
 }
 
+// Self-heals odds_json for the final/third-place playoff's static-odds
+// markets (anytime_scorer, first_scorer, match_result, double_chance,
+// qualify) once reconcileLockedMarkets() above has unlocked + coded their
+// rows. These two matches never look "resolved" to buildMarketRows() itself
+// (see api/markets.js for why), so this cron — the only reliable, scheduled
+// path, unlike the browser-triggered /api/markets — must call all five
+// explicitly on every run. Cheap, idempotent, safe to call every run even
+// once fully backfilled (no-ops once odds_json is set).
+async function backfillStaticOdds() {
+  const fns = [
+    'backfill_anytime_scorer_odds', 'backfill_first_scorer_odds',
+    'backfill_match_result_odds', 'backfill_double_chance_odds', 'backfill_qualify_odds',
+  ];
+  for (const fn of fns) {
+    const r = await rest(`/rpc/${fn}`, { method: 'POST' });
+    if (!r.ok) {
+      const body = await r.text().catch(() => '');
+      console.warn(`[scrape-odds] ${fn} failed: ${r.status} ${body}`);
+    }
+  }
+}
+
 async function main() {
   const missing = [];
   if (!SUPABASE_URL) missing.push('SUPABASE_URL');
@@ -68,6 +90,7 @@ async function main() {
   }
 
   await reconcileLockedMarkets();
+  await backfillStaticOdds();
 
   // 1. All tournaments share the same fixtures, so scrape odds once. Each
   // fetch is independently try/caught so a broken scorer-page selector never
