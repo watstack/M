@@ -75,6 +75,7 @@ module.exports = async function handler(req, res) {
       const matchResult  = regKnown ? (regHome > regAway ? 'home' : regAway > regHome ? 'away' : 'draw') : null;
       const correctScore = regKnown ? `${regHome}-${regAway}` : null;
       const overUnderResult = regKnown ? ((regHome + regAway) > 2.5 ? 'over' : 'under') : null;
+      const bttsResult = regKnown ? ((regHome > 0 && regAway > 0) ? 'yes' : 'no') : null;
 
       const adv = advancingSide(wc);
       const advSide = adv == null ? null : (swapped ? (adv === 'home' ? 'away' : 'home') : adv);
@@ -107,9 +108,16 @@ module.exports = async function handler(req, res) {
           }
           continue;
         }
+        if (market.market_type === 'over_under_cards' || market.market_type === 'total_corners') {
+          // Card/corner counts aren't available from the ESPN goals feed —
+          // these markets are settled manually by an admin.
+          skipped++;
+          continue;
+        }
         if (matchResult == null) { skipped++; continue; }
         const result = market.market_type === 'correct_score' ? correctScore
           : market.market_type === 'over_under' ? overUnderResult
+          : market.market_type === 'btts' ? bttsResult
           : matchResult;
         if (await settleMarketRpc(rest, market.id, result)) settled++;
       }

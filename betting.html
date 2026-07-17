@@ -1784,6 +1784,24 @@ function toggleAnytimeScorer(toggleEl) {
   toggleEl.classList.toggle('open', open);
 }
 
+function toggleBtts(toggleEl) {
+  const content = toggleEl.nextElementSibling;
+  const open = content.classList.toggle('hidden') === false;
+  toggleEl.classList.toggle('open', open);
+}
+
+function toggleOuCards(toggleEl) {
+  const content = toggleEl.nextElementSibling;
+  const open = content.classList.toggle('hidden') === false;
+  toggleEl.classList.toggle('open', open);
+}
+
+function toggleCorners(toggleEl) {
+  const content = toggleEl.nextElementSibling;
+  const open = content.classList.toggle('hidden') === false;
+  toggleEl.classList.toggle('open', open);
+}
+
 // ── Odds Boost ───────────────────────────────────────────────────────────────
 
 function _boostKey() { return `wc26_boosts_${_participant?.id}`; }

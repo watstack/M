@@ -67,6 +67,14 @@ module.exports = async function handler(req, res) {
       console.warn(`[markets] backfill_anytime_scorer_odds failed: ${backfillRes.status}`);
     }
 
+    // 1d. Same self-heal for first_scorer's odds_json on the final/third-place
+    // matches, whose odds are also static hand-set values rather than scraped
+    // (see supabase/final-third-place-markets.sql).
+    const backfillFsRes = await rest('/rpc/backfill_first_scorer_odds', { method: 'POST' });
+    if (!backfillFsRes.ok) {
+      console.warn(`[markets] backfill_first_scorer_odds failed: ${backfillFsRes.status}`);
+    }
+
     // 2. Build market rows from the static fixture list via shared builder.
     // No odds events passed — this endpoint only scaffolds; the cron owns odds.
     const { groupRows, koRows, oddsMatched } = buildMarketRows(tournamentId, null, null, null);

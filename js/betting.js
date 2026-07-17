@@ -17,18 +17,57 @@ const DEFAULT_CS_ODDS = 50;
 
 function csOdds(score) { return CORRECT_SCORE_ODDS[score] ?? DEFAULT_CS_ODDS; }
 
-// ─── Semi-final Over/Under 2.5 Goals fixed odds lookup ───────────────────────
+// ─── Over/Under 2.5 Goals fixed odds lookup ──────────────────────────────────
 // Static, hand-set odds (not scraped) keyed by sorted team-code pair so they
-// apply regardless of which match_no (101 or 102) a pairing lands on.
+// apply regardless of which match_no a pairing lands on. Covers both
+// semi-finals plus the final (ARG v ESP) and third-place playoff (ENG v FRA).
 
 const SF_OVER_UNDER_ODDS = {
-  'ESP|FRA': { over: 1.84, under: 1.92 },  // France v Spain
-  'ARG|ENG': { over: 2.27, under: 1.61 },  // England v Argentina
+  'ESP|FRA': { over: 1.84, under: 1.92 },  // France v Spain (semi-final)
+  'ARG|ENG': { over: 2.27, under: 1.61 },  // England v Argentina (semi-final)
+  'ARG|ESP': { over: 2.25, under: 1.62 },  // Spain v Argentina (final)
+  'ENG|FRA': { over: 1.4,  under: 2.86 }, // France v England (third-place playoff)
 };
 
 function sfOverUnderOdds(homeCode, awayCode) {
   if (!homeCode || !awayCode) return null;
   return SF_OVER_UNDER_ODDS[[homeCode, awayCode].sort().join('|')] || null;
+}
+
+// ─── Both Teams To Score fixed odds lookup (final + third-place only) ───────
+
+const STATIC_BTTS_ODDS = {
+  'ARG|ESP': { yes: 1.83, no: 1.91 }, // Spain v Argentina (final)
+  'ENG|FRA': { yes: 1.36, no: 3 },    // France v England (third-place playoff)
+};
+
+function bttsOdds(homeCode, awayCode) {
+  if (!homeCode || !awayCode) return null;
+  return STATIC_BTTS_ODDS[[homeCode, awayCode].sort().join('|')] || null;
+}
+
+// ─── Over/Under 2.5 Cards fixed odds lookup (final + third-place only) ──────
+
+const STATIC_OU_CARDS_ODDS = {
+  'ARG|ESP': { over: 1.25, under: 3.48 }, // Spain v Argentina (final)
+  'ENG|FRA': { over: 2.06, under: 1.68 }, // France v England (third-place playoff)
+};
+
+function ouCardsOdds(homeCode, awayCode) {
+  if (!homeCode || !awayCode) return null;
+  return STATIC_OU_CARDS_ODDS[[homeCode, awayCode].sort().join('|')] || null;
+}
+
+// ─── Total Corners 8.5 fixed odds lookup (final + third-place only) ─────────
+
+const STATIC_CORNERS_ODDS = {
+  'ARG|ESP': { over: 2,    under: 1.72 }, // Spain v Argentina (final)
+  'ENG|FRA': { over: 1.66, under: 2.09 }, // France v England (third-place playoff)
+};
+
+function cornersOdds(homeCode, awayCode) {
+  if (!homeCode || !awayCode) return null;
+  return STATIC_CORNERS_ODDS[[homeCode, awayCode].sort().join('|')] || null;
 }
 
 // ─── Score grid helper ────────────────────────────────────────────────────────
@@ -83,6 +122,11 @@ function buildDoubleChanceRow(marketId, matchNo, oddsJson, canBet) {
 
 const KO_QUALIFY_STAGES = new Set(['r32', 'r16', 'qf', 'sf']);
 
+// Stages that get the "extra" markets: over_under, first_scorer,
+// anytime_scorer, btts, over_under_cards, total_corners. Mirrors
+// EXTRA_MARKET_STAGES in api/_lib/market-builder.js.
+const EXTRA_MARKET_STAGES = new Set(['sf', 'third', 'final']);
+
 function buildQualifyRow(marketId, matchNo, oddsJson, canBet, isSettled, result, homeLabel, awayLabel) {
   const o = oddsJson || {};
   const btn = (sel, label) => {
@@ -103,7 +147,7 @@ function buildQualifyRow(marketId, matchNo, oddsJson, canBet, isSettled, result,
   </div>`;
 }
 
-// ─── Over/Under 2.5 Goals row helper (semi-finals only, fixed odds) ──────────
+// ─── Over/Under 2.5 Goals row helper (fixed odds) ────────────────────────────
 
 function buildOverUnderRow(marketId, matchNo, ouOdds, canBet, isSettled, result) {
   const btn = (sel, label) => {
@@ -120,7 +164,52 @@ function buildOverUnderRow(marketId, matchNo, ouOdds, canBet, isSettled, result)
   </div>`;
 }
 
-// ─── First-scorer row helper (semi-finals only) ──────────────────────────────
+// ─── Both Teams To Score row helper (fixed odds, final + third-place only) ──
+
+function buildBttsRow(marketId, matchNo, oddsJson, canBet, isSettled, result) {
+  const o = oddsJson || {};
+  const btn = (sel, label) => {
+    if (canBet && o[sel] != null) return oddsBtn(marketId, sel, label, o[sel], false, false, matchNo, 'btts');
+    if (isSettled && o[sel] != null) return oddsBtn(marketId, sel, label, o[sel], true, result === sel, matchNo, 'btts');
+    return oddsTbc(label);
+  };
+  return `<div class="dc-row">
+    ${btn('yes', 'Yes')}
+    ${btn('no', 'No')}
+  </div>`;
+}
+
+// ─── Over/Under 2.5 Cards row helper (fixed odds, final + third-place only) ─
+
+function buildOverUnderCardsRow(marketId, matchNo, oddsJson, canBet, isSettled, result) {
+  const o = oddsJson || {};
+  const btn = (sel, label) => {
+    if (canBet && o[sel] != null) return oddsBtn(marketId, sel, label, o[sel], false, false, matchNo, 'over_under_cards');
+    if (isSettled && o[sel] != null) return oddsBtn(marketId, sel, label, o[sel], true, result === sel, matchNo, 'over_under_cards');
+    return oddsTbc(label);
+  };
+  return `<div class="dc-row">
+    ${btn('over', 'Over 2.5')}
+    ${btn('under', 'Under 2.5')}
+  </div>`;
+}
+
+// ─── Total Corners 8.5 row helper (fixed odds, final + third-place only) ────
+
+function buildCornersRow(marketId, matchNo, oddsJson, canBet, isSettled, result) {
+  const o = oddsJson || {};
+  const btn = (sel, label) => {
+    if (canBet && o[sel] != null) return oddsBtn(marketId, sel, label, o[sel], false, false, matchNo, 'total_corners');
+    if (isSettled && o[sel] != null) return oddsBtn(marketId, sel, label, o[sel], true, result === sel, matchNo, 'total_corners');
+    return oddsTbc(label);
+  };
+  return `<div class="dc-row">
+    ${btn('over', 'Over 8.5')}
+    ${btn('under', 'Under 8.5')}
+  </div>`;
+}
+
+// ─── First-scorer row helper ─────────────────────────────────────────────────
 
 function buildFirstScorerRow(marketId, matchNo, oddsJson, canBet, isSettled, result) {
   const entries = Object.entries(oddsJson || {});
@@ -138,7 +227,7 @@ function buildFirstScorerRow(marketId, matchNo, oddsJson, canBet, isSettled, res
   }).join('') + `</div>`;
 }
 
-// ─── Anytime-scorer row helper (semi-finals only) ────────────────────────────
+// ─── Anytime-scorer row helper ───────────────────────────────────────────────
 // Multi-winner: every player who scores anytime wins, so the settled highlight
 // checks membership in resultsList (bet_markets.results_json) rather than
 // equality against a single result string.
@@ -475,7 +564,7 @@ function renderMatchCard(fixture, pair) {
     : '';
 
   const ou = pair.over_under;
-  const ouOdds = fixture.stage === 'sf' ? sfOverUnderOdds(home.code, away.code) : null;
+  const ouOdds = EXTRA_MARKET_STAGES.has(fixture.stage) ? sfOverUnderOdds(home.code, away.code) : null;
   const overUnderSection = (ou && ou.id && ouOdds)
     ? buildOverUnderRow(
         ou.id, fixture.match_no, ouOdds,
@@ -485,7 +574,7 @@ function renderMatchCard(fixture, pair) {
     : '';
 
   const fs = pair.first_scorer;
-  const showFirstScorerAccordion = fixture.stage === 'sf' && home.resolved && away.resolved && fs && fs.id;
+  const showFirstScorerAccordion = EXTRA_MARKET_STAGES.has(fixture.stage) && home.resolved && away.resolved && fs && fs.id;
   const firstScorerAccordion = showFirstScorerAccordion
     ? `<div class="cs-toggle" onclick="toggleFirstScorer(this)">
         <span>First Goalscorer</span><span class="cs-arrow">▾</span>
@@ -498,7 +587,7 @@ function renderMatchCard(fixture, pair) {
     : '';
 
   const as_ = pair.anytime_scorer;
-  const showAnytimeScorerAccordion = fixture.stage === 'sf' && home.resolved && away.resolved && as_ && as_.id;
+  const showAnytimeScorerAccordion = EXTRA_MARKET_STAGES.has(fixture.stage) && home.resolved && away.resolved && as_ && as_.id;
   const anytimeScorerAccordion = showAnytimeScorerAccordion
     ? `<div class="cs-toggle" onclick="toggleAnytimeScorer(this)">
         <span>Anytime Goal Scorer</span><span class="cs-arrow">▾</span>
@@ -507,6 +596,48 @@ function renderMatchCard(fixture, pair) {
         ${buildAnytimeScorerRow(as_.id, fixture.match_no, as_.odds_json,
             !!(as_.id && !as_.locked && as_.status === 'open'),
             as_.status === 'settled', as_.results_json)}
+      </div>`
+    : '';
+
+  const btts = pair.btts;
+  const bttsOddsVal = EXTRA_MARKET_STAGES.has(fixture.stage) ? bttsOdds(home.code, away.code) : null;
+  const showBttsAccordion = (!locked && !isClosed) && btts && btts.id && bttsOddsVal;
+  const bttsAccordion = showBttsAccordion
+    ? `<div class="cs-toggle" onclick="toggleBtts(this)">
+        <span>Both Teams To Score</span><span class="cs-arrow">▾</span>
+      </div>
+      <div class="cs-content hidden">
+        ${buildBttsRow(btts.id, fixture.match_no, bttsOddsVal,
+            !!(btts.id && !btts.locked && btts.status === 'open'),
+            btts.status === 'settled', btts.result)}
+      </div>`
+    : '';
+
+  const ouc = pair.over_under_cards;
+  const ouCardsOddsVal = EXTRA_MARKET_STAGES.has(fixture.stage) ? ouCardsOdds(home.code, away.code) : null;
+  const showOuCardsAccordion = (!locked && !isClosed) && ouc && ouc.id && ouCardsOddsVal;
+  const ouCardsAccordion = showOuCardsAccordion
+    ? `<div class="cs-toggle" onclick="toggleOuCards(this)">
+        <span>Over/Under Cards</span><span class="cs-arrow">▾</span>
+      </div>
+      <div class="cs-content hidden">
+        ${buildOverUnderCardsRow(ouc.id, fixture.match_no, ouCardsOddsVal,
+            !!(ouc.id && !ouc.locked && ouc.status === 'open'),
+            ouc.status === 'settled', ouc.result)}
+      </div>`
+    : '';
+
+  const tc = pair.total_corners;
+  const cornersOddsVal = EXTRA_MARKET_STAGES.has(fixture.stage) ? cornersOdds(home.code, away.code) : null;
+  const showCornersAccordion = (!locked && !isClosed) && tc && tc.id && cornersOddsVal;
+  const cornersAccordion = showCornersAccordion
+    ? `<div class="cs-toggle" onclick="toggleCorners(this)">
+        <span>Total Corners</span><span class="cs-arrow">▾</span>
+      </div>
+      <div class="cs-content hidden">
+        ${buildCornersRow(tc.id, fixture.match_no, cornersOddsVal,
+            !!(tc.id && !tc.locked && tc.status === 'open'),
+            tc.status === 'settled', tc.result)}
       </div>`
     : '';
 
@@ -541,6 +672,9 @@ function renderMatchCard(fixture, pair) {
     ${otherAccordion}
     ${firstScorerAccordion}
     ${anytimeScorerAccordion}
+    ${bttsAccordion}
+    ${ouCardsAccordion}
+    ${cornersAccordion}
   </div>`;
 }
 
