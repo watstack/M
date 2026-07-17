@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LaddyLadLad Wrapped — Season Recap</title>
+<meta name="description" content="A Spotify-Wrapped-style recap of the LaddyLadLad World Cup 2026 betting season — every bet, whale, degenerate parlay and broke mate, ranked.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%BD%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    color-scheme: dark;
+    --ground:#0B1512; --ground-2:#0E1A15;
+    --panel:rgba(255,255,255,.04); --panel-strong:rgba(255,255,255,.07);
+    --line:rgba(245,241,230,.12); --line-strong:rgba(245,241,230,.24);
+    --ink:#F5F1E6; --ink-dim:#B9C4BC; --ink-faint:#718076;
+    --gold:#FFC94D; --gold-deep:#C98500;
+    --good:#0ca30c; --critical:#d03b3b; --warn:#fab219;
+    --c-blue:#3987e5; --c-green:#008300; --c-magenta:#d55181;
+    --c-yellow:#c98500; --c-aqua:#199e70; --c-orange:#d95926;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    --mono:ui-monospace,"SF Mono","Cascadia Code","Roboto Mono",Consolas,monospace;
+  }
+  *{box-sizing:border-box;}
+  html{background:var(--ground);}
+  body{
+    margin:0; background:var(--ground); color:var(--ink); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  img,svg{max-width:100%;}
+  .wide-scroll{overflow-x:auto;}
+
+  /* progress bar */
+  #progress{position:fixed; top:0; left:0; height:3px; width:0%; background:var(--gold); z-index:50; transition:width .08s linear;}
+
+  .chapter{
+    position:relative; padding:5.5rem 1.5rem 5rem; overflow:hidden;
+  }
+  .chapter::before{
+    content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+    background: radial-gradient(ellipse 70% 55% at 50% 0%, var(--wash,transparent) 0%, transparent 70%);
+    opacity:.55;
+  }
+  .chapter > *{ position:relative; z-index:1; }
+  .inner{ max-width:64rem; margin:0 auto; }
+  .inner.narrow{ max-width:46rem; }
+
+  .eyebrow{
+    font-family:var(--mono); font-size:.72rem; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--accent, var(--gold)); font-weight:600; margin:0 0 .9rem;
+  }
+  h2.title{
+    font-family:var(--sans); font-weight:900; text-transform:uppercase;
+    font-size:clamp(2rem,5.4vw,3.4rem); letter-spacing:-.01em; line-height:1.02;
+    margin:0 0 1.4rem; text-wrap:balance;
+  }
+  p.lede{
+    font-size:1.08rem; line-height:1.7; color:var(--ink-dim); max-width:56ch; margin:0 0 2.6rem;
+  }
+  p.lede strong{ color:var(--ink); font-weight:700; }
+  p.note{ font-size:.95rem; line-height:1.65; color:var(--ink-dim); max-width:60ch; margin:1.8rem 0 0; }
+  p.note strong{ color:var(--gold); font-weight:700; }
+
+  /* ---- Cover ---- */
+  .cover{
+    min-height:92vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:3rem 1.5rem; position:relative;
+    background-color:var(--ground);
+    background-repeat:no-repeat;
+    background-image:
+      radial-gradient(circle 150px at 50% 40%, transparent 148px, rgba(245,241,230,.09) 149px, rgba(245,241,230,.09) 150px, transparent 151px),
+      radial-gradient(circle 3px at 50% 40%, rgba(245,241,230,.35) 2px, transparent 3px),
+      linear-gradient(rgba(245,241,230,.08), rgba(245,241,230,.08)),
+      radial-gradient(ellipse 60% 50% at 50% 30%, rgba(255,201,77,.16) 0%, transparent 70%);
+    background-position: center, center, 50% 40%, center;
+    background-size: auto, auto, 100% 1px, auto;
+  }
+  .cover::before, .cover::after{
+    content:""; position:absolute; bottom:14px; width:30px; height:30px; border:1.5px solid rgba(245,241,230,.16); pointer-events:none;
+  }
+  .cover::before{ left:14px; border-left:none; border-bottom:none; border-radius:0 100% 0 0; }
+  .cover::after{ right:14px; border-right:none; border-bottom:none; border-radius:100% 0 0 0; }
+  .cover .eyebrow{ color:var(--gold); }
+  .kickoff-badge{
+    display:inline-flex; align-items:center; gap:.5rem; font-family:var(--mono); font-size:.68rem;
+    letter-spacing:.16em; text-transform:uppercase; color:var(--ink-dim);
+    border:1px solid var(--line-strong); border-radius:999px; padding:.42rem 1rem 0.42rem .8rem;
+    margin-bottom:1.6rem; position:relative; z-index:1;
+  }
+  .live-dot{ width:7px; height:7px; border-radius:50%; background:var(--critical); flex:none; animation:livepulse 1.8s ease-out infinite; }
+  @keyframes livepulse{
+    0%{ box-shadow:0 0 0 0 rgba(208,59,59,.55); }
+    70%{ box-shadow:0 0 0 8px rgba(208,59,59,0); }
+    100%{ box-shadow:0 0 0 0 rgba(208,59,59,0); }
+  }
+  @media (prefers-reduced-motion:reduce){ .live-dot{ animation:none; } }
+  .cover h1{
+    font-family:var(--sans); font-weight:900; text-transform:uppercase;
+    font-size:clamp(2.6rem,11vw,6.4rem); line-height:.94; letter-spacing:-.02em;
+    margin:.3rem 0 .2rem; text-wrap:balance;
+  }
+  .cover h1 .b{ color:var(--gold); }
+  .cover .sub{
+    font-family:var(--mono); font-size:.85rem; letter-spacing:.06em; color:var(--ink-faint);
+    margin:1.1rem 0 2.6rem;
+  }
+  .cover .headline-stat{
+    font-family:var(--mono); font-weight:700; font-size:clamp(1rem,2.6vw,1.3rem);
+    color:var(--ink-dim); max-width:38ch; line-height:1.6; border-top:1px solid var(--line);
+    padding-top:1.4rem;
+  }
+  .cover .headline-stat b{ color:var(--gold); font-weight:700; }
+  .scrollcue{
+    margin-top:3rem; font-family:var(--mono); font-size:.68rem; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--ink-faint);
+  }
+  .scrollcue::after{ content:"↓"; display:block; margin-top:.4rem; animation:bob 1.8s ease-in-out infinite; }
+  @media (prefers-reduced-motion:reduce){ .scrollcue::after{ animation:none; } }
+  @keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(6px);} }
+
+  /* ---- reveal ---- */
+  .reveal{ opacity:0; transform:translateY(18px); transition:opacity .6s ease, transform .6s ease; }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+  @media (prefers-reduced-motion:reduce){ .reveal{ opacity:1; transform:none; transition:none; } }
+
+  /* ---- KPI grid ---- */
+  .kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(11.5rem,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); }
+  .kpi{ background:var(--ground); padding:1.6rem 1.4rem; }
+  .kpi .v{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-weight:700; font-size:clamp(1.7rem,4vw,2.5rem); color:var(--gold); line-height:1; }
+  .kpi .l{ margin-top:.6rem; font-size:.82rem; color:var(--ink-dim); line-height:1.4; }
+
+  /* ---- bar chart ---- */
+  .barchart{ display:flex; flex-direction:column; gap:6px; margin-top:.5rem; }
+  .bar-row{ display:grid; grid-template-columns:9.5rem 1fr auto; align-items:center; gap:.8rem; }
+  .bar-row .lbl{ display:flex; align-items:center; gap:.5rem; font-size:.86rem; color:var(--ink); }
+  .bar-row .dot{ width:9px; height:9px; border-radius:2px; flex:none; background:var(--dot); }
+  .bar-track{ height:16px; background:var(--panel); border-radius:3px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:0 3px 3px 0; background:var(--dot); width:0%; transition:width .8s cubic-bezier(.2,.7,.2,1); }
+  .bar-row .val{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:.82rem; color:var(--ink-dim); white-space:nowrap; text-align:right; }
+  .bar-sub{ font-size:.72rem; color:var(--ink-faint); margin-top:.15rem; }
+  @media (prefers-reduced-motion:reduce){ .bar-fill{ transition:none; } }
+  @media (max-width:640px){ .bar-row{ grid-template-columns:6.6rem 1fr auto; } }
+
+  /* legend */
+  .legend{ display:flex; flex-wrap:wrap; gap:1.1rem; margin-top:1.2rem; }
+  .legend .item{ display:flex; align-items:center; gap:.45rem; font-family:var(--mono); font-size:.74rem; color:var(--ink-dim); }
+  .legend .sw{ width:10px; height:10px; border-radius:2px; }
+
+  /* stacked bar */
+  .stacked{ display:flex; height:38px; border-radius:4px; overflow:hidden; gap:2px; background:var(--ground); margin-top:.4rem; }
+  .stacked .seg{ height:100%; display:flex; align-items:center; justify-content:center; }
+
+  /* ranked list */
+  .ranklist{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+  .ranklist li{ display:grid; grid-template-columns:2.2rem 1fr auto; align-items:baseline; gap:.8rem; padding:.85rem 0; border-bottom:1px solid var(--line); }
+  .ranklist li:first-child{ border-top:1px solid var(--line); }
+  .ranklist .rk{ font-family:var(--mono); color:var(--ink-faint); font-size:.85rem; }
+  .ranklist .nm{ font-weight:600; }
+  .ranklist .ct{ font-family:var(--mono); color:var(--gold); font-variant-numeric:tabular-nums; }
+
+  /* leaderboard */
+  .board{ display:flex; flex-direction:column; gap:2px; margin-top:.5rem; }
+  .board-row{ display:grid; grid-template-columns:2rem minmax(7rem,13rem) 1fr auto; align-items:center; gap:.7rem; padding:.5rem 0; }
+  .board-row .rk{ font-family:var(--mono); color:var(--ink-faint); font-size:.82rem; }
+  .board-row .nm{ font-size:.9rem; font-weight:600; display:flex; align-items:center; flex-wrap:wrap; gap:.4rem; row-gap:.15rem; line-height:1.2; }
+  .board-row .track{ height:12px; background:var(--panel); border-radius:3px; overflow:hidden; }
+  .board-row .fill{ height:100%; background:linear-gradient(90deg,var(--gold-deep),var(--gold)); border-radius:0 3px 3px 0; width:0%; transition:width .9s cubic-bezier(.2,.7,.2,1); }
+  .board-row .amt{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:.82rem; color:var(--ink-dim); text-align:right; min-width:4.4rem; }
+  .bust{ font-family:var(--mono); font-size:.62rem; letter-spacing:.08em; color:var(--critical); border:1px solid rgba(208,59,59,.5); border-radius:3px; padding:1px 4px; flex:none; }
+  @media (prefers-reduced-motion:reduce){ .board-row .fill{ transition:none; } }
+  @media (max-width:640px){ .board-row{ grid-template-columns:1.6rem minmax(5.4rem,7.5rem) 1fr auto; gap:.5rem; } }
+
+  /* superlative cards */
+  .award-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(15.5rem,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); margin-top:.5rem; }
+  .award{ background:var(--ground); padding:1.6rem 1.5rem 1.8rem; display:flex; flex-direction:column; min-height:12.5rem; }
+  .award .tag{ font-family:var(--mono); font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:var(--accent2,var(--gold)); margin-bottom:.7rem; }
+  .award .who{ font-size:1.28rem; font-weight:800; margin-bottom:.35rem; }
+  .award .stat{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:1.5rem; font-weight:700; color:var(--ink); margin-bottom:.5rem; }
+  .award .desc{ font-size:.84rem; line-height:1.55; color:var(--ink-dim); margin-top:auto; }
+
+  /* status tiles */
+  .status-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); }
+  .status-tile{ background:var(--ground); padding:1.4rem; }
+  .status-tile .dot{ width:10px; height:10px; border-radius:50%; display:inline-block; margin-right:.5rem; vertical-align:middle; }
+  .status-tile .v{ font-family:var(--mono); font-variant-numeric:tabular-nums; font-weight:700; font-size:1.7rem; }
+  .status-tile .l{ margin-top:.4rem; font-size:.78rem; color:var(--ink-dim); }
+
+  hr.rule{ border:none; border-top:1px solid var(--line); margin:3rem 0; }
+
+  footer{
+    padding:4rem 1.5rem 3rem; text-align:center; background:var(--ground);
+  }
+  footer .mark{ font-family:var(--mono); font-weight:800; letter-spacing:.04em; color:var(--gold); font-size:1rem; }
+  footer .fine{ margin-top:.8rem; font-size:.78rem; color:var(--ink-faint); font-family:var(--mono); }
+
+  ::selection{ background:var(--gold); color:#1a1206; }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header class="cover">
+  <div class="kickoff-badge"><span class="live-dot"></span>Live — match code 9HE9Y5</div>
+  <div class="eyebrow">Season recap · World Cup 2026</div>
+  <h1>Laddy<span class="b">Lad</span>Lad<br>Wrapped</h1>
+  <div class="sub">Kicked off 8 Jun 2026 &nbsp;·&nbsp; 15 mates &nbsp;·&nbsp; one shared bankroll</div>
+  <div class="headline-stat"><b>376,031</b> coins moved. <b>643</b> slips lodged. One admin who can't leave a parlay alone.</div>
+  <div class="scrollcue">Kick off</div>
+</header>
+
+<section class="chapter reveal" style="--wash:rgba(255,201,77,.16); --accent:var(--gold);">
+  <div class="inner">
+    <div class="eyebrow">Matchday 01</div>
+    <h2 class="title">Kick Off</h2>
+    <p class="lede">One draft. Fifteen mates. A month of full-time punting, boiled down to the raw numbers.</p>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="v">376,031</div><div class="l">coins staked in total</div></div>
+      <div class="kpi"><div class="v">643</div><div class="l">bet slips placed — 449 singles, 194 parlays</div></div>
+      <div class="kpi"><div class="v">1,076</div><div class="l">individual picks made, legs included</div></div>
+      <div class="kpi"><div class="v">390</div><div class="l">markets opened across 11 bet types</div></div>
+      <div class="kpi"><div class="v">39</div><div class="l">custom props pitched to the admin</div></div>
+      <div class="kpi"><div class="v">15</div><div class="l">degenerates, one shared bankroll story</div></div>
+    </div>
+    <p class="note">Everyone kicked off on <strong>1,000 coins</strong> each. Where that stack ended up — Matchday 05.</p>
+  </div>
+</section>
+
+<section class="chapter reveal" style="--wash:rgba(57,135,229,.16); --accent:var(--c-blue);">
+  <div class="inner">
+    <div class="eyebrow">Matchday 02</div>
+    <h2 class="title">The Game Plan</h2>
+    <p class="lede">Eleven markets on the board. Six got picked. One got ignored.</p>
+
+    <div class="barchart" data-bars>
+      <div class="bar-row">
+        <span class="lbl"><span class="dot" style="--dot:var(--c-blue)"></span>Correct score</span>
+        <div class="bar-track"><div class="bar-fill" style="--dot:var(--c-blue)" data-pct="100"></div></div>
+        <span class="val">188 bets</span>
+      </div>
+      <div class="bar-row">
+        <span class="lbl"><span class="dot" style="--dot:var(--c-green)"></span>Match result</span>
+        <div class="bar-track"><div class="bar-fill" style="--dot:var(--c-green)" data-pct="92.6"></div></div>
+        <span class="val">174 bets</span>
+      </div>
+      <div class="bar-row">
+        <span class="lbl"><span class="dot" style="--dot:var(--c-magenta)"></span>Qualify</span>
+        <div class="bar-track"><div class="bar-fill" style="--dot:var(--c-magenta)" data-pct="21.8"></div></div>
+        <span class="val">41 bets</span>
+      </div>
+      <div class="bar-row">
+        <span class="lbl"><span class="dot" style="--dot:var(--c-yellow)"></span>Custom prop</span>
+        <div class="bar-track"><div class="bar-fill" style="--dot:var(--c-yellow)" data-pct="12.8"></div></div>
+        <span class="val">24 bets</span>
+      </div>
+      <div class="bar-row">
+        <span class="lbl"><span class="dot" style="--dot:var(--c-aqua)"></span>Double chance</span>
+        <div class="bar-track"><div class="bar-fill" style="--dot:var(--c-aqua)" data-pct="11.2"></div></div>
+        <span class="val">21 bets</span>
+      </div>
+      <div class="bar-row">
+        <span class="lbl"><span class="dot" style="--dot:var(--c-orange)"></span>Anytime scorer</span>
+        <div class="bar-track"><div class="bar-fill" style="--dot:var(--c-orange)" data-pct="0.5"></div></div>
+        <span class="val">1 bet</span>
+      </div>
+    </div>
+
+    <p class="note">Correct score was the crowd favourite — cheap, constant, mostly wrong. <strong>Qualify is where the real money lives:</strong> just 41 bets, 200,900 coins staked — over half of every coin the group has ever put down. Go big or go home.</p>
+  </div>
+</section>
+
+<section class="chapter reveal" style="--wash:rgba(153,142,0,.14); --accent:var(--gold);">
+  <div class="inner">
+    <div class="eyebrow">Matchday 03</div>
+    <h2 class="title">How We Play</h2>
+    <p class="lede">Favourites. Evenings. Zero rest days.</p>
+
+    <div class="stacked">
+      <div class="seg" style="width:59.8%; background:var(--c-blue);"></div>
+      <div class="seg" style="width:25.9%; background:var(--c-orange);"></div>
+      <div class="seg" style="width:14.4%; background:var(--c-aqua);"></div>
+    </div>
+    <div class="legend">
+      <span class="item"><span class="sw" style="background:var(--c-blue)"></span>Home — 104 bets (59.8%)</span>
+      <span class="item"><span class="sw" style="background:var(--c-orange)"></span>Away — 45 bets (25.9%)</span>
+      <span class="item"><span class="sw" style="background:var(--c-aqua)"></span>Draw — 25 bets (14.4%)</span>
+    </div>
+    <p class="note">Chalk merchants, the lot of you — home sides backed 2-to-1 over away teams. Nobody trusts a draw.</p>
+
+    <hr class="rule">
+
+    <p style="font-size:.86rem; color:var(--ink-dim); margin:0 0 1rem;">Prime time (AEST) — this is when the slips go in:</p>
+    <ol class="ranklist" style="max-width:26rem;">
+      <li><span class="rk">8pm</span><span class="nm">Post-dinner peak</span><span class="ct">44 bets</span></li>
+      <li><span class="rk">5pm</span><span class="nm">Knock-off rush</span><span class="ct">43 bets</span></li>
+      <li><span class="rk">9pm</span><span class="nm">Second wind</span><span class="ct">40 bets</span></li>
+      <li><span class="rk">11am</span><span class="nm">Pre-lunch scroll</span><span class="ct">38 bets</span></li>
+      <li><span class="rk">7pm</span><span class="nm">Kickoff window</span><span class="ct">36 bets</span></li>
+    </ol>
+    <p class="note">Bets landed every single day, 60–68 a pop. No rest days in this league. Wednesday narrowly on top; Tuesday's the quiet one.</p>
+  </div>
+</section>
+
+<section class="chapter reveal" style="--wash:rgba(213,81,129,.14); --accent:var(--c-magenta);">
+  <div class="inner narrow">
+    <div class="eyebrow">Matchday 04</div>
+    <h2 class="title">On Repeat</h2>
+    <p class="lede">Five fixtures the group couldn't leave alone.</p>
+    <ol class="ranklist">
+      <li><span class="rk">01</span><span class="nm">England vs Ghana</span><span class="ct">14 bets</span></li>
+      <li><span class="rk">02</span><span class="nm">USA vs Australia</span><span class="ct">14 bets</span></li>
+      <li><span class="rk">03</span><span class="nm">France vs Iraq</span><span class="ct">13 bets</span></li>
+      <li><span class="rk">04</span><span class="nm">Czech Republic vs South Africa</span><span class="ct">10 bets</span></li>
+      <li><span class="rk">05</span><span class="nm">Argentina vs Austria</span><span class="ct">10 bets</span></li>
+    </ol>
+  </div>
+</section>
+
+<section class="chapter reveal" style="--wash:rgba(201,133,0,.16); --accent:var(--gold);">
+  <div class="inner">
+    <div class="eyebrow">Matchday 05</div>
+    <h2 class="title">The Table</h2>
+    <p class="lede">Everyone kicked off on 1,000 coins. One month later, this is the league table.</p>
+
+    <div class="board" data-board>
+      <div class="board-row"><span class="rk">1</span><span class="nm">Gigsy</span><div class="track"><div class="fill" data-pct="100"></div></div><span class="amt">10,012</span></div>
+      <div class="board-row"><span class="rk">2</span><span class="nm">Box2box Boddie</span><div class="track"><div class="fill" data-pct="96.9"></div></div><span class="amt">9,698</span></div>
+      <div class="board-row"><span class="rk">3</span><span class="nm">bigjohn69</span><div class="track"><div class="fill" data-pct="88.7"></div></div><span class="amt">8,885</span></div>
+      <div class="board-row"><span class="rk">4</span><span class="nm">Alex <span style="color:var(--ink-faint); font-weight:400; font-size:.72rem;">(admin)</span></span><div class="track"><div class="fill" data-pct="10.0"></div></div><span class="amt">1,000</span></div>
+      <div class="board-row"><span class="rk">5</span><span class="nm">Joe Wilson</span><div class="track"><div class="fill" data-pct="5.0"></div></div><span class="amt">500</span></div>
+      <div class="board-row"><span class="rk">6</span><span class="nm">Oscarini</span><div class="track"><div class="fill" data-pct="1.8"></div></div><span class="amt">180</span></div>
+      <div class="board-row"><span class="rk">7</span><span class="nm">RiRi</span><div class="track"><div class="fill" data-pct="1.7"></div></div><span class="amt">168</span></div>
+      <div class="board-row"><span class="rk">8</span><span class="nm">Baz</span><div class="track"><div class="fill" data-pct="0.3"></div></div><span class="amt">26</span></div>
+      <div class="board-row"><span class="rk">9</span><span class="nm">CG <span class="bust">BUST</span></span><div class="track"><div class="fill" data-pct="0"></div></div><span class="amt">0</span></div>
+      <div class="board-row"><span class="rk">10</span><span class="nm">Miitch <span class="bust">BUST</span></span><div class="track"><div class="fill" data-pct="0"></div></div><span class="amt">0</span></div>
+      <div class="board-row"><span class="rk">11</span><span class="nm">Kraken <span class="bust">BUST</span></span><div class="track"><div class="fill" data-pct="0"></div></div><span class="amt">0</span></div>
+      <div class="board-row"><span class="rk">12</span><span class="nm">Bigbadddbowlsy <span class="bust">BUST</span></span><div class="track"><div class="fill" data-pct="0"></div></div><span class="amt">0</span></div>
+      <div class="board-row"><span class="rk">13</span><span class="nm">Hoarey <span class="bust">BUST</span></span><div class="track"><div class="fill" data-pct="0"></div></div><span class="amt">0</span></div>
+      <div class="board-row"><span class="rk">14</span><span class="nm">Alessandro Scallario <span class="bust">BUST</span></span><div class="track"><div class="fill" data-pct="0"></div></div><span class="amt">0</span></div>
+      <div class="board-row"><span class="rk">15</span><span class="nm">Wilson <span class="bust">BUST</span></span><div class="track"><div class="fill" data-pct="0"></div></div><span class="amt">0</span></div>
+    </div>
+
+    <p class="note">Top three — Gigsy, Box2box Boddie, bigjohn69 — are sitting on <strong>28,595 coins</strong> between them. That's 94% of every coin still alive. Seven of fifteen are already down to nothing.</p>
+  </div>
+</section>
+
+<section class="chapter reveal" style="--wash:rgba(208,59,59,.14); --accent:var(--critical);">
+  <div class="inner">
+    <div class="eyebrow">Matchday 06</div>
+    <h2 class="title">Team Of The Season</h2>
+    <p class="lede">Every squad needs its main characters. Here's this one's.</p>
+
+    <div class="award-grid">
+      <div class="award" style="--accent2:var(--c-magenta);">
+        <div class="tag">The Whale</div>
+        <div class="who">Hoarey</div>
+        <div class="stat">136,889</div>
+        <div class="desc">Coins staked. One account, more than a third (36%) of every coin ever put down.</div>
+      </div>
+      <div class="award" style="--accent2:var(--good);">
+        <div class="tag">Sharpshooter</div>
+        <div class="who">bigjohn69</div>
+        <div class="stat">70% <span style="font-size:.9rem; color:var(--ink-dim); font-weight:400;">win rate</span></div>
+        <div class="desc">33 wins from 47 singles. Turned 94,201 staked into 101,087 won. The only real process in the building.</div>
+      </div>
+      <div class="award" style="--accent2:var(--gold);">
+        <div class="tag">Parlay Junkie</div>
+        <div class="who">Alex</div>
+        <div class="stat">106 parlays</div>
+        <div class="desc">More parlay slips than the other 14 mates combined. 4 winners. Average odds 14,241/1. No shame.</div>
+      </div>
+      <div class="award" style="--accent2:var(--c-orange);">
+        <div class="tag">The Lottery Ticket</div>
+        <div class="who">Alex, again</div>
+        <div class="stat">1,376,256/1</div>
+        <div class="desc">A 6-leg parlay, 1-coin stake, chasing a 1.38m payout. Lost, obviously. Not even his biggest leg count that month.</div>
+      </div>
+      <div class="award" style="--accent2:var(--c-aqua);">
+        <div class="tag">Parlay Whisperer</div>
+        <div class="who">Kraken</div>
+        <div class="stat">8 wins</div>
+        <div class="desc">29 parlays, 8 landed. More parlay wins than anyone else in the group — and at sane odds.</div>
+      </div>
+      <div class="award" style="--accent2:var(--c-blue);">
+        <div class="tag">Prop Bet Producer</div>
+        <div class="who">Box2box Boddie</div>
+        <div class="stat">16 of 39</div>
+        <div class="desc">41% of every custom bet request the group has ever pitched. Never short of an idea.</div>
+      </div>
+      <div class="award" style="--accent2:var(--c-magenta);">
+        <div class="tag">Biggest Bet Ever Placed</div>
+        <div class="who">Hoarey</div>
+        <div class="stat">44,170</div>
+        <div class="desc">England to beat Argentina, qualify market, odds of 2.09. Lost. Same market that's paid him big elsewhere — not this time.</div>
+      </div>
+      <div class="award" style="--accent2:var(--critical);">
+        <div class="tag">Ice Cold</div>
+        <div class="who">Baz</div>
+        <div class="stat">14% <span style="font-size:.9rem; color:var(--ink-dim); font-weight:400;">win rate</span></div>
+        <div class="desc">5 wins from 35 single bets. The largest sample size of pure misfortune in the tournament.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="chapter reveal" style="--wash:rgba(25,158,112,.14); --accent:var(--c-aqua);">
+  <div class="inner">
+    <div class="eyebrow">Matchday 07</div>
+    <h2 class="title">Full Time</h2>
+    <p class="lede">The scoreline. The admin's approval rate. Who's buying the round.</p>
+
+    <p style="font-size:.86rem; color:var(--ink-dim); margin:0 0 .6rem;">Single bets, settled</p>
+    <div class="status-grid">
+      <div class="status-tile"><span class="dot" style="background:var(--good)"></span><div class="v">159</div><div class="l">won</div></div>
+      <div class="status-tile"><span class="dot" style="background:var(--critical)"></span><div class="v">288</div><div class="l">lost</div></div>
+      <div class="status-tile"><span class="dot" style="background:var(--ink-faint)"></span><div class="v">2</div><div class="l">voided</div></div>
+      <div class="status-tile"><span class="dot" style="background:var(--gold)"></span><div class="v">35.4%</div><div class="l">win rate</div></div>
+    </div>
+
+    <p style="font-size:.86rem; color:var(--ink-dim); margin:2.2rem 0 .6rem;">Custom prop requests, decided</p>
+    <div class="status-grid">
+      <div class="status-tile"><span class="dot" style="background:var(--good)"></span><div class="v">20</div><div class="l">approved</div></div>
+      <div class="status-tile"><span class="dot" style="background:var(--critical)"></span><div class="v">18</div><div class="l">rejected</div></div>
+      <div class="status-tile"><span class="dot" style="background:var(--warn)"></span><div class="v">1</div><div class="l">still pending</div></div>
+    </div>
+
+    <hr class="rule">
+
+    <p style="font-size:.86rem; color:var(--ink-dim); margin:0 0 .6rem;">The shame board — cans owed on the side bet</p>
+    <div class="barchart">
+      <div class="bar-row"><span class="lbl">Hoarey</span><div class="bar-track"><div class="bar-fill" style="--dot:var(--gold)" data-pct="100"></div></div><span class="val">17 cans</span></div>
+      <div class="bar-row"><span class="lbl">Miitch</span><div class="bar-track"><div class="bar-fill" style="--dot:var(--gold)" data-pct="64.7"></div></div><span class="val">11 cans</span></div>
+      <div class="bar-row"><span class="lbl">Gigsy</span><div class="bar-track"><div class="bar-fill" style="--dot:var(--gold)" data-pct="52.9"></div></div><span class="val">9 cans</span></div>
+      <div class="bar-row"><span class="lbl">Kraken</span><div class="bar-track"><div class="bar-fill" style="--dot:var(--gold)" data-pct="52.9"></div></div><span class="val">9 cans</span></div>
+      <div class="bar-row"><span class="lbl">Alex</span><div class="bar-track"><div class="bar-fill" style="--dot:var(--gold)" data-pct="41.2"></div></div><span class="val">7 cans</span></div>
+      <div class="bar-row"><span class="lbl">bigjohn69</span><div class="bar-track"><div class="bar-fill" style="--dot:var(--gold)" data-pct="29.4"></div></div><span class="val">5 cans</span></div>
+    </div>
+    <p class="note">87 cans owed across the group. Hoarey — the whale from Matchday 06 — also owes the most rounds. Balance restored.</p>
+  </div>
+</section>
+
+<section class="chapter reveal" style="--wash:rgba(255,201,77,.12); --accent:var(--gold);">
+  <div class="inner narrow">
+    <div class="eyebrow">Post-Match</div>
+    <h2 class="title">Final Whistle</h2>
+    <p class="lede" style="max-width:56ch;">
+      One month in, LaddyLadLad runs like a proper little economy — a whale, a degenerate, and a growing tab of mates paying their dues in cans instead of coin.
+    </p>
+    <p class="lede" style="max-width:56ch;">
+      Hoarey's the whale. A third of every coin staked has gone through his account, and he holds both season records — biggest win, biggest loss, sometimes in the same fortnight. bigjohn69 quietly has the only real process in the building. Alex runs the show, placed more bets than anyone alive, and finished exactly where he started: 1,000 coins, breakeven, 102 losing parlays wiser.
+    </p>
+    <p class="lede" style="max-width:56ch;">
+      Full time hasn't blown yet. Qualify markets are still paying out, Box2box Boddie's still pitching props, and someone still owes 17 cans. Wrapped again at the final whistle.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="mark">LADDYLADLAD · 9HE9Y5</div>
+  <div class="fine">Data covers placed bets from 14 Jun – 15 Jul 2026. Tournament status: live — figures will keep moving.</div>
+</footer>
+
+<script>
+(function(){
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var bar = document.getElementById('progress');
+  function onScroll(){
+    var h = document.documentElement;
+    var pct = (h.scrollTop) / (h.scrollHeight - h.clientHeight) * 100;
+    bar.style.width = (isFinite(pct) ? pct : 0) + '%';
+  }
+  document.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  var revealTargets = document.querySelectorAll('.reveal');
+  var fillTargets = document.querySelectorAll('[data-pct]');
+
+  if (reduced || !('IntersectionObserver' in window)) {
+    revealTargets.forEach(function(el){ el.classList.add('in'); });
+    fillTargets.forEach(function(el){ el.style.width = el.getAttribute('data-pct') + '%'; });
+    return;
+  }
+
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('in');
+      entry.target.querySelectorAll('[data-pct]').forEach(function(el){
+        el.style.width = el.getAttribute('data-pct') + '%';
+      });
+      io.unobserve(entry.target);
+    });
+  }, { threshold: 0.15 });
+
+  revealTargets.forEach(function(el){ io.observe(el); });
+})();
+</script>
+</body>
+</html>
