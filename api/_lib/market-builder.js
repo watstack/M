@@ -118,6 +118,48 @@ function staticFirstScorerOdds(homeCode, awayCode) {
   return STATIC_FIRST_SCORER_ODDS[[homeCode, awayCode].sort().join('|')] || null;
 }
 
+// ─── Match result / double chance / qualify — static fallback for the final
+// and third-place playoff. The live odds source (api/_lib/odds-source.js,
+// scraping Oddschecker) has been returning 403s for every fixture — not
+// specific to these two matches — so these two singleton, high-profile
+// matches get a one-off hand-set snapshot (from a competitor site) to fall
+// back on when the scrape has nothing, same reasoning as the tables above.
+// Unlike those tables (keyed by sorted pair, reusable across either SF slot),
+// these are each a single fixed match, so keyed by exact `${home}|${away}` —
+// orientation matters here (draw/qualify home vs away aren't symmetric).
+const STATIC_MATCH_RESULT_ODDS = {
+  'ESP|ARG': { home: 2.25, draw: 3.00, away: 3.60 }, // Final: Spain (h) v Argentina (a)
+  'FRA|ENG': { home: 1.85, draw: 3.90, away: 3.90 }, // Third-place: France (h) v England (a)
+};
+
+function staticMatchResultOdds(homeCode, awayCode) {
+  if (!homeCode || !awayCode) return null;
+  return STATIC_MATCH_RESULT_ODDS[`${homeCode}|${awayCode}`] || null;
+}
+
+const STATIC_DOUBLE_CHANCE_ODDS = {
+  'ESP|ARG': { '1x': 1.26, 'x2': 1.62, '12': 1.37 }, // Final
+  'FRA|ENG': { '1x': 1.23, 'x2': 1.97, '12': 1.22 }, // Third-place
+};
+
+function staticDoubleChanceOdds(homeCode, awayCode) {
+  if (!homeCode || !awayCode) return null;
+  return STATIC_DOUBLE_CHANCE_ODDS[`${homeCode}|${awayCode}`] || null;
+}
+
+// "Qualify" market, labeled "To Lift the Cup" (final) / "To Finish Third"
+// (third-place) client-side (see js/betting.js) instead of "To Qualify" —
+// same market shape (decisive result incl. ET/pens), different display copy.
+const STATIC_QUALIFY_ODDS = {
+  'ESP|ARG': { home: 1.64, away: 2.26 }, // To Lift the Cup: Spain / Argentina
+  'FRA|ENG': { home: 1.42, away: 2.72 }, // To Finish Third: France / England
+};
+
+function staticQualifyOdds(homeCode, awayCode) {
+  if (!homeCode || !awayCode) return null;
+  return STATIC_QUALIFY_ODDS[`${homeCode}|${awayCode}`] || null;
+}
+
 // Stages that get the "extra" markets beyond match_result/correct_score/
 // double_chance/qualify: first_scorer, over_under, anytime_scorer, btts,
 // over_under_cards, total_corners. Originally semi-final only; the final and
@@ -125,9 +167,11 @@ function staticFirstScorerOdds(homeCode, awayCode) {
 // the static tables in js/betting.js for over_under/btts/cards/corners).
 const EXTRA_MARKET_STAGES = new Set(['sf', 'third', 'final']);
 
-// Knockout stages that get a qualify market (who advances, regardless of ET/pens).
-// third and final are excluded — no team "qualifies" further from those.
-const KO_QUALIFY_STAGES = new Set(['r32', 'r16', 'qf', 'sf']);
+// Knockout stages that get a "decisive result" market beyond plain
+// match_result (who advances / lifts the cup / finishes third, regardless of
+// ET/pens). Labeled "To Qualify" for r32/r16/qf/sf, "To Lift the Cup" for the
+// final, "To Finish Third" for the third-place playoff — see js/betting.js.
+const KO_QUALIFY_STAGES = new Set(['r32', 'r16', 'qf', 'sf', 'third', 'final']);
 
 function matchNameFor(fx) {
   const h = fx.home.code ? teamName(fx.home.code) : fx.home.label;
@@ -209,7 +253,13 @@ function buildMarketRows(tournamentId, h2hEvents, scorerEvents, fetchedAt) {
       if (commence) { base.kickoff_time = commence; base.close_time = commence; }
 
       // Call h2hOddsForFixture once and reuse for both match_result and double_chance.
-      const odds = Array.isArray(h2hEvents) ? h2hOddsForFixture(h2hEvents, fx) : null;
+      // Falls back to a hand-set snapshot for the final/third-place playoff
+      // when the live scrape has nothing for this fixture (see
+      // STATIC_MATCH_RESULT_ODDS above) — live odds still take priority when
+      // available, so this self-heals to real prices the moment the scrape
+      // recovers.
+      const liveOdds = Array.isArray(h2hEvents) ? h2hOddsForFixture(h2hEvents, fx) : null;
+      const odds = liveOdds || staticMatchResultOdds(fx.home.code, fx.away.code);
 
       const mr = { ...base, market_type: 'match_result' };
       if (odds) {
@@ -222,15 +272,27 @@ function buildMarketRows(tournamentId, h2hEvents, scorerEvents, fetchedAt) {
       groupRows.push({ ...base, market_type: 'correct_score' });
 
       const dc = { ...base, market_type: 'double_chance' };
-      if (odds && odds.draw !== null) {
-        dc.odds_json = calcDcOdds(odds);
+      const staticDc = staticDoubleChanceOdds(fx.home.code, fx.away.code);
+      if (liveOdds && liveOdds.draw !== null) {
+        dc.odds_json = calcDcOdds(liveOdds);
+        dc.odds_fetched_at = fetchedAt;
+      } else if (staticDc) {
+        // Prefer the exact captured snapshot over deriving from the static
+        // match_result odds — bookmaker double-chance prices aren't a pure
+        // formula of their own 1X2 line, so the derived value would drift
+        // from what's actually being offered.
+        dc.odds_json = staticDc;
         dc.odds_fetched_at = fetchedAt;
       }
       groupRows.push(dc);
 
       if (KO_QUALIFY_STAGES.has(fx.stage)) {
         const qm = { ...base, market_type: 'qualify' };
-        if (odds && odds.draw !== null) {
+        const staticQual = staticQualifyOdds(fx.home.code, fx.away.code);
+        if (staticQual) {
+          qm.odds_json = staticQual;
+          qm.odds_fetched_at = fetchedAt;
+        } else if (odds && odds.draw !== null) {
           qm.odds_json = calcQualifyOdds(odds);
           qm.odds_fetched_at = fetchedAt;
         }
@@ -285,4 +347,8 @@ function buildMarketRows(tournamentId, h2hEvents, scorerEvents, fetchedAt) {
   return { groupRows, koRows, oddsMatched };
 }
 
-module.exports = { buildMarketRows, matchNameFor, commenceTimeForFixture, calcDcOdds, calcQualifyOdds, sfAnytimeScorerOdds, staticFirstScorerOdds };
+module.exports = {
+  buildMarketRows, matchNameFor, commenceTimeForFixture, calcDcOdds, calcQualifyOdds,
+  sfAnytimeScorerOdds, staticFirstScorerOdds,
+  staticMatchResultOdds, staticDoubleChanceOdds, staticQualifyOdds,
+};
