@@ -75,6 +75,20 @@ module.exports = async function handler(req, res) {
       console.warn(`[markets] backfill_first_scorer_odds failed: ${backfillFsRes.status}`);
     }
 
+    // 1e-1g. Same self-heal for match_result/double_chance/qualify's odds_json
+    // on the final/third-place matches. These two matches never look
+    // "resolved" to buildMarketRows() below (their real team codes only ever
+    // land in the DB via propagateResult()/setMatchTeams(), never in the
+    // static WC2026_FIXTURES file — see supabase/reconcile-locked-markets.sql's
+    // header), so the static fallback odds in market-builder.js's "resolved"
+    // branch can never fire for them; these RPCs are the only path that
+    // actually fills odds_json in for these three market types on these two
+    // matches (see supabase/final-third-place-odds-backfill.sql).
+    for (const fn of ['backfill_match_result_odds', 'backfill_double_chance_odds', 'backfill_qualify_odds']) {
+      const r = await rest(`/rpc/${fn}`, { method: 'POST' });
+      if (!r.ok) console.warn(`[markets] ${fn} failed: ${r.status}`);
+    }
+
     // 2. Build market rows from the static fixture list via shared builder.
     // No odds events passed — this endpoint only scaffolds; the cron owns odds.
     const { groupRows, koRows, oddsMatched } = buildMarketRows(tournamentId, null, null, null);
