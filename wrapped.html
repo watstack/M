@@ -178,6 +178,15 @@
   .award .stat .unit{ font-family:var(--sans); font-size:.85rem; font-weight:400; color:var(--ink-dim); }
   .award .desc{ font-size:.84rem; line-height:1.55; color:var(--ink-dim); margin-top:auto; }
 
+  /* subs bench */
+  .subs-head{ display:flex; align-items:baseline; gap:.7rem; margin:2.6rem 0 .3rem; }
+  .subs-head .eyebrow{ margin:0; }
+  .subs-head .line{ flex:1; height:1px; background:var(--line); }
+  .subs-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(15.5rem,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); margin-top:1rem; }
+  .sub{ background:var(--ground); padding:1rem 1.2rem; }
+  .sub .sub-name{ display:block; font-size:.88rem; font-weight:700; color:var(--ink); margin-bottom:.3rem; }
+  .sub .sub-note{ display:block; font-size:.78rem; line-height:1.5; color:var(--ink-dim); }
+
   /* status tiles */
   .status-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); }
   .status-tile{ background:var(--ground); padding:1.4rem; }
@@ -498,10 +507,10 @@
         <div class="desc">More parlay slips than the other 14 mates combined. 4 winners. Average odds 14,241/1. No shame.</div>
       </div>
       <div class="award" style="--accent2:var(--c-orange);">
-        <div class="tag">The Lottery Ticket</div>
-        <div class="who">Alex, again</div>
-        <div class="stat">1,376,256/1</div>
-        <div class="desc">A 6-leg parlay, 1-coin stake, chasing a 1.38m payout. Lost, obviously. Not even his biggest leg count that month.</div>
+        <div class="tag">Top Of The Table</div>
+        <div class="who">Gigsy</div>
+        <div class="stat">10,012</div>
+        <div class="desc">Turned a 1,000-coin start into the biggest bankroll in the group. Never needed an award card to prove it — until now.</div>
       </div>
       <div class="award" style="--accent2:var(--c-aqua);">
         <div class="tag">Parlay Whisperer</div>
@@ -526,6 +535,43 @@
         <div class="who">Baz</div>
         <div class="stat">14% <span style="font-size:.9rem; color:var(--ink-dim); font-weight:400;">win rate</span></div>
         <div class="desc">5 wins from 35 single bets. The largest sample size of pure misfortune in the tournament.</div>
+      </div>
+    </div>
+
+    <div class="subs-head"><div class="eyebrow">The Subs Bench</div><div class="line"></div></div>
+    <p class="lede" style="margin-bottom:1.2rem;">Didn't make the starting eight, but no LaddyLadLad season recap is complete without them.</p>
+    <div class="subs-grid">
+      <div class="sub">
+        <span class="sub-name">Joe Wilson</span>
+        <span class="sub-note">9 bets, zero parlays. Never touched a multi all season — 500 coins to show for the caution.</span>
+      </div>
+      <div class="sub">
+        <span class="sub-name">Oscarini</span>
+        <span class="sub-note">7 bets, 1 win, 180 coins left. Still in it, barely.</span>
+      </div>
+      <div class="sub">
+        <span class="sub-name">RiRi</span>
+        <span class="sub-note">26 bets and not a single parlay. The last true singles purist in the group.</span>
+      </div>
+      <div class="sub">
+        <span class="sub-name">CG</span>
+        <span class="sub-note">23 bets, 7 of them parlays. Busted to zero, but owes the fewest cans of the bust club (5).</span>
+      </div>
+      <div class="sub">
+        <span class="sub-name">Miitch</span>
+        <span class="sub-note">33 bets, 14 of them parlays. Flat broke, and owes the second-most cans in the group (11).</span>
+      </div>
+      <div class="sub">
+        <span class="sub-name">Bigbadddbowlsy</span>
+        <span class="sub-note">28 singles, just 2 parlays. Best single-bet win rate of anyone who still went bust (53.6%).</span>
+      </div>
+      <div class="sub">
+        <span class="sub-name">Alessandro Scallario</span>
+        <span class="sub-note">5 bets all season — the smallest sample size in the group. 2 wins, 3 losses.</span>
+      </div>
+      <div class="sub">
+        <span class="sub-name">Wilson</span>
+        <span class="sub-note">7 bets, zero wins. Still waiting on his first W.</span>
       </div>
     </div>
   </div>
