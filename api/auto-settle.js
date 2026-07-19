@@ -102,9 +102,11 @@ module.exports = async function handler(req, res) {
           const scorers = allScorers(wc);
           if (scorers.length) {
             if (await settleMarketMultiRpc(rest, market.id, scorers)) settled++; else skipped++;
-          } else {
-            // Genuine 0-0 through full time — no anytime scorer exists.
+          } else if (matchResult === 'draw' && correctScore === '0-0') {
+            // Genuine scoreless draw — there is definitionally no anytime scorer.
             await voidMarketRpc(rest, market.id); settled++;
+          } else {
+            skipped++; // scorer data not yet resolved from the data source — retry next run
           }
           continue;
         }
