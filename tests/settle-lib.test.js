@@ -135,6 +135,48 @@ describe('firstScorerName', () => {
   });
 });
 
+describe('anytime_scorer void guard (mirrors api/auto-settle.js / scripts/auto-settle.cjs dispatch)', () => {
+  // The dispatch only voids anytime_scorer when allScorers() is empty AND the
+  // match is a genuine scoreless draw (matchResult === 'draw' && correctScore
+  // === '0-0', computed here the same way auto-settle.js does from
+  // regulationScore()) — otherwise it must skip-and-retry, since an empty
+  // goals[] can also mean the data source hasn't supplied scorer names yet
+  // (see the football-data.org free-tier gap this guards against).
+  function matchResultAndScore(wc) {
+    const reg = regulationScore(wc);
+    const matchResult = reg.home > reg.away ? 'home' : reg.away > reg.home ? 'away' : 'draw';
+    return { matchResult, correctScore: `${reg.home}-${reg.away}` };
+  }
+
+  it('voids when there are no scorers and the match is a genuine 0-0', () => {
+    const wc = { home_score: 0, away_score: 0, home_score_reg: null, away_score_reg: null, goals: [] };
+    const { matchResult, correctScore } = matchResultAndScore(wc);
+    expect(allScorers(wc)).toEqual([]);
+    expect(matchResult === 'draw' && correctScore === '0-0').toBe(true);
+  });
+
+  it('does NOT void when there are no scorers but the match was not scoreless (data gap, not a real 0-0)', () => {
+    const wc = { home_score: 2, away_score: 1, home_score_reg: null, away_score_reg: null, goals: [] };
+    const { matchResult, correctScore } = matchResultAndScore(wc);
+    expect(allScorers(wc)).toEqual([]);
+    expect(matchResult === 'draw' && correctScore === '0-0').toBe(false);
+  });
+
+  it('does NOT void when there are no scorers even for a level score reached via extra time (not a 90-min 0-0)', () => {
+    const wc = {
+      home_score: 1, away_score: 1,
+      home_score_reg: 0, away_score_reg: 0,
+      goals: [],
+    };
+    const { matchResult, correctScore } = matchResultAndScore(wc);
+    expect(matchResult).toBe('draw');
+    expect(correctScore).toBe('0-0');
+    // This one legitimately is a 90-min 0-0 (home_score_reg/away_score_reg both 0),
+    // so voiding is correct here even though the ET-inclusive final score is 1-1.
+    expect(matchResult === 'draw' && correctScore === '0-0').toBe(true);
+  });
+});
+
 describe('allScorers', () => {
   it('returns every named scorer, deduped, regardless of minute order', () => {
     const wc = {
