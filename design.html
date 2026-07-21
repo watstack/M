@@ -3,44 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kickoff — Design Kitchen Sink</title>
+  <title>Kickoff — Design System</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@700;800&family=DM+Sans:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
-/* ─────────────────────────────────────────────────────────────
-   DESIGN KITCHEN SINK
-   All screens visible and stacked — no JS, no Supabase.
-   To iterate: edit CSS variables in :root first,
-   then tweak individual sections.
+/* ═══════════════════════════════════════════════════════════════════════════
+   KICKOFF — DESIGN SYSTEM (single-file export)
+   "Sunset Kickoff" theme: 8-bit / pixel-art World Cup sweepstake app.
 
-   HOW TO BRING CHANGES BACK:
-   :root vars + global rules → css/styles.css
-   State-specific styles      → inline <style> in sweepstake.html (lines 15–156)
-   body.page-entry / #stateBracket rules → bottom of css/styles.css
-   ───────────────────────────────────────────────────────────── */
+   This file is a portable snapshot of the live design system: every token
+   and component style below is copied from css/styles.css (the real
+   stylesheet the app ships), so it should match production exactly at the
+   time it was generated. It's meant to be uploaded as reference material
+   (e.g. into a Claude Project) — not linked from a live page.
 
-/* ── Reset & base ──────────────────────────────────────────── */
+   SOURCE OF TRUTH: css/styles.css. If you change a token or component
+   there, re-export this file — don't edit tokens here and expect them to
+   flow back automatically.
+
+   Sections below:
+     0. Design tokens (colors, type, shape)
+     1. Buttons, forms, badges, misc atoms
+     2. Cards, avatar picker, participant list
+     3. Screen: Entry / landing (16-bit title screen — index.html)
+     4. Screen: Tournament splash (sweepstake.html #stateLanding)
+     5. Screen: Join (sweepstake.html #stateJoin)
+     6. Screen: Waiting room (sweepstake.html #stateWaiting)
+     7. Screen: Draw arena (sweepstake.html #stateDraw)
+     8. Screen: Bracket — groups + knockout tree (sweepstake.html #stateBracket)
+     9. Screen: Match cards / stage tabs (betting.html, live bracket)
+   ─────────────────────────────────────────────────────────────────────── */
+
+/* ── Reset & base ───────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* — brand — */
+  /* — brand · Sunset Kickoff — */
   --green:      #ff6a1f;
   --green-lt:   #ff8a3d;
-  --gold:       #25d8d8;
+  --gold:       #ff9ad0;
   --red:        #ff3b5c;
-  /* — surfaces — */
-  --dark:       #080b10;
-  --mid:        #0e131b;
-  --panel:      #0a0f16;
-  --border:     #1d2735;
+  /* — surfaces · warm dusk — */
+  --dark:       #140a18;
+  --mid:        #211327;
+  --panel:      #190d1f;
+  --border:     #3a1f3a;
   /* — ink — */
-  --text:       #eef3f8;
-  --muted:      #8896a8;
+  --text:       #f6ead8;
+  --muted:      #b58aa0;
   /* — live — */
-  --live-pulse: #25d8d8;
+  --live-pulse: #ff9ad0;
   /* — shape — */
-  --radius:     10px;
+  --radius:     2px;
   /* — type — */
   --font-body:    'DM Sans', system-ui, sans-serif;
   --font-mono:    'Share Tech Mono', monospace;
@@ -56,10 +71,10 @@
   --pixel-black:   #0a0808;
   /* — gradients — */
   --grad-accent:  linear-gradient(180deg, #ff9a4d, #ff6a1f);
-  --grad-duotone: linear-gradient(135deg, #ff6a1f, #25d8d8);
+  --grad-duotone: linear-gradient(135deg, #ff6a1f, #ff3b6b);
   /* — glow — */
   --glow-orange: 0 0 22px rgba(255,106,31,.4);
-  --glow-cyan:   0 0 18px rgba(37,216,216,.4);
+  --glow-cyan:   0 0 18px rgba(255,154,208,.4);
   /* — motion — */
   --ease: cubic-bezier(.16,1,.3,1);
   --dur:  .16s;
@@ -75,7 +90,7 @@ body {
   line-height: 1.5;
 }
 
-/* Scanline CRT overlay */
+/* Scanline CRT overlay — present on every screen */
 body::after {
   content: '';
   position: fixed;
@@ -90,343 +105,356 @@ body::after {
 a { color: var(--gold); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* ── Typography ────────────────────────────────────────────── */
-h1 { font-family: var(--font-display); font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; letter-spacing: .03em; text-transform: uppercase; line-height: 1.1; }
-h2 { font-family: var(--font-display); font-size: clamp(1.3rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
-h3 { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; }
+/* ── Typography ─────────────────────────────────────────────────────────── */
+h1 { font-family: var(--font-pixel); font-size: clamp(1.1rem, 3.4vw, 2rem); font-weight: 400; letter-spacing: .01em; text-transform: uppercase; line-height: 1.5; text-shadow: 3px 3px 0 var(--pixel-black); }
+h2 { font-family: var(--font-pixel); font-size: clamp(0.78rem, 2.2vw, 1rem); font-weight: 400; letter-spacing: .01em; text-transform: uppercase; line-height: 1.7; }
+h3 { font-family: var(--font-pixel); font-size: 0.62rem; font-weight: 400; letter-spacing: .02em; text-transform: uppercase; line-height: 1.7; }
 small, .muted { color: var(--muted); font-size: 0.85rem; }
 
-/* ── Layout ─────────────────────────────────────────────────── */
+/* ── Layout ─────────────────────────────────────────────────────────────── */
 .page { max-width: 960px; margin: 0 auto; padding: 24px 16px 64px; }
 .page.wide { max-width: 1300px; }
 
 header.site-header {
-  display: flex; align-items: center; gap: 12px;
-  padding: 16px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 32px;
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 16px 0 28px; border-bottom: 1px solid var(--border); margin-bottom: 28px;
 }
+.site-home {
+  display: inline-flex; align-items: center; gap: 12px;
+  text-decoration: none; color: inherit;
+  padding: 4px 10px; border-radius: 12px; cursor: pointer;
+  transition: transform .12s var(--ease), opacity .12s;
+}
+.site-home:hover { text-decoration: none; transform: translateY(-1px); }
+.site-home:hover .logo { box-shadow: var(--glow-orange), 0 0 0 2px rgba(255,106,31,.25); }
+.site-home:hover .site-name { color: var(--text); }
 .logo {
   width: 36px; height: 36px; background: var(--grad-accent); border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
   font-size: 20px; box-shadow: var(--glow-orange);
 }
-.site-name { font-family: var(--font-pixel); font-size: 0.6rem; letter-spacing: .04em; color: var(--gold); }
+.site-name { font-family: var(--font-pixel); font-size: 0.6rem; letter-spacing: .04em; color: var(--gold); transition: color .12s; }
 
-/* ── Cards ──────────────────────────────────────────────────── */
+/* Background treatments — applied to <body> per page */
+body.tunnel-screen, body.page-entry {
+  background:
+    linear-gradient(180deg, rgba(20,10,24,.46) 0%, rgba(20,10,24,.72) 58%, rgba(20,10,24,.9) 100%),
+    url('assets/tunnel-sunset.svg') center top / cover no-repeat fixed,
+    var(--dark);
+}
+.landing-bg { background: #160320 url('assets/landing-castle.svg') top center / 100% auto no-repeat; }
+
+/* ── Cards ──────────────────────────────────────────────────────────────── */
 .card {
-  position: relative; background: var(--mid); border: 1px solid var(--border);
+  position: relative; background: var(--mid); border: 3px solid #2c3e54;
   border-radius: var(--radius); padding: 24px;
-  box-shadow: 0 18px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(37,216,216,.04);
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,.06),
+    inset -3px -3px 0 rgba(0,0,0,.5),
+    6px 6px 0 rgba(0,0,0,.5);
 }
 .card::before {
-  content: ""; position: absolute; top: 0; left: 0; width: 40px; height: 3px;
-  background: var(--grad-accent); border-radius: 0 0 2px 0;
+  content: ""; position: absolute; top: -3px; left: 16px; width: 38px; height: 6px;
+  background: var(--grad-accent); border-radius: 0;
 }
 .card + .card { margin-top: 16px; }
 .card-sm { padding: 16px; }
 
-/* ── Forms ──────────────────────────────────────────────────── */
+/* ── Forms ──────────────────────────────────────────────────────────────── */
 label {
   display: block; font-size: 0.85rem; font-weight: 600; color: var(--muted);
   margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;
 }
 input[type=text], input[type=number], select {
-  width: 100%; background: var(--mid); border: 1px solid var(--border);
-  border-radius: 8px; padding: 12px 14px; color: var(--text);
-  font-family: var(--font-body); font-size: 1rem; outline: none;
+  width: 100%; background: #0c1622; border: 2px solid #2c3e54;
+  border-radius: var(--radius); padding: 12px 14px; color: var(--text);
+  font-family: var(--font-mono); font-size: 1rem; outline: none;
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,.4);
+  transition: border-color 0.15s;
 }
+input[type=text]:focus, input[type=number]:focus, select:focus { border-color: var(--gold); }
+input.error { border-color: var(--red) !important; }
 .field { margin-bottom: 20px; }
+.field-error { color: var(--red); font-size: 0.82rem; margin-top: 4px; display: none; }
+.field-error.show { display: block; }
 
-/* ── Buttons ─────────────────────────────────────────────────── */
+/* ── Buttons ────────────────────────────────────────────────────────────── */
 button, .btn {
   display: inline-flex; align-items: center; gap: 8px;
-  background: var(--grad-accent); color: #0a0805; border: none;
-  border-radius: 999px; padding: 12px 24px; font-family: var(--font-display);
-  font-size: 0.9rem; font-weight: 700; letter-spacing: .03em;
+  background: var(--grad-accent); color: #0a0805; border: 2px solid rgba(0,0,0,.35);
+  border-radius: var(--radius); padding: 14px 20px; font-family: var(--font-pixel);
+  font-size: 0.6rem; font-weight: 400; letter-spacing: 0; line-height: 1.6;
   text-transform: uppercase; cursor: pointer; text-decoration: none;
-  box-shadow: var(--glow-orange); transition: transform .1s, filter .1s;
+  box-shadow: 4px 4px 0 rgba(0,0,0,.8); transition: transform .08s, box-shadow .08s, filter .08s;
 }
-button:hover { transform: translateY(-1px); filter: brightness(1.08); }
-button.btn-gold { background: var(--grad-accent); color: #0a0805; box-shadow: var(--glow-orange); }
-button.btn-ghost {
-  background: transparent; border: 1px solid rgba(37,216,216,.3);
-  color: var(--gold); box-shadow: none;
-}
-button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
+button:hover, .btn:hover { transform: translate(2px,2px); box-shadow: 2px 2px 0 rgba(0,0,0,.8); filter: brightness(1.07); }
+button:active, .btn:active { transform: translate(4px,4px); box-shadow: none; }
+button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
+button.btn-gold { background: var(--grad-accent); color: #0a0805; }
+button.btn-ghost { background: var(--pixel-black); border: 2px solid var(--gold); color: var(--gold); box-shadow: 4px 4px 0 rgba(0,0,0,.8); }
+button.btn-danger { background: var(--red); color: #fff; border-color: rgba(0,0,0,.35); }
 .btn-full { width: 100%; justify-content: center; }
+.btn-pixel { border-radius: 2px; font-family: var(--font-pixel); font-size: 0.55rem; box-shadow: 4px 4px 0 rgba(0,0,0,.8); }
 
-/* ── Live badge ─────────────────────────────────────────────── */
+/* ── Spinner ────────────────────────────────────────────────────────────── */
+.spinner { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; display: none; }
+.spinner.show { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Live badge ─────────────────────────────────────────────────────────── */
 .live-badge {
   display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(37,216,216,.1); border: 1px solid var(--live-pulse);
+  background: rgba(255,154,208,.1); border: 1px solid var(--live-pulse);
   color: var(--live-pulse); font-family: var(--font-mono); font-size: 0.72rem;
   font-weight: 700; letter-spacing: 0.1em; padding: 4px 10px;
   border-radius: 999px; text-transform: uppercase; box-shadow: var(--glow-cyan);
 }
-.live-dot {
-  width: 8px; height: 8px; background: var(--live-pulse); border-radius: 50%;
-  animation: pulse-dot 1.1s ease-in-out infinite;
-}
-@keyframes pulse-dot {
-  0%   { box-shadow: 0 0 0 0 rgba(37,216,216,.6); }
-  70%  { box-shadow: 0 0 0 7px transparent; }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
+.live-dot { width: 8px; height: 8px; background: var(--live-pulse); border-radius: 50%; animation: pulse-dot 1.1s ease-in-out infinite; }
+@keyframes pulse-dot { 0% { box-shadow: 0 0 0 0 rgba(255,154,208,.6); } 70% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 
-/* ── Avatar picker ──────────────────────────────────────────── */
-.avatar-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 12px; margin-top: 10px;
-}
+/* ── Avatar picker ──────────────────────────────────────────────────────── */
+.avatar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 12px; margin-top: 10px; }
 .avatar-option {
-  background: var(--mid); border: 2px solid var(--border); border-radius: 10px;
+  background: var(--mid); border: 2px solid #2c3e54; border-radius: var(--radius);
   padding: 12px 8px 8px; cursor: pointer; text-align: center;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.4);
   display: flex; flex-direction: column; align-items: center; gap: 6px;
+  transition: transform .08s, border-color .08s;
 }
-.avatar-option.selected { border-color: var(--gold); background: rgba(37,216,216,0.08); }
-.avatar-option-label { font-size: 0.72rem; color: var(--muted); font-weight: 600; }
+.avatar-option:hover { transform: translateY(-2px); }
+.avatar-option.selected {
+  border-color: var(--gold); background: rgba(255,154,208,0.08);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.4), 0 0 0 2px rgba(255,154,208,.3);
+}
+.avatar-option-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); font-weight: 600; }
+.avatar-option.selected .avatar-option-label { color: var(--gold); }
+.avatar-sprite { width: auto; height: 60px; image-rendering: pixelated; display: block; margin: 2px auto 0; filter: drop-shadow(0 3px 0 rgba(0,0,0,.4)); }
 
-/* ── Participant list ───────────────────────────────────────── */
+/* ── Participant list ───────────────────────────────────────────────────── */
 .participant-list { display: flex; flex-direction: column; gap: 8px; }
 .participant-row {
   display: flex; align-items: center; gap: 12px; background: var(--mid);
-  border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px;
+  border: 2px solid #2c3e54; border-radius: var(--radius); padding: 10px 14px;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.04), inset -2px -2px 0 rgba(0,0,0,.35);
 }
 .participant-row .p-name { font-weight: 700; flex: 1; }
 .participant-row .p-slots { font-size: 0.82rem; color: var(--muted); font-family: var(--font-mono); }
-.team-pill {
-  display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px;
-  border-radius: 20px; font-weight: 700; font-size: 0.78rem; white-space: nowrap;
-}
+.team-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-weight: 700; font-size: 0.78rem; white-space: nowrap; }
 
-/* ── Slot counter ───────────────────────────────────────────── */
+/* ── Slot counter ───────────────────────────────────────────────────────── */
 .slot-counter { display: flex; align-items: center; gap: 12px; font-family: var(--font-mono); }
 .slot-bar-wrap { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
-.slot-bar { height: 100%; background: var(--grad-duotone); border-radius: 4px; }
+.slot-bar { height: 100%; background: var(--grad-duotone); border-radius: 4px; transition: width 0.4s ease; }
+.slot-bar.full { background: var(--gold); }
 .slot-label { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
 
-/* ── Share box ──────────────────────────────────────────────── */
-.share-box {
-  display: flex; align-items: center; gap: 8px; background: var(--mid);
-  border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px;
-}
+/* ── Share box ──────────────────────────────────────────────────────────── */
+.share-box { display: flex; align-items: center; gap: 8px; background: #0c1622; border: 2px solid #2c3e54; border-radius: var(--radius); padding: 10px 14px; box-shadow: inset 2px 2px 0 rgba(0,0,0,.4); }
 .share-url { flex: 1; font-family: var(--font-mono); font-size: 0.88rem; word-break: break-all; }
 .copy-btn {
-  background: var(--border); border: none; color: var(--text); padding: 6px 12px;
-  font-size: 0.82rem; border-radius: 6px; cursor: pointer;
+  background: var(--grad-accent); border: 2px solid rgba(0,0,0,.35); color: #0a0805;
+  padding: 8px 12px; font-family: var(--font-pixel); font-size: 0.5rem;
+  line-height: 1.6; border-radius: var(--radius); cursor: pointer;
+  box-shadow: 3px 3px 0 rgba(0,0,0,.7);
 }
 
-/* ── Draw arena ─────────────────────────────────────────────── */
-.draw-arena {
-  position: relative; min-height: 80vh; padding: 8px 0 32px;
-  display: flex; flex-direction: column; gap: 16px;
-  background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5NjAgNjAwIiB3aWR0aD0iOTYwIiBoZWlnaHQ9IjYwMCIgc2hhcGUtcmVuZGVyaW5nPSJjcmlzcEVkZ2VzIj4KICA8ZGVmcz4KICAgIDxwYXR0ZXJuIGlkPSJzYW5kIiB4PSIwIiB5PSIwIiB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8cmVjdCB3aWR0aD0iMTYiIGhlaWdodD0iOCIgZmlsbD0iI2Q0YTg0YSIvPgogICAgICA8cmVjdCB5PSI4IiB3aWR0aD0iMTYiIGhlaWdodD0iOCIgZmlsbD0iI2MwOTQ0MCIvPgogICAgPC9wYXR0ZXJuPgogICAgPHBhdHRlcm4gaWQ9InN0b25lIiB4PSIwIiB5PSIwIiB3aWR0aD0iMzIiIGhlaWdodD0iMTYiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMTYiIGZpbGw9IiM1MDQwMzAiLz4KICAgICAgPHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE0IiBmaWxsPSIjNzA2MDUwIi8+CiAgICAgIDxyZWN0IHg9IjE3IiB5PSIxIiB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIGZpbGw9IiM2MDQ4NDAiLz4KICAgIDwvcGF0dGVybj4KICAgIDxwYXR0ZXJuIGlkPSJzdG9uZUIiIHg9IjE2IiB5PSIwIiB3aWR0aD0iMzIiIGhlaWdodD0iMTYiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMTYiIGZpbGw9IiM1MDQwMzAiLz4KICAgICAgPHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE0IiBmaWxsPSIjNjA0ODQwIi8+CiAgICAgIDxyZWN0IHg9IjE3IiB5PSIxIiB3aWR0aD0iMTQiIGhlaWdodD0iMTQiIGZpbGw9IiM3MDYwNTAiLz4KICAgIDwvcGF0dGVybj4KICAgIDxyYWRpYWxHcmFkaWVudCBpZD0idmlnbmV0dGUiIGN4PSI1MCUiIGN5PSI1MCUiIHI9IjY1JSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMzUlIiBzdG9wLWNvbG9yPSIjMDAwMDAwIiBzdG9wLW9wYWNpdHk9IjAiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMDAwMDAwIiBzdG9wLW9wYWNpdHk9IjAuNjciLz4KICAgIDwvcmFkaWFsR3JhZGllbnQ+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9InNwb3RsaWdodCIgY3g9IjUwJSIgY3k9IjAlIiByPSI3MCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZmY5NjFlIiBzdG9wLW9wYWNpdHk9IjAuMjciLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjZmY5NjFlIiBzdG9wLW9wYWNpdHk9IjAiLz4KICAgIDwvcmFkaWFsR3JhZGllbnQ+CiAgPC9kZWZzPgoKICA8cmVjdCB3aWR0aD0iOTYwIiBoZWlnaHQ9IjYwMCIgZmlsbD0idXJsKCNzYW5kKSIvPgogIDxyZWN0IHg9IjAiICAgeT0iMjQiIHdpZHRoPSIxMjgiIGhlaWdodD0iNTUyIiBmaWxsPSIjMWE1ZTFhIi8+CiAgPHJlY3QgeD0iMCIgICB5PSIyNCIgd2lkdGg9IjMyIiBoZWlnaHQ9IjU1MiIgZmlsbD0iIzIzNjgyMyIvPgogIDxyZWN0IHg9IjY0IiAgeT0iMjQiIHdpZHRoPSIxNiIgaGVpZ2h0PSI1NTIiIGZpbGw9IiMxZjYyMjAiLz4KICA8cmVjdCB4PSIxNiIgIHk9IjI0IiB3aWR0aD0iMTYiIGhlaWdodD0iNTUyIiBmaWxsPSIjMTU0ZTE1Ii8+CiAgPHJlY3QgeD0iODAiICB5PSIyNCIgd2lkdGg9IjMyIiBoZWlnaHQ9IjU1MiIgZmlsbD0iIzE1NGUxNSIvPgogIDxyZWN0IHg9IjExMiIgeT0iMjQiIHdpZHRoPSIxNiIgaGVpZ2h0PSI1NTIiIGZpbGw9IiMwZjNhMGYiLz4KICA8cmVjdCB4PSIxMiIgIHk9IjUzNiIgd2lkdGg9IjgiIGhlaWdodD0iMTYiIGZpbGw9IiM2YjNhMmEiLz4KICA8cmVjdCB4PSI0NCIgIHk9IjUzNiIgd2lkdGg9IjgiIGhlaWdodD0iMTYiIGZpbGw9IiM2YjNhMmEiLz4KICA8cmVjdCB4PSI3NiIgIHk9IjUzNiIgd2lkdGg9IjgiIGhlaWdodD0iMTYiIGZpbGw9IiM2YjNhMmEiLz4KICA8cmVjdCB4PSIxMDgiIHk9IjUzNiIgd2lkdGg9IjgiIGhlaWdodD0iMTYiIGZpbGw9IiM2YjNhMmEiLz4KICA8cmVjdCB4PSI4MzIiIHk9IjI0IiB3aWR0aD0iMTI4IiBoZWlnaHQ9IjU1MiIgZmlsbD0iIzFhNWUxYSIvPgogIDxyZWN0IHg9IjkyOCIgeT0iMjQiIHdpZHRoPSIzMiIgaGVpZ2h0PSI1NTIiIGZpbGw9IiMyMzY4MjMiLz4KICA8cmVjdCB4PSI4ODAiIHk9IjI0IiB3aWR0aD0iMTYiIGhlaWdodD0iNTUyIiBmaWxsPSIjMWY2MjIwIi8+CiAgPHJlY3QgeD0iOTEyIiB5PSIyNCIgd2lkdGg9IjE2IiBoZWlnaHQ9IjU1MiIgZmlsbD0iIzE1NGUxNSIvPgogIDxyZWN0IHg9Ijg0OCIgeT0iMjQiIHdpZHRoPSIzMiIgaGVpZ2h0PSI1NTIiIGZpbGw9IiMxNTRlMTUiLz4KICA8cmVjdCB4PSI4MzIiIHk9IjI0IiB3aWR0aD0iMTYiIGhlaWdodD0iNTUyIiBmaWxsPSIjMGYzYTBmIi8+CiAgPHJlY3QgeD0iODM2IiB5PSI1MzYiIHdpZHRoPSI4IiBoZWlnaHQ9IjE2IiBmaWxsPSIjNmIzYTJhIi8+CiAgPHJlY3QgeD0iODY4IiB5PSI1MzYiIHdpZHRoPSI4IiBoZWlnaHQ9IjE2IiBmaWxsPSIjNmIzYTJhIi8+CiAgPHJlY3QgeD0iOTAwIiB5PSI1MzYiIHdpZHRoPSI4IiBoZWlnaHQ9IjE2IiBmaWxsPSIjNmIzYTJhIi8+CiAgPHJlY3QgeD0iOTMyIiB5PSI1MzYiIHdpZHRoPSI4IiBoZWlnaHQ9IjE2IiBmaWxsPSIjNmIzYTJhIi8+CiAgPHJlY3Qgd2lkdGg9Ijk2MCIgaGVpZ2h0PSIyNCIgZmlsbD0idXJsKCNzdG9uZSkiLz4KICA8cmVjdCB5PSI1NzYiIHdpZHRoPSI5NjAiIGhlaWdodD0iMjQiIGZpbGw9InVybCgjc3RvbmVCKSIvPgogIDxyZWN0IHg9IjEyOCIgeT0iMjQiIHdpZHRoPSIyMCIgaGVpZ2h0PSI1NTIiIGZpbGw9IiMwMDAwMDAiIGZpbGwtb3BhY2l0eT0iMC4xNiIvPgogIDxyZWN0IHg9IjgxMiIgeT0iMjQiIHdpZHRoPSIyMCIgaGVpZ2h0PSI1NTIiIGZpbGw9IiMwMDAwMDAiIGZpbGwtb3BhY2l0eT0iMC4xNiIvPgogIDxyZWN0IHdpZHRoPSI5NjAiIGhlaWdodD0iNjAwIiBmaWxsPSJ1cmwoI3Nwb3RsaWdodCkiLz4KICA8cmVjdCB3aWR0aD0iOTYwIiBoZWlnaHQ9IjYwMCIgZmlsbD0idXJsKCN2aWduZXR0ZSkiLz4KPC9zdmc+') center/cover no-repeat, var(--dark);
-}
-.draw-arena::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(ellipse 70% 30% at 50% 0%, rgba(255,106,31,.25) 0%, transparent 100%);
-  pointer-events: none; z-index: 0;
-}
-.draw-arena::after { display: none; }
-
-.arena-header { text-align: center; position: relative; z-index: 1; }
-.draw-counter {
-  display: flex; align-items: baseline; justify-content: center; gap: 5px;
-  margin-top: 6px; font-family: var(--font-mono); color: var(--muted);
-  font-size: 0.76rem; letter-spacing: .1em; text-transform: uppercase;
-}
-.draw-counter-num {
-  font-family: var(--font-pixel); font-size: 1.4rem; color: var(--gold); line-height: 1; min-width: 2ch; text-align: right;
-}
-.arena-reel-zone {
-  display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; z-index: 1;
-}
-.arena-current-label {
-  font-family: var(--font-pixel); font-size: 0.5rem; color: var(--muted);
-  letter-spacing: .07em; text-transform: uppercase; text-align: center; min-height: 1.1em;
-}
-.draw-reel-wrap {
-  width: min(280px, 88vw); height: 90px; background: var(--mid); border: 1px solid var(--border);
-  border-radius: var(--radius); display: flex; flex-direction: column; align-items: center;
-  justify-content: center; gap: 3px; overflow: hidden; position: relative;
-}
-.draw-reel-wrap.locked { border-color: var(--gold); box-shadow: 0 0 28px rgba(37,216,216,.35); }
-.draw-reel-flag { font-size: 2.4rem; line-height: 1; display: block; }
-.draw-reel-name {
-  font-family: var(--font-display); font-size: 0.84rem; font-weight: 700;
-  letter-spacing: .06em; text-transform: uppercase; color: var(--text);
-}
-
-/* Participant grid */
-.arena-grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 9px; position: relative; z-index: 1;
-}
-.arena-p-card {
-  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 10px 9px 9px; display: flex; flex-direction: column; align-items: center;
-  gap: 6px; text-align: center; position: relative; overflow: hidden;
-}
-.arena-p-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  background: var(--grad-accent); opacity: 0;
-}
-.arena-p-card.active {
-  border-color: var(--green); transform: scale(1.04) translateY(-2px);
-  animation: arenaGlow 1.4s ease-in-out infinite;
-}
-.arena-p-card.active::before { opacity: 1; }
-@keyframes arenaGlow {
-  0%, 100% { box-shadow: 0 0 18px rgba(255,106,31,.35); }
-  50%       { box-shadow: 0 0 38px rgba(255,106,31,.75), 0 6px 22px rgba(0,0,0,.5); }
-}
-.arena-p-card.done { opacity: .55; border-color: rgba(37,216,216,.2); }
-.arena-p-name {
-  font-family: var(--font-display); font-size: 0.7rem; letter-spacing: .04em;
-  text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
-}
-.arena-p-teams { width: 100%; display: flex; flex-direction: column; gap: 3px; }
-.arena-slot {
-  width: 100%; min-height: 21px; border-radius: 4px;
-  display: flex; align-items: center; gap: 4px; padding: 2px 5px;
-  font-size: 0.6rem; font-family: var(--font-mono);
-}
-.arena-slot.empty { border: 1px dashed rgba(255,255,255,.1); }
-.arena-slot.filled { border: 1px solid; background: rgba(255,255,255,.04); }
-.slot-flag { flex-shrink: 0; font-size: 0.78rem; }
-.slot-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-weight: 700; }
-
-/* ── Bracket ─────────────────────────────────────────────────── */
-.bracket-scroll-wrap { overflow-x: auto; margin: 0 -20px; padding: 0 20px 16px; }
-.bracket-tree { display: flex; align-items: stretch; gap: 6px; min-width: max-content; }
-.b-col { display: flex; flex-direction: column; gap: 6px; }
-.b-groups-col { width: 188px; }
-.b-round-col { width: 168px; justify-content: space-around; }
-.b-round-label {
-  font-family: var(--font-pixel); font-size: 0.38rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: center;
-  padding-bottom: 4px; flex-shrink: 0;
-}
-.b-group-card {
-  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; flex-shrink: 0;
-}
-.b-group-head {
-  background: var(--mid); padding: 5px 10px; font-family: var(--font-pixel);
-  font-weight: 800; font-size: 0.42rem; letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--gold);
-}
-.b-team-row {
-  display: flex; align-items: center; gap: 5px; padding: 5px 8px; font-size: 0.75rem; min-height: 32px;
-}
-.b-team-row + .b-team-row { border-top: 1px solid var(--border); }
-.b-team-row.qualified { border-left: 2px solid var(--green); }
-.b-team-name { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.b-team-pts { font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); font-weight: 700; flex-shrink: 0; }
-.b-match {
-  background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; flex-shrink: 0;
-}
-.b-match-team { display: flex; align-items: center; gap: 5px; padding: 5px 8px; min-height: 44px; }
-.b-match-team + .b-match-team { border-top: 1px solid var(--border); }
-.b-match-name { flex: 1; font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.b-match-score { font-family: var(--font-mono); font-weight: 800; font-size: 0.8rem; min-width: 14px; text-align: right; flex-shrink: 0; }
-.b-match-tbd { padding: 12px 8px; color: var(--muted); font-size: 0.72rem; text-align: center; font-family: var(--font-mono); }
-.b-final-col { width: 188px; justify-content: center; gap: 10px; }
-.b-final-card {
-  background: rgba(37,216,216,0.04); border: 1px solid rgba(37,216,216,0.3);
-  border-radius: var(--radius); overflow: hidden; box-shadow: var(--glow-cyan);
-}
-.b-final-head {
-  background: rgba(37,216,216,0.1); padding: 6px 10px; font-family: var(--font-display);
-  font-weight: 800; font-size: 0.72rem; letter-spacing: .08em; color: var(--gold); text-align: center;
-}
-
-/* ── Waiting room ───────────────────────────────────────────── */
+/* ── Waiting room ───────────────────────────────────────────────────────── */
 .waiting-icon { font-size: 3rem; text-align: center; margin: 16px 0; animation: bounce 2s ease-in-out infinite; }
 @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 
-/* ── Admin bar ──────────────────────────────────────────────── */
+/* ── Admin bar ──────────────────────────────────────────────────────────── */
 .admin-bar {
   background: rgba(255,106,31,.06); border: 1px solid rgba(255,106,31,.25);
   border-radius: var(--radius); padding: 16px 20px; margin-bottom: 24px;
   display: flex; align-items: center; flex-wrap: wrap; gap: 12px;
 }
-.admin-bar-label {
-  font-family: var(--font-display); font-size: 0.78rem; color: var(--green);
-  font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; flex: 1;
-}
+.admin-bar-label { font-family: var(--font-display); font-size: 0.78rem; color: var(--green); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; flex: 1; }
 
-/* ── 8-bit button ───────────────────────────────────────────── */
-.btn-pixel {
-  border-radius: 2px; font-family: var(--font-pixel); font-size: 0.55rem;
-  box-shadow: 4px 4px 0 rgba(0,0,0,.8); transition: transform .1s, box-shadow .1s;
+/* ── Mute button (fixed, present on every page) ──────────────────────────── */
+.mute-btn {
+  width: 44px; height: 44px; padding: 0;
+  background: var(--mid); border: 2px solid #2c3e54;
+  border-radius: var(--radius); font-size: 1.1rem; line-height: 1;
+  box-shadow: 3px 3px 0 rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center;
 }
-.btn-pixel:hover  { transform: translate(2px,2px); box-shadow: 2px 2px 0 rgba(0,0,0,.8); }
-.btn-pixel:active { transform: translate(4px,4px); box-shadow: none; }
+.mute-btn.muted { opacity: 0.45; }
 
-/* ── Arena heading pixel font ───────────────────────────────── */
+/* ── Draw arena (Thunderdome) ─────────────────────────────────────────────── */
+.draw-arena {
+  position: relative; min-height: 600px; padding: 8px 16px 32px;
+  display: flex; flex-direction: column; gap: 16px;
+  background: linear-gradient(#48136f 0%, #9d1f84 30%, #dd2f59 60%, #ff662e 100%);
+  overflow: hidden; border: 3px solid #2a0e30; border-radius: var(--radius);
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,.4), 6px 6px 0 rgba(0,0,0,.5);
+}
+.arena-scene { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.scene-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; image-rendering: pixelated; }
+.scene-fg { position: absolute; bottom: 0; height: 72%; width: auto; max-width: 30%; image-rendering: pixelated; pointer-events: none; }
+.scene-fg-l { left: -1%; }
+.scene-fg-r { right: -1%; transform: scaleX(-1); height: 62%; }
+.arena-header { text-align: center; position: relative; z-index: 1; }
 .arena-header h1 { font-family: var(--font-pixel); font-size: clamp(0.7rem, 2.5vw, 1.1rem); letter-spacing: .08em; }
+.draw-counter { display: flex; align-items: baseline; justify-content: center; gap: 5px; margin-top: 6px; font-family: var(--font-mono); color: var(--muted); font-size: 0.76rem; letter-spacing: .1em; text-transform: uppercase; }
+.draw-counter-num { font-family: var(--font-pixel); font-size: 1.4rem; color: var(--gold); line-height: 1; min-width: 2ch; text-align: right; }
+.arena-reel-zone { display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; z-index: 1; }
+.arena-current-label { font-family: var(--font-pixel); font-size: 0.5rem; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; text-align: center; min-height: 1.1em; }
+.draw-reel-wrap {
+  width: min(280px, 88vw); height: 90px; background: var(--mid); border: 2px solid #2c3e54; border-radius: var(--radius);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; overflow: hidden; position: relative;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.5), 4px 4px 0 rgba(0,0,0,.6);
+}
+.draw-reel-wrap.locked { border-color: var(--reel-color, var(--gold)); box-shadow: 0 0 28px var(--reel-glow, rgba(255,154,208,.35)); }
+.draw-reel-flag { font-size: 2.4rem; line-height: 1; display: block; }
+.draw-reel-name { font-family: var(--font-display); font-size: 0.84rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text); }
+.arena-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 9px; position: relative; z-index: 1; }
+.arena-p-card {
+  background: var(--panel); border: 2px solid #2c3e54; border-radius: var(--radius);
+  padding: 10px 9px 9px; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; position: relative; overflow: hidden;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,.06), inset -2px -2px 0 rgba(0,0,0,.5), 3px 3px 0 rgba(0,0,0,.5);
+}
+.arena-p-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--grad-accent); opacity: 0; }
+.arena-p-card.active { border-color: var(--green); transform: scale(1.04) translateY(-2px); animation: arenaGlow 1.4s ease-in-out infinite; }
+.arena-p-card.active::before { opacity: 1; }
+@keyframes arenaGlow { 0%, 100% { box-shadow: 0 0 18px rgba(255,106,31,.35); } 50% { box-shadow: 0 0 38px rgba(255,106,31,.75), 0 6px 22px rgba(0,0,0,.5); } }
+.arena-p-card.done:not(.active) { opacity: .55; border-color: rgba(255,154,208,.2); }
+.arena-p-name { font-family: var(--font-display); font-size: 0.7rem; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.arena-p-teams { width: 100%; display: flex; flex-direction: column; gap: 3px; }
+.arena-slot { width: 100%; min-height: 21px; border-radius: 4px; display: flex; align-items: center; gap: 4px; padding: 2px 5px; font-size: 0.6rem; font-family: var(--font-mono); }
+.arena-slot.empty { border: 1px dashed rgba(255,255,255,.1); }
+.arena-slot.filled { border: 1px solid; background: rgba(255,255,255,.04); }
+.slot-flag { flex-shrink: 0; font-size: 0.78rem; }
+.slot-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font-weight: 700; }
 
-/* ── Animations ─────────────────────────────────────────────── */
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes slotReveal { from { opacity: 0; transform: scaleX(.5); } to { opacity: 1; transform: scaleX(1); } }
+/* ── Bracket ────────────────────────────────────────────────────────────── */
+.bracket-scroll-wrap { overflow-x: auto; margin: 0 -20px; padding: 0 20px 16px; }
+.bracket-tree { display: flex; align-items: stretch; gap: 6px; min-width: max-content; }
+.b-col { display: flex; flex-direction: column; gap: 6px; }
+.b-groups-col { width: 188px; }
+.b-round-col  { width: 168px; justify-content: space-around; }
+.b-final-col  { width: 188px; justify-content: center; gap: 10px; }
+.b-round-label { font-family: var(--font-pixel); font-size: 0.38rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: center; padding-bottom: 4px; flex-shrink: 0; }
+.b-group-card { background: var(--panel); border: 2px solid #2c3e54; border-radius: var(--radius); overflow: hidden; flex-shrink: 0; box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.4), 3px 3px 0 rgba(0,0,0,.5); }
+.b-group-head { background: var(--mid); padding: 5px 10px; font-family: var(--font-pixel); font-weight: 800; font-size: 0.42rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); }
+.b-team-row { display: flex; align-items: center; gap: 5px; padding: 5px 8px; font-size: 0.75rem; min-height: 32px; }
+.b-team-row + .b-team-row { border-top: 1px solid var(--border); }
+.b-team-row.qualified { border-left: 2px solid var(--green); }
+.b-team-name { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.b-team-pts { font-family: var(--font-mono); font-size: 0.68rem; color: var(--muted); font-weight: 700; flex-shrink: 0; }
+.b-match { background: var(--panel); border: 2px solid #2c3e54; border-radius: var(--radius); overflow: hidden; flex-shrink: 0; box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.4), 3px 3px 0 rgba(0,0,0,.5); }
+.b-match-team { display: flex; align-items: center; gap: 5px; padding: 5px 8px; min-height: 44px; }
+.b-match-team + .b-match-team { border-top: 1px solid var(--border); }
+.b-match-team.winner { font-weight: 800; }
+.b-match-name { flex: 1; font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.b-match-score { font-family: var(--font-mono); font-weight: 800; font-size: 0.8rem; min-width: 14px; text-align: right; flex-shrink: 0; }
+.b-match-tbd { padding: 12px 8px; color: var(--muted); font-size: 0.72rem; text-align: center; font-family: var(--font-mono); }
+.b-final-card { background: rgba(255,154,208,0.04); border: 2px solid rgba(255,154,208,0.4); border-radius: var(--radius); overflow: hidden; box-shadow: var(--glow-cyan), inset 1px 1px 0 rgba(255,255,255,.08), inset -2px -2px 0 rgba(0,0,0,.4), 4px 4px 0 rgba(0,0,0,.6); }
+.b-final-head { background: rgba(255,154,208,0.1); padding: 6px 10px; font-family: var(--font-pixel); font-weight: 800; font-size: 0.5rem; letter-spacing: .08em; color: var(--gold); text-align: center; }
 
-/* ── Sweepstake inline styles ───────────────────────────────── */
+/* ── My teams panel ─────────────────────────────────────────────────────── */
+.my-teams { background: rgba(255,154,208,0.07); border: 1px solid rgba(255,154,208,0.25); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 24px; }
+.my-teams h3 { color: var(--gold); margin-bottom: 10px; font-size: 0.5rem; letter-spacing: .08em; }
+.my-team-cards { display: flex; gap: 10px; flex-wrap: wrap; }
+.my-team-card { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 2px solid #2c3e54; border-radius: 2px; padding: 8px 12px; font-size: 0.88rem; font-weight: 700; box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.4); }
+
+/* ── ESPN-style stage tabs + match cards ─────────────────────────────────── */
+.stage-tabs-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 4px; margin-bottom: 16px; }
+.stage-tabs-wrap::-webkit-scrollbar { display: none; }
+.stage-tabs { display: flex; gap: 8px; min-width: max-content; padding: 2px 0; }
+.stage-tab {
+  background: var(--mid); border: 2px solid var(--border); border-radius: 999px; color: var(--muted);
+  font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; padding: 8px 18px; cursor: pointer;
+  white-space: nowrap; box-shadow: 2px 2px 0 rgba(0,0,0,.4); line-height: 1.4;
+}
+.stage-tab:hover:not(.active) { border-color: var(--muted); color: var(--text); }
+.stage-tab.active { background: var(--text); border-color: var(--text); color: var(--dark); box-shadow: 1px 1px 0 rgba(0,0,0,.4); }
+.stage-tab-divider { width: 1px; background: var(--border); margin: 2px 4px; flex-shrink: 0; align-self: stretch; }
+
+.smv-match { background: var(--panel); border: 2px solid #2c3e54; border-radius: var(--radius); overflow: hidden; box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.4), 3px 3px 0 rgba(0,0,0,.5); }
+.smv-match.live { border-color: var(--live-pulse); box-shadow: 0 0 0 1px var(--live-pulse), 0 0 14px rgba(255,154,208,.2); }
+.smv-match.finished { border-color: var(--border); }
+.smv-match-meta { display: flex; align-items: center; gap: 8px; padding: 7px 10px 6px; font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); border-bottom: 1px solid var(--border); }
+.smv-match-meta-badge { margin-left: auto; }
+.smv-status-badge { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; letter-spacing: 0.03em; background: rgba(255,255,255,0.08); color: var(--muted); }
+.smv-match-team { display: flex; align-items: center; gap: 7px; padding: 9px 10px; min-height: 48px; }
+.smv-match-team + .smv-match-team { border-top: 1px solid var(--border); }
+.smv-match-team.mine { background: rgba(255,106,31,0.1); }
+.smv-match-team.mine .smv-match-name { color: var(--green); }
+.smv-match-team.winner .smv-match-name, .smv-match-team.winner .smv-match-score { color: var(--text); font-weight: 800; }
+.smv-match-team.loser .smv-match-name, .smv-match-team.loser .smv-match-score { color: var(--muted); font-weight: 500; }
+.smv-match-name { flex: 1; font-size: 0.85rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.smv-match-score { font-family: var(--font-mono); font-weight: 800; font-size: 0.9rem; min-width: 18px; text-align: right; flex-shrink: 0; }
+.smv-match-owner { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.smv-match-owner-name { font-size: 0.65rem; color: var(--muted); font-weight: 600; max-width: 46px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.smv-tbd { color: var(--muted); }
+
+/* ── Tournament landing splash ───────────────────────────────────────────── */
+.landing-splash { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; text-align: center; padding: 40px 20px; }
+.landing-splash-eyebrow { display: inline-block; background: rgba(255,154,208,0.12); color: var(--gold); font-family: var(--font-pixel); font-size: 0.42rem; letter-spacing: 0.14em; text-transform: uppercase; padding: 6px 14px; border: 1px solid rgba(255,154,208,0.25); border-radius: var(--radius); margin-bottom: 28px; }
+.landing-splash-name { font-family: var(--font-pixel); font-size: clamp(1.1rem, 4vw, 2rem); font-weight: 400; line-height: 1.5; letter-spacing: .01em; margin-bottom: 16px; text-shadow: 4px 4px 0 var(--pixel-black), 0 0 24px rgba(255,106,31,.3); }
+.landing-splash-meta { color: var(--muted); font-size: 0.9rem; margin-bottom: 40px; }
+.landing-splash .btn-gold { font-family: var(--font-pixel); font-size: 0.55rem; padding: 14px 28px; box-shadow: 4px 4px 0 rgba(0,0,0,.7); letter-spacing: .04em; }
+
+/* ── Join / waiting page furniture ───────────────────────────────────────── */
 .join-wrap { max-width: 540px; margin: 0 auto; }
 .tourney-header { text-align: center; padding: 32px 0 24px; }
-.tourney-name { font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 900; margin-bottom: 6px; }
+.tourney-name { font-family: var(--font-pixel); font-size: clamp(1rem, 3.4vw, 1.7rem); font-weight: 400; line-height: 1.5; letter-spacing: .01em; margin-bottom: 12px; text-shadow: 3px 3px 0 var(--pixel-black), 0 0 18px rgba(255,106,31,.25); }
 .slots-info { font-size: 0.85rem; color: var(--muted); }
 .waiting-wrap { max-width: 680px; margin: 0 auto; }
 .waiting-header { text-align: center; padding: 24px 0; }
 .participant-count { font-size: 1.1rem; font-weight: 700; color: var(--gold); }
-.my-teams {
-  background: rgba(240,192,64,0.07); border: 1px solid rgba(240,192,64,0.25);
-  border-radius: var(--radius); padding: 16px 20px; margin-bottom: 24px;
-}
-.my-teams h3 { color: var(--gold); margin-bottom: 10px; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; }
-.my-team-cards { display: flex; gap: 10px; flex-wrap: wrap; }
-.my-team-card {
-  display: flex; align-items: center; gap: 8px; background: var(--panel);
-  border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;
-  font-size: 0.88rem; font-weight: 700;
-}
 
-/* ── Landing page styles ────────────────────────────────────── */
-.hero { text-align: center; padding: 60px 0 48px; }
-.hero-eyebrow {
-  display: inline-block; background: rgba(240,192,64,0.15); color: var(--gold);
-  font-size: 0.8rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
-  padding: 4px 12px; border-radius: 20px; margin-bottom: 20px;
+/* ── 16-bit landing hero (index.html — body.landing-screen) ─────────────── */
+.landing-screen .hero { padding: 52px 0 40px; position: relative; text-align: center; }
+.landing-screen .hero::before {
+  content: ''; position: absolute; inset: -6% -10% 2%;
+  background: radial-gradient(ellipse 64% 78% at 50% 44%, rgba(8,3,14,.82) 0%, rgba(8,3,14,.55) 48%, rgba(8,3,14,0) 78%);
+  z-index: 0; pointer-events: none;
 }
-.hero h1 { font-size: clamp(2.2rem, 6vw, 4rem); font-weight: 900; margin-bottom: 16px; line-height: 1.08; }
-.hero p { font-size: 1.1rem; color: var(--muted); max-width: 520px; margin: 0 auto 32px; line-height: 1.6; }
-.hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.steps {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 48px;
+.landing-screen .hero > * { position: relative; z-index: 1; }
+.landing-screen .hero-eyebrow {
+  font-family: var(--font-pixel); font-size: 0.56rem; letter-spacing: .12em;
+  color: var(--gold); background: var(--pixel-black); display: inline-block;
+  border: 2px solid var(--gold); border-radius: 2px;
+  padding: 8px 13px; box-shadow: 4px 4px 0 rgba(0,0,0,.65);
+  animation: blink16 1.25s steps(1, end) infinite;
 }
-.step-card {
-  background: var(--mid); border: 1px solid var(--border); border-top: 2px solid var(--gold);
-  border-radius: var(--radius); padding: 24px;
+@keyframes blink16 { 0%, 62% { opacity: 1; } 63%, 100% { opacity: .4; } }
+.landing-screen .hero h1 {
+  font-family: var(--font-pixel); font-size: clamp(1.05rem, 3.4vw, 2.3rem);
+  line-height: 1.55; letter-spacing: .01em; color: #fff; margin: 26px auto 20px;
+  text-shadow: 3px 3px 0 var(--pixel-black), 6px 6px 0 rgba(0,0,0,.4), 0 0 20px rgba(255,106,31,.3);
 }
-.step-num {
-  width: 32px; height: 32px; background: var(--grad-accent); border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; font-family: var(--font-pixel);
-  font-size: 0.6rem; color: #0a0805; margin-bottom: 14px;
+.landing-screen .hero h1 .l2 { color: var(--gold); text-shadow: 3px 3px 0 var(--pixel-black), 6px 6px 0 rgba(0,0,0,.4), 0 0 20px rgba(255,154,208,.35); }
+.landing-screen .hero p { font-family: var(--font-mono); color: #f0e2ee; font-size: 0.95rem; letter-spacing: .01em; max-width: 480px; margin: 0 auto; text-shadow: 0 2px 6px rgba(8,3,14,.9), 0 0 14px rgba(8,3,14,.7); }
+.landing-screen .hero-actions { margin-top: 24px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.landing-screen .hero-actions button {
+  font-family: var(--font-pixel); font-size: 0.6rem; line-height: 1.7; border-radius: 2px;
+  padding: 15px 22px; border: 2px solid rgba(0,0,0,.35); box-shadow: 5px 5px 0 rgba(0,0,0,.8);
 }
+.landing-screen .hero-actions .btn-ghost { background: var(--pixel-black); color: var(--gold); border: 2px solid var(--gold); }
+.landing-screen .hero .start-blink { margin-top: 22px; text-align: center; font-family: var(--font-pixel); font-size: 0.5rem; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; animation: blink16 1s steps(1, end) infinite; }
+.landing-screen .steps { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; margin-top: 52px; }
+.landing-screen .step-card { background: #101722; border: 3px solid #2c3e54; box-shadow: inset 2px 2px 0 rgba(255,255,255,.07), inset -3px -3px 0 rgba(0,0,0,.55), 6px 6px 0 rgba(0,0,0,.5); padding: 22px 20px; }
+.landing-screen .step-num { border-radius: 2px; width: 34px; height: 34px; font-size: 0.7rem; border: 2px solid rgba(0,0,0,.35); box-shadow: 3px 3px 0 rgba(0,0,0,.7); background: var(--grad-accent); display: flex; align-items: center; justify-content: center; font-family: var(--font-pixel); color: #0a0805; margin-bottom: 14px; }
+.landing-screen .step-card h3 { font-size: 0.6rem; line-height: 1.7; color: #fff; letter-spacing: .02em; margin-bottom: 10px; }
+.landing-screen .step-card p { font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); line-height: 1.55; }
 
-/* ── Design section dividers (not in production) ────────────── */
-.ds-section {
-  border-top: 2px dashed rgba(37,216,216,.2); margin: 60px 0 0; padding-top: 0;
-}
+/* ── Design doc chrome (not part of the app) ─────────────────────────────── */
+.ds-section { border-top: 2px dashed rgba(255,154,208,.2); margin: 60px 0 0; padding-top: 0; }
 .ds-label {
-  display: inline-block; background: rgba(37,216,216,.08); border: 1px solid rgba(37,216,216,.2);
+  display: inline-block; background: rgba(255,154,208,.08); border: 1px solid rgba(255,154,208,.2);
   color: var(--gold); font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: .1em;
   padding: 4px 14px; border-radius: 0 0 8px 8px; margin-bottom: 24px;
 }
-
-/* ── Bracket state background ───────────────────────────────── */
-#stateBracket {
-  background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5NjAgNjAwIiB3aWR0aD0iOTYwIiBoZWlnaHQ9IjYwMCIgc2hhcGUtcmVuZGVyaW5nPSJjcmlzcEVkZ2VzIj4KICA8ZGVmcz4KICAgIDxwYXR0ZXJuIGlkPSJncmFzcyIgeD0iMCIgeT0iMCIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjYwMCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICAgIDxyZWN0IHdpZHRoPSIyNCIgaGVpZ2h0PSI2MDAiIGZpbGw9IiMyNjgwMjYiLz4KICAgICAgPHJlY3QgeD0iMjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSI2MDAiIGZpbGw9IiMyZDhhMmQiLz4KICAgIDwvcGF0dGVybj4KICA8L2RlZnM+CiAgPHJlY3Qgd2lkdGg9Ijk2MCIgaGVpZ2h0PSI2MDAiIGZpbGw9InVybCgjZ3Jhc3MpIi8+CiAgPHJlY3QgeT0iMCIgd2lkdGg9Ijk2MCIgaGVpZ2h0PSIzMiIgZmlsbD0iIzE0MTQxZSIvPgogIDxyZWN0IHg9IjQwIiB5PSI0OCIgd2lkdGg9Ijg4MCIgaGVpZ2h0PSI1MDQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSI0Ii8+CiAgPHJlY3QgeD0iNDAiIHk9IjI5OCIgd2lkdGg9Ijg4MCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmZmZmIi8+CiAgPHJlY3QgeD0iMzgwIiB5PSIyMTYiIHdpZHRoPSIyMDAiIGhlaWdodD0iNCIgZmlsbD0iI2ZmZmZmZiIvPgogIDxyZWN0IHg9IjM4MCIgeT0iMzgwIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmZmZmYiLz4KICA8cmVjdCB4PSIzODAiIHk9IjIyMCIgd2lkdGg9IjQiIGhlaWdodD0iMTYwIiBmaWxsPSIjZmZmZmZmIi8+CiAgPHJlY3QgeD0iNTc2IiB5PSIyMjAiIHdpZHRoPSI0IiBoZWlnaHQ9IjE2MCIgZmlsbD0iI2ZmZmZmZiIvPgogIDxyZWN0IHg9IjQ3OCIgeT0iMjk4IiB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmZmZmIi8+CiAgPHJlY3QgeD0iMjQ0IiB5PSI0OCIgd2lkdGg9IjQ3MiIgaGVpZ2h0PSIxMjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSI0Ii8+CiAgPHJlY3QgeD0iMjQ0IiB5PSI0MzIiIHdpZHRoPSI0NzIiIGhlaWdodD0iMTIwIiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iNCIvPgogIDxyZWN0IHg9IjQ0MCIgeT0iNDQiIHdpZHRoPSI4MCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmZmZmIiBmaWxsLW9wYWNpdHk9IjAuNiIvPgogIDxyZWN0IHg9IjQ0MCIgeT0iNTQ4IiB3aWR0aD0iODAiIGhlaWdodD0iOCIgZmlsbD0iI2ZmZmZmZiIgZmlsbC1vcGFjaXR5PSIwLjYiLz4KICA8cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iNjAwIiBmaWxsPSIjMDAwMDAwIiBmaWxsLW9wYWNpdHk9IjAuMzUiLz4KICA8cmVjdCB4PSI4ODAiIHdpZHRoPSI4MCIgaGVpZ2h0PSI2MDAiIGZpbGw9IiMwMDAwMDAiIGZpbGwtb3BhY2l0eT0iMC4zNSIvPgo8L3N2Zz4=') center/cover no-repeat, var(--dark);
-  position: relative;
-  padding: 24px 0 64px;
-}
+.ds-swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.ds-swatch { border: 2px solid #2c3e54; border-radius: var(--radius); overflow: hidden; }
+.ds-swatch-color { height: 56px; }
+.ds-swatch-label { padding: 8px 10px; font-family: var(--font-mono); font-size: 0.72rem; background: var(--panel); }
+.ds-swatch-label b { display: block; font-family: var(--font-body); font-weight: 700; font-size: 0.78rem; color: var(--text); }
+.ds-type-row { display: flex; align-items: baseline; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.ds-type-row .ds-type-name { width: 160px; flex-shrink: 0; font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
 
   </style>
   <link rel="manifest" href="manifest.webmanifest">
@@ -441,26 +469,108 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
 <body>
 
 <!-- ═══════════════════════════════════════════════════════
-     SECTION 1 — ENTRY SCREEN (index.html / admin.html)
-     Background applied to this wrapper div
+     SECTION 0 — DESIGN TOKENS
 ════════════════════════════════════════════════════════ -->
-<div style="background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA5NjAgNTQwIiB3aWR0aD0iOTYwIiBoZWlnaHQ9IjU0MCIgc2hhcGUtcmVuZGVyaW5nPSJjcmlzcEVkZ2VzIj4KICA8ZGVmcz4KICAgIDxwYXR0ZXJuIGlkPSJicmlja0EiIHg9IjAiIHk9IjAiIHdpZHRoPSIzMiIgaGVpZ2h0PSIxNiIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICAgIDxyZWN0IHdpZHRoPSIzMiIgaGVpZ2h0PSIxNiIgZmlsbD0iIzMwMjAxOCIvPgogICAgICA8cmVjdCB4PSIxIiB5PSIxIiB3aWR0aD0iMjgiIGhlaWdodD0iMTMiIGZpbGw9IiM2MDQ4NDAiLz4KICAgIDwvcGF0dGVybj4KICAgIDxwYXR0ZXJuIGlkPSJicmlja0IiIHg9IjE2IiB5PSIwIiB3aWR0aD0iMzIiIGhlaWdodD0iMTYiIHBhdHRlcm5Vbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8cmVjdCB3aWR0aD0iMzIiIGhlaWdodD0iMTYiIGZpbGw9IiMzMDIwMTgiLz4KICAgICAgPHJlY3QgeD0iMSIgeT0iMSIgd2lkdGg9IjI4IiBoZWlnaHQ9IjEzIiBmaWxsPSIjNTAzODMwIi8+CiAgICA8L3BhdHRlcm4+CiAgICA8cmFkaWFsR3JhZGllbnQgaWQ9ImFyY2hHbG93IiBjeD0iNTAlIiBjeT0iMTAwJSIgcj0iNzAlIiBncmFkaWVudFVuaXRzPSJvYmplY3RCb3VuZGluZ0JveCI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiNmMGMwNDAiIHN0b3Atb3BhY2l0eT0iMC41NSIvPgogICAgICA8c3RvcCBvZmZzZXQ9IjQ1JSIgc3RvcC1jb2xvcj0iI2YwYTAyMCIgc3RvcC1vcGFjaXR5PSIwLjE1Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2YwYTAyMCIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJ0b3JjaEdsb3dMIiBjeD0iNTAlIiBjeT0iNTAlIiByPSI1MCUiIGdyYWRpZW50VW5pdHM9Im9iamVjdEJvdW5kaW5nQm94Ij4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmYWEyMiIgc3RvcC1vcGFjaXR5PSIwLjY1Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2ZmYWEyMiIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogICAgPHJhZGlhbEdyYWRpZW50IGlkPSJ0b3JjaEdsb3dSIiBjeD0iNTAlIiBjeT0iNTAlIiByPSI1MCUiIGdyYWRpZW50VW5pdHM9Im9iamVjdEJvdW5kaW5nQm94Ij4KICAgICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmYWEyMiIgc3RvcC1vcGFjaXR5PSIwLjY1Ii8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3RvcC1jb2xvcj0iI2ZmYWEyMiIgc3RvcC1vcGFjaXR5PSIwIi8+CiAgICA8L3JhZGlhbEdyYWRpZW50PgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJza3lHcmFkIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0b3AtY29sb3I9IiMwMzA2MTQiLz4KICAgICAgPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjMGMxODMwIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICA8cmVjdCB3aWR0aD0iOTYwIiBoZWlnaHQ9IjU0MCIgZmlsbD0idXJsKCNza3lHcmFkKSIvPgogIDxyZWN0IHg9IjQyIiAgeT0iMTgiICB3aWR0aD0iMiIgaGVpZ2h0PSIyIiBmaWxsPSIjZjBmMGMwIi8+CiAgPHJlY3QgeD0iMTIwIiB5PSIzNSIgIHdpZHRoPSIyIiBoZWlnaHQ9IjIiIGZpbGw9IiNkOGQ4YjAiLz4KICA8cmVjdCB4PSIxOTUiIHk9IjEyIiAgd2lkdGg9IjIiIGhlaWdodD0iMiIgZmlsbD0iI2YwZjBjMCIvPgogIDxyZWN0IHg9IjI4MCIgeT0iNDgiICB3aWR0aD0iMiIgaGVpZ2h0PSIyIiBmaWxsPSIjZThlOGMwIi8+CiAgPHJlY3QgeD0iNTEwIiB5PSIxNSIgIHdpZHRoPSIyIiBoZWlnaHQ9IjIiIGZpbGw9IiNlMGUwYjgiLz4KICA8cmVjdCB4PSI1OTAiIHk9IjQwIiAgd2lkdGg9IjIiIGhlaWdodD0iMiIgZmlsbD0iI2YwZjBjMCIvPgogIDxyZWN0IHg9Ijc0MCIgeT0iNTUiICB3aWR0aD0iMiIgaGVpZ2h0PSIyIiBmaWxsPSIjZjBmMGMwIi8+CiAgPHJlY3QgeD0iODIwIiB5PSIyOCIgIHdpZHRoPSIyIiBoZWlnaHQ9IjIiIGZpbGw9IiNlOGU4YzAiLz4KICA8cmVjdCB4PSI3OCIgIHk9IjU1IiAgd2lkdGg9IjQiIGhlaWdodD0iNCIgZmlsbD0iI2ZmZmZmZiIvPgogIDxyZWN0IHg9IjQ4MCIgeT0iMzAiICB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmZmYwIi8+CiAgPHJlY3QgeD0iNzIwIiB5PSIxOCIgIHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmZmZmYiLz4KICA8cmVjdCB5PSIzMjQiIHdpZHRoPSI5NjAiIGhlaWdodD0iMjE2IiBmaWxsPSJ1cmwoI2JyaWNrQSkiLz4KICA8cmVjdCB5PSIzNDAiIHdpZHRoPSI5NjAiIGhlaWdodD0iMTYiIGZpbGw9InVybCgjYnJpY2tCKSIvPgogIDxyZWN0IHk9IjM3MiIgd2lkdGg9Ijk2MCIgaGVpZ2h0PSIxNiIgZmlsbD0idXJsKCNicmlja0IpIi8+CiAgPHJlY3QgeT0iNDA0IiB3aWR0aD0iOTYwIiBoZWlnaHQ9IjE2IiBmaWxsPSJ1cmwoI2JyaWNrQikiLz4KICA8cmVjdCB5PSI0MzYiIHdpZHRoPSI5NjAiIGhlaWdodD0iMTYiIGZpbGw9InVybCgjYnJpY2tCKSIvPgogIDxyZWN0IHg9IjgwIiB5PSIxNjAiIHdpZHRoPSIxMjgiIGhlaWdodD0iMzgwIiBmaWxsPSIjNzA2MDUwIi8+CiAgPHJlY3QgeD0iODAiIHk9IjE2MCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjM4MCIgZmlsbD0iIzgwNzA2MCIvPgogIDxyZWN0IHg9IjgwIiAgeT0iMTQ0IiB3aWR0aD0iMjAiIGhlaWdodD0iMjQiIGZpbGw9IiM3MDYwNTAiLz4KICA8cmVjdCB4PSIxMTIiIHk9IjE0NCIgd2lkdGg9IjIwIiBoZWlnaHQ9IjI0IiBmaWxsPSIjNzA2MDUwIi8+CiAgPHJlY3QgeD0iMTQ0IiB5PSIxNDQiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyNCIgZmlsbD0iIzcwNjA1MCIvPgogIDxyZWN0IHg9Ijc1MiIgeT0iMTYwIiB3aWR0aD0iMTI4IiBoZWlnaHQ9IjM4MCIgZmlsbD0iIzcwNjA1MCIvPgogIDxyZWN0IHg9Ijg3MCIgeT0iMTYwIiB3aWR0aD0iMTAiIGhlaWdodD0iMzgwIiBmaWxsPSIjODA3MDYwIi8+CiAgPHJlY3QgeD0iNzU2IiB5PSIxNDQiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyNCIgZmlsbD0iIzcwNjA1MCIvPgogIDxyZWN0IHg9Ijc4OCIgeT0iMTQ0IiB3aWR0aD0iMjAiIGhlaWdodD0iMjQiIGZpbGw9IiM3MDYwNTAiLz4KICA8cmVjdCB4PSI4MjAiIHk9IjE0NCIgd2lkdGg9IjIwIiBoZWlnaHQ9IjI0IiBmaWxsPSIjNzA2MDUwIi8+CiAgPHJlY3QgeD0iMjAwIiB5PSIyMDAiIHdpZHRoPSI1NjAiIGhlaWdodD0iMzQwIiBmaWxsPSJ1cmwoI2FyY2hHbG93KSIvPgogIDxyZWN0IHg9IjI0MCIgeT0iMjAwIiB3aWR0aD0iNDgwIiBoZWlnaHQ9IjM0MCIgZmlsbD0iIzAyMDMwOCIvPgogIDxyZWN0IHg9IjI4MCIgeT0iMTc2IiB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMyIiBmaWxsPSIjMDIwMzA4Ii8+CiAgPHJlY3QgeD0iMjQwIiB5PSIxOTIiIHdpZHRoPSI0ODAiIGhlaWdodD0iOCIgZmlsbD0iIzUwNDAzMCIvPgogIDxyZWN0IHg9IjI0MCIgeT0iMTkyIiB3aWR0aD0iOCIgaGVpZ2h0PSIzNDgiIGZpbGw9IiM1MDQwMzAiLz4KICA8cmVjdCB4PSI3MTIiIHk9IjE5MiIgd2lkdGg9IjgiIGhlaWdodD0iMzQ4IiBmaWxsPSIjNTA0MDMwIi8+CiAgPHJlY3QgeD0iMTg4IiB5PSIyNTIiIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgZmlsbD0idXJsKCN0b3JjaEdsb3dMKSIvPgogIDxyZWN0IHg9IjIyMiIgeT0iMjgyIiB3aWR0aD0iOCIgaGVpZ2h0PSIyMCIgZmlsbD0iIzZiM2EyYSIvPgogIDxyZWN0IHg9IjIyMCIgeT0iMjY0IiB3aWR0aD0iMTIiIGhlaWdodD0iMTgiIGZpbGw9IiNmZjhjMDAiLz4KICA8cmVjdCB4PSIyMjIiIHk9IjI2MCIgd2lkdGg9IjgiIGhlaWdodD0iOCIgZmlsbD0iI2ZmY2MwMCIvPgogIDxyZWN0IHg9IjY5MiIgeT0iMjUyIiB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9InVybCgjdG9yY2hHbG93UikiLz4KICA8cmVjdCB4PSI3MzAiIHk9IjI4MiIgd2lkdGg9IjgiIGhlaWdodD0iMjAiIGZpbGw9IiM2YjNhMmEiLz4KICA8cmVjdCB4PSI3MjgiIHk9IjI2NCIgd2lkdGg9IjEyIiBoZWlnaHQ9IjE4IiBmaWxsPSIjZmY4YzAwIi8+CiAgPHJlY3QgeD0iNzMwIiB5PSIyNjAiIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9IiNmZmNjMDAiLz4KICA8cmVjdCB5PSIzMjAiIHdpZHRoPSI5NjAiIGhlaWdodD0iNCIgZmlsbD0iIzIwMTQwOCIvPgogIDxyZWN0IHdpZHRoPSI4MCIgaGVpZ2h0PSI1NDAiIGZpbGw9IiMwMDAwMDAiIGZpbGwtb3BhY2l0eT0iMC40Ii8+CiAgPHJlY3QgeD0iODgwIiB3aWR0aD0iODAiIGhlaWdodD0iNTQwIiBmaWxsPSIjMDAwMDAwIiBmaWxsLW9wYWNpdHk9IjAuNCIvPgogIDxyZWN0IHdpZHRoPSI5NjAiIGhlaWdodD0iNDAiIGZpbGw9IiMwMDAwMDAiIGZpbGwtb3BhY2l0eT0iMC4zIi8+CiAgPHJlY3QgeT0iNTAwIiB3aWR0aD0iOTYwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjMDAwMDAwIiBmaWxsLW9wYWNpdHk9IjAuMyIvPgo8L3N2Zz4=') center/cover no-repeat; min-height: 460px;">
+<div class="page wide">
+  <div class="ds-label">0 · DESIGN TOKENS — :root in css/styles.css</div>
+  <h1 style="margin-bottom:8px">Kickoff Design System</h1>
+  <p class="muted" style="max-width:640px;margin-bottom:32px">"Sunset Kickoff" — an 8-bit pixel-art World Cup sweepstake app. Warm dusk purples, a hot orange→pink gradient, beveled hard-shadow cards, and a pixel-font UI voice throughout.</p>
+
+  <h2 style="margin-bottom:14px">Colors</h2>
+  <div class="ds-swatch-grid" style="margin-bottom:32px">
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--green)"></div><div class="ds-swatch-label"><b>green</b>#ff6a1f</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--green-lt)"></div><div class="ds-swatch-label"><b>green-lt</b>#ff8a3d</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--gold)"></div><div class="ds-swatch-label"><b>gold</b>#ff9ad0</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--red)"></div><div class="ds-swatch-label"><b>red</b>#ff3b5c</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--dark)"></div><div class="ds-swatch-label"><b>dark</b>#140a18</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--mid)"></div><div class="ds-swatch-label"><b>mid</b>#211327</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--panel)"></div><div class="ds-swatch-label"><b>panel</b>#190d1f</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--border)"></div><div class="ds-swatch-label"><b>border</b>#3a1f3a</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--text)"></div><div class="ds-swatch-label"><b>text</b>#f6ead8</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--muted)"></div><div class="ds-swatch-label"><b>muted</b>#b58aa0</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--grad-accent)"></div><div class="ds-swatch-label"><b>grad-accent</b>orange→gold</div></div>
+    <div class="ds-swatch"><div class="ds-swatch-color" style="background:var(--grad-duotone)"></div><div class="ds-swatch-label"><b>grad-duotone</b>orange→red</div></div>
+  </div>
+
+  <h2 style="margin-bottom:14px">Type scale</h2>
+  <div style="margin-bottom:32px">
+    <div class="ds-type-row"><span class="ds-type-name">font-pixel · h1</span><h1 style="margin:0">The Draw</h1></div>
+    <div class="ds-type-row"><span class="ds-type-name">font-pixel · h2</span><h2 style="margin:0">Group Stage</h2></div>
+    <div class="ds-type-row"><span class="ds-type-name">font-pixel · h3</span><h3 style="margin:0">Your teams</h3></div>
+    <div class="ds-type-row"><span class="ds-type-name">font-body</span><span>Pick your teams. Follow the bracket.</span></div>
+    <div class="ds-type-row"><span class="ds-type-name">font-mono</span><span style="font-family:var(--font-mono)">kickoff.app/s/WC26AB</span></div>
+    <div class="ds-type-row"><span class="ds-type-name">font-display</span><span style="font-family:var(--font-display);font-weight:700;text-transform:uppercase;letter-spacing:.04em">England vs France</span></div>
+  </div>
+
+  <h2 style="margin-bottom:14px">Shape &amp; shadow</h2>
+  <p class="muted" style="font-size:0.85rem;max-width:640px">Everything is <code style="font-family:var(--font-mono)">--radius: 2px</code> (near-square, 8-bit) with a beveled inset highlight + a hard offset drop shadow (<code style="font-family:var(--font-mono)">Npx Npx 0 rgba(0,0,0,.5)</code>) instead of blur — this is the single most defining trait of the system. Buttons additionally "press in" on hover/active by translating toward the shadow.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 1 — BUTTONS, FORMS, BADGES
+════════════════════════════════════════════════════════ -->
+<div class="ds-section">
+<div class="page">
+  <div class="ds-label">1 · BUTTONS · FORMS · BADGES</div>
+  <div class="card" style="margin-bottom:16px">
+    <h3 style="margin-bottom:14px">Buttons</h3>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <button class="btn-gold">▶ Create a sweepstake</button>
+      <button class="btn-ghost">Join with a code</button>
+      <button class="btn-danger">Reset draw</button>
+      <button disabled>Disabled</button>
+      <button class="btn-gold"><span class="spinner show"></span>Joining…</button>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <h3 style="margin-bottom:14px">Badges &amp; status</h3>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+      <span class="live-badge"><span class="live-dot"></span>Live</span>
+      <span class="smv-status-badge">FT</span>
+      <span class="smv-status-badge" style="background:rgba(255,154,208,.15);color:var(--gold)">45'</span>
+    </div>
+  </div>
+  <div class="card">
+    <h3 style="margin-bottom:16px">Form field</h3>
+    <div class="field">
+      <label for="dsNickname">Your nickname</label>
+      <input type="text" id="dsNickname" placeholder="e.g. BigMatch Barry" value="Watto">
+    </div>
+    <div class="field">
+      <label for="dsCode">Invite code (error state)</label>
+      <input type="text" id="dsCode" class="error" value="WC2">
+      <div class="field-error show">Tournament not found. Check the code and try again.</div>
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label>Share link</label>
+      <div class="share-box">
+        <span class="share-url">kickoff.app/s/WC26AB</span>
+        <button class="copy-btn">Copy</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 2 — ENTRY SCREEN (16-bit title screen, index.html)
+════════════════════════════════════════════════════════ -->
+<div class="ds-section">
+<div class="landing-bg landing-screen">
   <div class="page">
-    <div class="ds-label">1 · ENTRY SCREEN — index.html &amp; admin.html (body.page-entry)</div>
+    <div class="ds-label">2 · ENTRY SCREEN — index.html (body.landing-screen)</div>
     <header class="site-header">
-      <div class="logo">⚽</div>
-      <span class="site-name">Kickoff</span>
-      <span style="flex:1"></span>
-      <span class="muted" style="font-size:0.8rem">WC 2026</span>
+      <a class="site-home" href="#"><span class="logo">⚽</span><span class="site-name">Kickoff</span></a>
     </header>
     <section class="hero">
       <span class="hero-eyebrow">World Cup 2026 · Sweepstake</span>
-      <h1>Pick your teams.<br>Follow the bracket.</h1>
+      <h1>Pick your teams.<br><span class="l2">Follow the bracket.</span></h1>
       <p>Create a sweepstake in seconds, share a link with your friends, and watch the live draw together.</p>
       <div class="hero-actions">
-        <button class="btn-gold">⚽ Create a Sweepstake</button>
-        <button class="btn-ghost">🔗 Join with a code</button>
+        <button class="btn-gold">▶ Create a sweepstake</button>
+        <button class="btn-ghost">Join with a code</button>
       </div>
+      <p class="start-blink">— insert coin to begin —</p>
     </section>
     <div class="steps">
       <div class="step-card"><div class="step-num">1</div><h3>Create</h3><p>Name your sweepstake and set how many teams each player can claim.</p></div>
@@ -470,13 +580,29 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
     </div>
   </div>
 </div>
+</div>
 
 <!-- ═══════════════════════════════════════════════════════
-     SECTION 2 — JOIN STATE
+     SECTION 3 — TOURNAMENT SPLASH (sweepstake.html #stateLanding)
 ════════════════════════════════════════════════════════ -->
-<div class="ds-section">
+<div class="ds-section tunnel-screen">
 <div class="page">
-  <div class="ds-label">2 · JOIN STATE — sweepstake.html #stateJoin</div>
+  <div class="ds-label">3 · TOURNAMENT SPLASH — sweepstake.html #stateLanding</div>
+  <div class="landing-splash">
+    <span class="landing-splash-eyebrow">World Cup 2026 · Sweepstake</span>
+    <div class="landing-splash-name">Office Sweepstake 2026</div>
+    <p class="landing-splash-meta">8 players joined · 3 teams each</p>
+    <button class="btn-gold">Enter →</button>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 4 — JOIN (sweepstake.html #stateJoin, tunnel-screen bg)
+════════════════════════════════════════════════════════ -->
+<div class="ds-section tunnel-screen">
+<div class="page">
+  <div class="ds-label">4 · JOIN — sweepstake.html #stateJoin</div>
   <div class="tourney-header">
     <div class="tourney-name">World Cup 2026 🏆</div>
     <p class="slots-info">Up to 3 teams per player · 8 players joined</p>
@@ -491,30 +617,12 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
       <div class="field">
         <label>Choose your avatar</label>
         <div class="avatar-grid">
-          <div class="avatar-option selected">
-            <span style="font-size:2.4rem">🦁</span>
-            <span class="avatar-option-label">Lion</span>
-          </div>
-          <div class="avatar-option">
-            <span style="font-size:2.4rem">🐯</span>
-            <span class="avatar-option-label">Tiger</span>
-          </div>
-          <div class="avatar-option">
-            <span style="font-size:2.4rem">🦅</span>
-            <span class="avatar-option-label">Eagle</span>
-          </div>
-          <div class="avatar-option">
-            <span style="font-size:2.4rem">🐉</span>
-            <span class="avatar-option-label">Dragon</span>
-          </div>
-          <div class="avatar-option">
-            <span style="font-size:2.4rem">🦊</span>
-            <span class="avatar-option-label">Fox</span>
-          </div>
-          <div class="avatar-option">
-            <span style="font-size:2.4rem">🐺</span>
-            <span class="avatar-option-label">Wolf</span>
-          </div>
+          <div class="avatar-option selected"><img class="avatar-sprite" src="assets/avatars/striker.svg" alt=""><span class="avatar-option-label">Striker</span></div>
+          <div class="avatar-option"><img class="avatar-sprite" src="assets/avatars/playmaker.svg" alt=""><span class="avatar-option-label">Playmaker</span></div>
+          <div class="avatar-option"><img class="avatar-sprite" src="assets/avatars/winger.svg" alt=""><span class="avatar-option-label">Winger</span></div>
+          <div class="avatar-option"><img class="avatar-sprite" src="assets/avatars/keeper.svg" alt=""><span class="avatar-option-label">Keeper</span></div>
+          <div class="avatar-option"><img class="avatar-sprite" src="assets/avatars/captain.svg" alt=""><span class="avatar-option-label">Captain</span></div>
+          <div class="avatar-option"><img class="avatar-sprite" src="assets/avatars/mascot.svg" alt=""><span class="avatar-option-label">Mascot</span></div>
         </div>
       </div>
       <div class="field">
@@ -529,11 +637,11 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
 </div>
 
 <!-- ═══════════════════════════════════════════════════════
-     SECTION 3 — WAITING ROOM
+     SECTION 5 — WAITING ROOM (sweepstake.html #stateWaiting)
 ════════════════════════════════════════════════════════ -->
-<div class="ds-section">
+<div class="ds-section tunnel-screen">
 <div class="page">
-  <div class="ds-label">3 · WAITING ROOM — sweepstake.html #stateWaiting</div>
+  <div class="ds-label">5 · WAITING ROOM — sweepstake.html #stateWaiting</div>
   <div class="waiting-wrap">
     <div class="waiting-header">
       <div class="tourney-name">World Cup 2026 🏆</div>
@@ -551,11 +659,11 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
         </div>
       </div>
       <div class="participant-list">
-        <div class="participant-row"><span style="font-size:1.4rem">🦁</span><span class="p-name">Watto</span><span class="p-slots">3 slots</span></div>
-        <div class="participant-row"><span style="font-size:1.4rem">🐯</span><span class="p-name">BigMatch Barry</span><span class="p-slots">4 slots</span></div>
-        <div class="participant-row"><span style="font-size:1.4rem">🦅</span><span class="p-name">Spursinho</span><span class="p-slots">3 slots</span></div>
-        <div class="participant-row"><span style="font-size:1.4rem">🐉</span><span class="p-name">Goalmouth Gaz</span><span class="p-slots">2 slots</span></div>
-        <div class="participant-row"><span style="font-size:1.4rem">🦊</span><span class="p-name">Offside Oli</span><span class="p-slots">3 slots</span></div>
+        <div class="participant-row" data-avatar="1"><img class="avatar-sprite" style="height:28px" src="assets/avatars/striker.svg" alt=""><span class="p-name">Watto</span><span class="p-slots">3 slots</span></div>
+        <div class="participant-row" data-avatar="3"><img class="avatar-sprite" style="height:28px" src="assets/avatars/winger.svg" alt=""><span class="p-name">BigMatch Barry</span><span class="p-slots">4 slots</span></div>
+        <div class="participant-row" data-avatar="2"><img class="avatar-sprite" style="height:28px" src="assets/avatars/playmaker.svg" alt=""><span class="p-name">Spursinho</span><span class="p-slots">3 slots</span></div>
+        <div class="participant-row" data-avatar="4"><img class="avatar-sprite" style="height:28px" src="assets/avatars/keeper.svg" alt=""><span class="p-name">Goalmouth Gaz</span><span class="p-slots">2 slots</span></div>
+        <div class="participant-row" data-avatar="10"><img class="avatar-sprite" style="height:28px" src="assets/avatars/mascot.svg" alt=""><span class="p-name">Offside Oli</span><span class="p-slots">3 slots</span></div>
       </div>
     </div>
     <div class="card card-sm" style="text-align:center">
@@ -563,7 +671,7 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
       <p class="muted" style="font-size:0.9rem">The admin will start the draw when everyone's in. Sit tight!</p>
     </div>
     <div style="margin-top:16px">
-      <p class="muted" style="font-size:0.82rem">Share this link:</p>
+      <p class="muted" style="font-size:0.82rem">Share this link with your group:</p>
       <div class="share-box" style="margin-top:8px">
         <span class="share-url">kickoff.app/s/WC26AB</span>
         <button class="copy-btn">Copy</button>
@@ -574,11 +682,11 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
 </div>
 
 <!-- ═══════════════════════════════════════════════════════
-     SECTION 4 — DRAW ARENA
+     SECTION 6 — DRAW ARENA (sweepstake.html #stateDraw, admin view)
 ════════════════════════════════════════════════════════ -->
 <div class="ds-section">
 <div class="page wide">
-  <div class="ds-label">4 · DRAW ARENA — sweepstake.html #stateDraw (admin view)</div>
+  <div class="ds-label">6 · DRAW ARENA — sweepstake.html #stateDraw</div>
 
   <div class="admin-bar">
     <span class="admin-bar-label">⚙ Admin controls</span>
@@ -588,6 +696,11 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
   </div>
 
   <div class="draw-arena">
+    <div class="arena-scene" aria-hidden="true">
+      <img class="scene-bg" src="assets/arena-bg.svg" alt="">
+      <img class="scene-fg scene-fg-l" src="assets/arena-fg.svg" alt="">
+      <img class="scene-fg scene-fg-r" src="assets/arena-fg.svg" alt="">
+    </div>
     <div class="arena-header">
       <h1>THE DRAW</h1>
       <div class="draw-counter">
@@ -604,18 +717,17 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
       <p class="arena-current-label">Spursinho is picking…</p>
     </div>
     <div class="arena-grid">
-      <!-- Done -->
-      <div class="arena-p-card done">
-        <span style="font-size:1.8rem">🦁</span>
+      <div class="arena-p-card done" data-avatar="1">
+        <img class="avatar-sprite" style="height:32px" src="assets/avatars/striker.svg" alt="">
         <div class="arena-p-name">Watto</div>
         <div class="arena-p-teams">
-          <div class="arena-slot filled" style="border-color:#CF011B;--reel-color:#CF011B"><span class="slot-flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span class="slot-name">England</span></div>
-          <div class="arena-slot filled" style="border-color:#006C35;--reel-color:#006C35"><span class="slot-flag">🇸🇦</span><span class="slot-name">Saudi Arabia</span></div>
-          <div class="arena-slot filled" style="border-color:#BC002D;--reel-color:#BC002D"><span class="slot-flag">🇯🇵</span><span class="slot-name">Japan</span></div>
+          <div class="arena-slot filled" style="border-color:#CF011B"><span class="slot-flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span class="slot-name">England</span></div>
+          <div class="arena-slot filled" style="border-color:#006C35"><span class="slot-flag">🇸🇦</span><span class="slot-name">Saudi Arabia</span></div>
+          <div class="arena-slot filled" style="border-color:#BC002D"><span class="slot-flag">🇯🇵</span><span class="slot-name">Japan</span></div>
         </div>
       </div>
-      <div class="arena-p-card done">
-        <span style="font-size:1.8rem">🐯</span>
+      <div class="arena-p-card done" data-avatar="3">
+        <img class="avatar-sprite" style="height:32px" src="assets/avatars/winger.svg" alt="">
         <div class="arena-p-name">Barry</div>
         <div class="arena-p-teams">
           <div class="arena-slot filled" style="border-color:#009C3B"><span class="slot-flag">🇧🇷</span><span class="slot-name">Brazil</span></div>
@@ -624,9 +736,8 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
           <div class="arena-slot filled" style="border-color:#AE1C28"><span class="slot-flag">🇳🇱</span><span class="slot-name">Netherlands</span></div>
         </div>
       </div>
-      <!-- Active -->
-      <div class="arena-p-card active">
-        <span style="font-size:1.8rem">🦅</span>
+      <div class="arena-p-card active" data-avatar="2">
+        <img class="avatar-sprite" style="height:32px" src="assets/avatars/playmaker.svg" alt="">
         <div class="arena-p-name">Spursinho</div>
         <div class="arena-p-teams">
           <div class="arena-slot filled" style="border-color:#002395"><span class="slot-flag">🇫🇷</span><span class="slot-name">France</span></div>
@@ -634,33 +745,20 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
           <div class="arena-slot empty"></div>
         </div>
       </div>
-      <!-- Pending -->
-      <div class="arena-p-card">
-        <span style="font-size:1.8rem">🐉</span>
+      <div class="arena-p-card" data-avatar="4">
+        <img class="avatar-sprite" style="height:32px" src="assets/avatars/keeper.svg" alt="">
         <div class="arena-p-name">Gaz</div>
-        <div class="arena-p-teams">
-          <div class="arena-slot empty"></div>
-          <div class="arena-slot empty"></div>
-        </div>
+        <div class="arena-p-teams"><div class="arena-slot empty"></div><div class="arena-slot empty"></div></div>
       </div>
-      <div class="arena-p-card">
-        <span style="font-size:1.8rem">🦊</span>
+      <div class="arena-p-card" data-avatar="10">
+        <img class="avatar-sprite" style="height:32px" src="assets/avatars/mascot.svg" alt="">
         <div class="arena-p-name">Offside Oli</div>
-        <div class="arena-p-teams">
-          <div class="arena-slot empty"></div>
-          <div class="arena-slot empty"></div>
-          <div class="arena-slot empty"></div>
-        </div>
+        <div class="arena-p-teams"><div class="arena-slot empty"></div><div class="arena-slot empty"></div><div class="arena-slot empty"></div></div>
       </div>
-      <div class="arena-p-card">
-        <span style="font-size:1.8rem">🐺</span>
+      <div class="arena-p-card" data-avatar="9">
+        <img class="avatar-sprite" style="height:32px" src="assets/avatars/fan.svg" alt="">
         <div class="arena-p-name">Wolfie</div>
-        <div class="arena-p-teams">
-          <div class="arena-slot empty"></div>
-          <div class="arena-slot empty"></div>
-          <div class="arena-slot empty"></div>
-          <div class="arena-slot empty"></div>
-        </div>
+        <div class="arena-p-teams"><div class="arena-slot empty"></div><div class="arena-slot empty"></div><div class="arena-slot empty"></div><div class="arena-slot empty"></div></div>
       </div>
     </div>
   </div>
@@ -668,18 +766,18 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
 </div>
 
 <!-- ═══════════════════════════════════════════════════════
-     SECTION 5 — BRACKET
+     SECTION 7 — BRACKET: GROUPS + KNOCKOUT TREE (sweepstake.html #stateBracket)
 ════════════════════════════════════════════════════════ -->
 <div class="ds-section">
-<div id="stateBracket" class="page wide">
-  <div class="ds-label">5 · BRACKET — sweepstake.html #stateBracket</div>
+<div class="page wide">
+  <div class="ds-label">7 · BRACKET — sweepstake.html #stateBracket</div>
 
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap;position:relative;z-index:1">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
     <h1 style="font-size:1.5rem;flex:1">World Cup 2026 🏆</h1>
     <span class="live-badge"><span class="live-dot"></span>Live</span>
   </div>
 
-  <div class="my-teams" style="position:relative;z-index:1">
+  <div class="my-teams">
     <h3>Your teams</h3>
     <div class="my-team-cards">
       <div class="my-team-card">🏴󠁧󠁢󠁥󠁮󠁧󠁿 England</div>
@@ -688,9 +786,22 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
     </div>
   </div>
 
-  <div class="bracket-scroll-wrap" style="position:relative;z-index:1">
+  <div class="stage-tabs-wrap">
+    <div class="stage-tabs">
+      <button class="stage-tab active">Group Stage</button>
+      <button class="stage-tab">Round of 32</button>
+      <button class="stage-tab">Round of 16</button>
+      <button class="stage-tab">Quarterfinals</button>
+      <button class="stage-tab">Semifinals</button>
+      <button class="stage-tab">3rd-Place Match &amp; Final</button>
+      <div class="stage-tab-divider"></div>
+      <button class="stage-tab">Players</button>
+      <button class="stage-tab">Highlights</button>
+    </div>
+  </div>
+
+  <div class="bracket-scroll-wrap">
     <div class="bracket-tree">
-      <!-- Groups left -->
       <div class="b-col b-groups-col">
         <div class="b-round-label">Group Stage</div>
         <div class="b-group-card">
@@ -707,64 +818,18 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
           <div class="b-team-row"><span>🇧🇦</span><span class="b-team-name">Bosnia</span><span class="b-team-pts">2</span></div>
           <div class="b-team-row"><span>🇶🇦</span><span class="b-team-name">Qatar</span><span class="b-team-pts">0</span></div>
         </div>
-        <div class="b-group-card">
-          <div class="b-group-head">Group C</div>
-          <div class="b-team-row qualified"><span>🇧🇷</span><span class="b-team-name">Brazil</span><span class="b-team-pts">9</span></div>
-          <div class="b-team-row qualified"><span>🇲🇦</span><span class="b-team-name">Morocco</span><span class="b-team-pts">5</span></div>
-          <div class="b-team-row"><span>🏴󠁧󠁢󠁳󠁣󠁴󠁿</span><span class="b-team-name">Scotland</span><span class="b-team-pts">3</span></div>
-          <div class="b-team-row"><span>🇭🇹</span><span class="b-team-name">Haiti</span><span class="b-team-pts">0</span></div>
-        </div>
-        <div class="b-group-card">
-          <div class="b-group-head">Group D</div>
-          <div class="b-team-row qualified"><span>🇺🇸</span><span class="b-team-name">USA</span><span class="b-team-pts">7</span></div>
-          <div class="b-team-row qualified"><span>🇵🇾</span><span class="b-team-name">Paraguay</span><span class="b-team-pts">4</span></div>
-          <div class="b-team-row"><span>🇦🇺</span><span class="b-team-name">Australia</span><span class="b-team-pts">4</span></div>
-          <div class="b-team-row"><span>🇹🇷</span><span class="b-team-name">Turkey</span><span class="b-team-pts">1</span></div>
-        </div>
-        <div class="b-group-card">
-          <div class="b-group-head">Group E</div>
-          <div class="b-team-row qualified"><span>🇩🇪</span><span class="b-team-name">Germany</span><span class="b-team-pts">9</span></div>
-          <div class="b-team-row qualified"><span>🇨🇮</span><span class="b-team-name">Côte d'Ivoire</span><span class="b-team-pts">4</span></div>
-          <div class="b-team-row"><span>🇪🇨</span><span class="b-team-name">Ecuador</span><span class="b-team-pts">3</span></div>
-          <div class="b-team-row"><span>🇨🇼</span><span class="b-team-name">Curaçao</span><span class="b-team-pts">0</span></div>
-        </div>
-        <div class="b-group-card">
-          <div class="b-group-head">Group F</div>
-          <div class="b-team-row qualified"><span>🇳🇱</span><span class="b-team-name">Netherlands</span><span class="b-team-pts">7</span></div>
-          <div class="b-team-row qualified"><span>🇯🇵</span><span class="b-team-name">Japan</span><span class="b-team-pts">6</span></div>
-          <div class="b-team-row"><span>🇸🇪</span><span class="b-team-name">Sweden</span><span class="b-team-pts">2</span></div>
-          <div class="b-team-row"><span>🇹🇳</span><span class="b-team-name">Tunisia</span><span class="b-team-pts">1</span></div>
-        </div>
       </div>
-      <!-- R32 left -->
       <div class="b-col b-round-col">
         <div class="b-round-label">Round of 32</div>
         <div class="b-match"><div class="b-match-team"><span>🇲🇽</span><span class="b-match-name">Mexico</span><span class="b-match-score">2</span></div><div class="b-match-team winner"><span>🇨🇦</span><span class="b-match-name">Canada</span><span class="b-match-score">3</span></div></div>
         <div class="b-match"><div class="b-match-team winner"><span>🇧🇷</span><span class="b-match-name">Brazil</span><span class="b-match-score">2</span></div><div class="b-match-team"><span>🇵🇾</span><span class="b-match-name">Paraguay</span><span class="b-match-score">0</span></div></div>
-        <div class="b-match"><div class="b-match-team winner"><span>🇩🇪</span><span class="b-match-name">Germany</span><span class="b-match-score">1</span></div><div class="b-match-team"><span>🇳🇱</span><span class="b-match-name">Netherlands</span><span class="b-match-score">0</span></div></div>
-        <div class="b-match"><div class="b-match-team"><span>🇺🇸</span><span class="b-match-name">USA</span><span class="b-match-score">1</span></div><div class="b-match-team winner"><span>🇯🇵</span><span class="b-match-name">Japan</span><span class="b-match-score">2</span></div></div>
-        <div class="b-match"><div class="b-match-tbd">TBD</div></div>
         <div class="b-match"><div class="b-match-tbd">TBD</div></div>
       </div>
-      <!-- R16 left -->
       <div class="b-col b-round-col">
         <div class="b-round-label">Round of 16</div>
         <div class="b-match"><div class="b-match-team winner"><span>🇨🇦</span><span class="b-match-name">Canada</span><span class="b-match-score">1</span></div><div class="b-match-team"><span>🇧🇷</span><span class="b-match-name">Brazil</span><span class="b-match-score">0</span></div></div>
-        <div class="b-match"><div class="b-match-team winner"><span>🇩🇪</span><span class="b-match-name">Germany</span><span class="b-match-score">2</span></div><div class="b-match-team"><span>🇯🇵</span><span class="b-match-name">Japan</span><span class="b-match-score">1</span></div></div>
         <div class="b-match"><div class="b-match-tbd">TBD</div></div>
       </div>
-      <!-- QF left -->
-      <div class="b-col b-round-col">
-        <div class="b-round-label">Quarter-Finals</div>
-        <div class="b-match"><div class="b-match-team winner"><span>🇨🇦</span><span class="b-match-name">Canada</span><span class="b-match-score">1</span></div><div class="b-match-team"><span>🇩🇪</span><span class="b-match-name">Germany</span><span class="b-match-score">0</span></div></div>
-        <div class="b-match"><div class="b-match-tbd">TBD</div></div>
-      </div>
-      <!-- SF left -->
-      <div class="b-col b-round-col">
-        <div class="b-round-label">Semi-Final</div>
-        <div class="b-match"><div class="b-match-team winner"><span>🇨🇦</span><span class="b-match-name">Canada</span><span class="b-match-score">2</span></div><div class="b-match-team"><span>🇦🇷</span><span class="b-match-name">Argentina</span><span class="b-match-score">1</span></div></div>
-      </div>
-      <!-- Final -->
       <div class="b-col b-final-col">
         <div class="b-round-label">Final</div>
         <div class="b-final-card">
@@ -773,71 +838,24 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
           <div class="b-match-team"><span>🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span class="b-match-name">England</span><span class="b-match-score">—</span></div>
         </div>
       </div>
-      <!-- SF right -->
-      <div class="b-col b-round-col">
-        <div class="b-round-label">Semi-Final</div>
-        <div class="b-match"><div class="b-match-team winner"><span>🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span class="b-match-name">England</span><span class="b-match-score">3</span></div><div class="b-match-team"><span>🇫🇷</span><span class="b-match-name">France</span><span class="b-match-score">2</span></div></div>
-      </div>
-      <!-- QF right -->
-      <div class="b-col b-round-col">
-        <div class="b-round-label">Quarter-Finals</div>
-        <div class="b-match"><div class="b-match-team winner"><span>🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span class="b-match-name">England</span><span class="b-match-score">1</span></div><div class="b-match-team"><span>🇵🇹</span><span class="b-match-name">Portugal</span><span class="b-match-score">0</span></div></div>
-        <div class="b-match"><div class="b-match-tbd">TBD</div></div>
-      </div>
-      <!-- R16 right -->
       <div class="b-col b-round-col">
         <div class="b-round-label">Round of 16</div>
         <div class="b-match"><div class="b-match-team winner"><span>🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span class="b-match-name">England</span><span class="b-match-score">2</span></div><div class="b-match-team"><span>🇸🇦</span><span class="b-match-name">Saudi Arabia</span><span class="b-match-score">0</span></div></div>
         <div class="b-match"><div class="b-match-tbd">TBD</div></div>
-        <div class="b-match"><div class="b-match-tbd">TBD</div></div>
       </div>
-      <!-- R32 right -->
       <div class="b-col b-round-col">
         <div class="b-round-label">Round of 32</div>
-        <div class="b-match"><div class="b-match-team winner"><span>🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span class="b-match-name">England</span><span class="b-match-score">3</span></div><div class="b-match-team"><span>🇨🇷</span><span class="b-match-name">Croatia</span><span class="b-match-score">1</span></div></div>
-        <div class="b-match"><div class="b-match-team winner"><span>🇸🇦</span><span class="b-match-name">Saudi Arabia</span><span class="b-match-score">2</span></div><div class="b-match-team"><span>🇦🇺</span><span class="b-match-name">Australia</span><span class="b-match-score">1</span></div></div>
-        <div class="b-match"><div class="b-match-tbd">TBD</div></div>
-        <div class="b-match"><div class="b-match-tbd">TBD</div></div>
-        <div class="b-match"><div class="b-match-tbd">TBD</div></div>
+        <div class="b-match"><div class="b-match-team winner"><span>🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span class="b-match-name">England</span><span class="b-match-score">3</span></div><div class="b-match-team"><span>🇭🇷</span><span class="b-match-name">Croatia</span><span class="b-match-score">1</span></div></div>
         <div class="b-match"><div class="b-match-tbd">TBD</div></div>
       </div>
-      <!-- Groups right -->
       <div class="b-col b-groups-col">
         <div class="b-round-label">Group Stage</div>
-        <div class="b-group-card">
-          <div class="b-group-head">Group G</div>
-          <div class="b-team-row qualified"><span>🇧🇪</span><span class="b-team-name">Belgium</span><span class="b-team-pts">7</span></div>
-          <div class="b-team-row qualified"><span>🇮🇷</span><span class="b-team-name">Iran</span><span class="b-team-pts">5</span></div>
-          <div class="b-team-row"><span>🇪🇬</span><span class="b-team-name">Egypt</span><span class="b-team-pts">2</span></div>
-          <div class="b-team-row"><span>🇳🇿</span><span class="b-team-name">New Zealand</span><span class="b-team-pts">0</span></div>
-        </div>
         <div class="b-group-card">
           <div class="b-group-head">Group H</div>
           <div class="b-team-row qualified"><span>🇪🇸</span><span class="b-team-name">Spain</span><span class="b-team-pts">9</span></div>
           <div class="b-team-row qualified"><span>🇺🇾</span><span class="b-team-name">Uruguay</span><span class="b-team-pts">4</span></div>
           <div class="b-team-row"><span>🇸🇦</span><span class="b-team-name">Saudi Arabia</span><span class="b-team-pts">3</span></div>
           <div class="b-team-row"><span>🇨🇻</span><span class="b-team-name">Cape Verde</span><span class="b-team-pts">1</span></div>
-        </div>
-        <div class="b-group-card">
-          <div class="b-group-head">Group I</div>
-          <div class="b-team-row qualified"><span>🇫🇷</span><span class="b-team-name">France</span><span class="b-team-pts">9</span></div>
-          <div class="b-team-row qualified"><span>🇸🇳</span><span class="b-team-name">Senegal</span><span class="b-team-pts">4</span></div>
-          <div class="b-team-row"><span>🇮🇶</span><span class="b-team-name">Iraq</span><span class="b-team-pts">2</span></div>
-          <div class="b-team-row"><span>🇳🇴</span><span class="b-team-name">Norway</span><span class="b-team-pts">1</span></div>
-        </div>
-        <div class="b-group-card">
-          <div class="b-group-head">Group J</div>
-          <div class="b-team-row qualified"><span>🇦🇷</span><span class="b-team-name">Argentina</span><span class="b-team-pts">9</span></div>
-          <div class="b-team-row qualified"><span>🇦🇹</span><span class="b-team-name">Austria</span><span class="b-team-pts">4</span></div>
-          <div class="b-team-row"><span>🇩🇿</span><span class="b-team-name">Algeria</span><span class="b-team-pts">3</span></div>
-          <div class="b-team-row"><span>🇯🇴</span><span class="b-team-name">Jordan</span><span class="b-team-pts">0</span></div>
-        </div>
-        <div class="b-group-card">
-          <div class="b-group-head">Group K</div>
-          <div class="b-team-row qualified"><span>🇵🇹</span><span class="b-team-name">Portugal</span><span class="b-team-pts">7</span></div>
-          <div class="b-team-row qualified"><span>🇨🇴</span><span class="b-team-name">Colombia</span><span class="b-team-pts">5</span></div>
-          <div class="b-team-row"><span>🇺🇿</span><span class="b-team-name">Uzbekistan</span><span class="b-team-pts">3</span></div>
-          <div class="b-team-row"><span>🇨🇩</span><span class="b-team-name">DR Congo</span><span class="b-team-pts">1</span></div>
         </div>
         <div class="b-group-card">
           <div class="b-group-head">Group L</div>
@@ -849,10 +867,34 @@ button.btn-danger { background: var(--red); color: #fff; box-shadow: none; }
       </div>
     </div>
   </div>
-
 </div>
 </div>
 
-<script src="js/pwa.js?v=17818741"></script>
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 8 — MATCH CARDS (betting.html / live bracket "Players"-style view)
+════════════════════════════════════════════════════════ -->
+<div class="ds-section">
+<div class="page">
+  <div class="ds-label">8 · MATCH CARDS — betting.html, live bracket match-view</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px">
+    <div class="smv-match live">
+      <div class="smv-match-meta">Group A · Matchday 2 <span class="smv-match-meta-badge"><span class="smv-status-badge" style="background:rgba(255,154,208,.15);color:var(--gold)">67'</span></span></div>
+      <div class="smv-match-team mine"><span>🇲🇽</span><span class="smv-match-name">Mexico</span><span class="smv-match-score">2</span></div>
+      <div class="smv-match-team"><span>🇿🇦</span><span class="smv-match-name">South Africa</span><span class="smv-match-score">1</span></div>
+    </div>
+    <div class="smv-match finished">
+      <div class="smv-match-meta">Round of 16 <span class="smv-match-meta-badge"><span class="smv-status-badge">FT</span></span></div>
+      <div class="smv-match-team winner"><span>🏴󠁧󠁢󠁥󠁮󠁧󠁿</span><span class="smv-match-name">England</span><span class="smv-match-score">2</span><span class="smv-match-owner"><span class="smv-match-owner-name">Watto</span></span></div>
+      <div class="smv-match-team loser"><span>🇸🇦</span><span class="smv-match-name">Saudi Arabia</span><span class="smv-match-score">0</span></div>
+    </div>
+    <div class="smv-match">
+      <div class="smv-match-meta">Quarterfinals <span class="smv-match-meta-badge"><span class="smv-status-badge">Sat 15:00</span></span></div>
+      <div class="smv-match-team smv-tbd"><span class="smv-match-name">TBD</span></div>
+      <div class="smv-match-team smv-tbd"><span class="smv-match-name">TBD</span></div>
+    </div>
+  </div>
+</div>
+</div>
+
 </body>
 </html>
