@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Holiday Planner — Kickoff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@700;800&family=DM+Sans:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<style>
+  .hero-plain { text-align: center; margin: 8px 0 32px; }
+  .hero-plain h1 { margin-bottom: 10px; }
+  .hero-plain p { color: var(--muted); max-width: 540px; margin: 0 auto; line-height: 1.6; }
+
+  #mapCard { margin-bottom: 24px; }
+
+  .search-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .search-row input[type=text] { flex: 1; min-width: 200px; }
+  .search-error {
+    color: var(--red); font-size: 0.82rem; margin: -6px 0 12px; display: none;
+  }
+  .search-error.show { display: block; }
+
+  #map {
+    width: 100%; height: 480px; border-radius: var(--radius);
+    border: 2px solid #2c3e54;
+    box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.5);
+  }
+  @media (max-width: 640px) { #map { height: 340px; } }
+
+  .map-hint { margin-top: 12px; text-align: center; font-size: 0.78rem; }
+
+  .leaflet-control-attribution, .leaflet-control-zoom a {
+    font-family: var(--font-mono) !important;
+  }
+  .leaflet-control-attribution {
+    background: rgba(20,10,24,.8) !important; color: var(--muted) !important;
+  }
+  .leaflet-control-attribution a { color: var(--gold) !important; }
+  .leaflet-control-zoom a {
+    background: var(--panel) !important; color: var(--text) !important;
+    border-color: #2c3e54 !important;
+  }
+
+  .city-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--gold); border: 2px solid var(--dark);
+    box-shadow: var(--glow-cyan);
+    transition: transform .15s;
+  }
+  .city-dot:hover { transform: scale(1.35); }
+  .city-dot.active { background: var(--green); box-shadow: var(--glow-orange); }
+  .city-dot.search-pin { background: transparent; border: 2px dashed var(--gold); box-shadow: none; }
+  .leaflet-tooltip {
+    background: var(--panel) !important; color: var(--text) !important;
+    border: 1px solid #2c3e54 !important; font-family: var(--font-mono) !important;
+    font-size: 0.75rem !important; border-radius: 3px !important;
+  }
+  .leaflet-tooltip-top:before { border-top-color: #2c3e54 !important; }
+
+  /* Info panel */
+  .info-panel {
+    background: var(--mid); border: 3px solid #2c3e54; border-radius: var(--radius);
+    padding: 24px; position: relative;
+    box-shadow:
+      inset 2px 2px 0 rgba(255,255,255,.06),
+      inset -3px -3px 0 rgba(0,0,0,.5),
+      6px 6px 0 rgba(0,0,0,.5);
+    animation: fadeIn 0.3s ease;
+  }
+  .info-panel-close {
+    position: absolute; top: 12px; right: 12px; background: transparent; border: none;
+    box-shadow: none; color: var(--muted); font-size: 1.5rem; line-height: 1;
+    padding: 4px 10px; cursor: pointer;
+  }
+  .info-panel-close:hover { color: var(--text); transform: none; box-shadow: none; filter: none; }
+  .info-panel-header { margin-bottom: 18px; padding-right: 34px; }
+  .info-panel-header h2 { margin-bottom: 4px; }
+
+  .ov-section + .ov-section { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; }
+  .ov-section-toggle {
+    width: 100%; background: transparent; border: none; box-shadow: none;
+    display: flex; align-items: center; gap: 10px; padding: 0; cursor: pointer;
+    font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; color: var(--text);
+    text-transform: none; letter-spacing: 0;
+  }
+  .ov-section-toggle:hover { transform: none; box-shadow: none; filter: none; color: var(--gold); }
+  .ov-icon { font-size: 1.2rem; }
+  .ov-title { flex: 1; text-align: left; }
+  .ov-chevron { color: var(--muted); transition: transform .2s; }
+  .ov-section.collapsed .ov-chevron { transform: rotate(-90deg); }
+
+  .ov-section-body {
+    display: grid; grid-template-rows: 1fr; transition: grid-template-rows .25s ease;
+  }
+  .ov-section-body > div { min-height: 0; overflow: hidden; }
+  .ov-section.collapsed .ov-section-body { grid-template-rows: 0fr; }
+  .ov-section-content-wrap { padding-top: 14px; }
+
+  .ov-spinner {
+    font-size: 0.72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+    animation: ovPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes ovPulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+
+  .ov-error {
+    background: rgba(255,59,92,.1); border: 1px solid var(--red); border-radius: var(--radius);
+    padding: 10px 14px; font-size: 0.82rem; color: var(--red); margin-bottom: 10px;
+  }
+  .ov-retry { font-size: 0.58rem; padding: 8px 12px; }
+  .ov-empty { color: var(--muted); font-size: 0.85rem; }
+
+  /* Weather-by-month rows */
+  .month-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+  .month-label {
+    width: 32px; flex-shrink: 0; color: var(--muted);
+    font-family: var(--font-mono); font-size: 0.72rem;
+  }
+  .month-bar-track {
+    flex: 1; height: 10px; background: var(--panel); border-radius: 6px;
+    position: relative; overflow: hidden;
+  }
+  .month-bar { position: absolute; top: 0; bottom: 0; border-radius: 6px; background: var(--grad-accent); }
+  .month-stats {
+    font-family: var(--font-mono); font-size: 0.7rem; color: var(--text);
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .month-rain { color: var(--muted); }
+  .weather-note { margin-top: 10px; font-size: 0.72rem; }
+
+  /* Beaches list */
+  .beach-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .beach-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    font-size: 0.85rem; background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 8px 12px;
+  }
+  .beach-dist { color: var(--muted); font-family: var(--font-mono); font-size: 0.75rem; white-space: nowrap; }
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#140a18">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kickoff">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="icon" href="assets/icons/favicon.png">
+</head>
+<body>
+
+<div class="page wide">
+
+  <header class="site-header">
+    <a class="site-home" href="index.html" aria-label="Go to Kickoff home">
+      <span class="logo">⚽</span>
+      <span class="site-name">Kickoff</span>
+    </a>
+  </header>
+
+  <section class="hero-plain">
+    <h1>🌍 Holiday Planner</h1>
+    <p>Pick a spot on the map, or search any place. See the weather by month and the nearest beaches.</p>
+  </section>
+
+  <div class="card" id="mapCard">
+    <div class="search-row">
+      <input type="text" id="citySearch" placeholder="Search any city or place…" autocomplete="off">
+      <button class="btn-ghost" id="searchBtn">Search</button>
+    </div>
+    <div class="search-error" id="searchError"></div>
+    <div id="map"></div>
+    <p class="map-hint muted">Click a marker to open its holiday info card</p>
+  </div>
+
+  <aside class="info-panel" id="infoPanel" hidden>
+    <button class="info-panel-close" id="infoPanelClose" aria-label="Close">&times;</button>
+    <div class="info-panel-header">
+      <h2 id="infoCityName"></h2>
+      <p class="muted" id="infoCityCountry"></p>
+    </div>
+    <div class="info-panel-sections" id="infoSections"></div>
+  </aside>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+  // ── Curated destinations ────────────────────────────────────────────────
+  const HOLIDAY_CITIES = [
+    { name: 'Barcelona',        country: 'Spain',          lat: 41.3874,  lon: 2.1686   },
+    { name: 'Lisbon',           country: 'Portugal',        lat: 38.7223,  lon: -9.1393  },
+    { name: 'Santorini',        country: 'Greece',          lat: 36.3932,  lon: 25.4615  },
+    { name: 'Athens',           country: 'Greece',          lat: 37.9838,  lon: 23.7275  },
+    { name: 'Dubrovnik',        country: 'Croatia',         lat: 42.6507,  lon: 18.0944  },
+    { name: 'Venice',           country: 'Italy',           lat: 45.4408,  lon: 12.3155  },
+    { name: 'Rome',             country: 'Italy',           lat: 41.9028,  lon: 12.4964  },
+    { name: 'Reykjavik',        country: 'Iceland',         lat: 64.1466,  lon: -21.9426 },
+    { name: 'Paris',            country: 'France',          lat: 48.8566,  lon: 2.3522   },
+    { name: 'Madrid',           country: 'Spain',           lat: 40.4168,  lon: -3.7038  },
+    { name: 'Zurich',           country: 'Switzerland',     lat: 47.3769,  lon: 8.5417   },
+    { name: 'Vienna',           country: 'Austria',         lat: 48.2082,  lon: 16.3738  },
+    { name: 'Prague',           country: 'Czechia',         lat: 50.0755,  lon: 14.4378  },
+    { name: 'Budapest',         country: 'Hungary',         lat: 47.4979,  lon: 19.0402  },
+    { name: 'Berlin',           country: 'Germany',         lat: 52.5200,  lon: 13.4050  },
+    { name: 'Amsterdam',        country: 'Netherlands',     lat: 52.3676,  lon: 4.9041   },
+    { name: 'Copenhagen',       country: 'Denmark',         lat: 55.6761,  lon: 12.5683  },
+    { name: 'Stockholm',        country: 'Sweden',          lat: 59.3293,  lon: 18.0686  },
+    { name: 'Oslo',             country: 'Norway',          lat: 59.9139,  lon: 10.7522  },
+    { name: 'Helsinki',         country: 'Finland',         lat: 60.1699,  lon: 24.9384  },
+    { name: 'London',           country: 'United Kingdom',  lat: 51.5072,  lon: -0.1276  },
+    { name: 'Edinburgh',        country: 'Scotland',        lat: 55.9533,  lon: -3.1883  },
+    { name: 'Istanbul',         country: 'Turkey',          lat: 41.0082,  lon: 28.9784  },
+    { name: 'Marrakech',        country: 'Morocco',         lat: 31.6295,  lon: -7.9811  },
+    { name: 'Cape Town',        country: 'South Africa',    lat: -33.9249, lon: 18.4241  },
+    { name: 'Nairobi',          country: 'Kenya',           lat: -1.2921,  lon: 36.8219  },
+    { name: 'Zanzibar City',    country: 'Tanzania',        lat: -6.1659,  lon: 39.1988  },
+    { name: 'Cairo',            country: 'Egypt',           lat: 30.0444,  lon: 31.2357  },
+    { name: 'Dubai',            country: 'UAE',              lat: 25.2048,  lon: 55.2708  },
+    { name: 'Doha',             country: 'Qatar',           lat: 25.2854,  lon: 51.5310  },
+    { name: 'Tel Aviv',         country: 'Israel',          lat: 32.0853,  lon: 34.7818  },
+    { name: 'Mumbai',           country: 'India',           lat: 19.0760,  lon: 72.8777  },
+    { name: 'Goa (Panaji)',     country: 'India',           lat: 15.4909,  lon: 73.8278  },
+    { name: 'Male',             country: 'Maldives',        lat: 4.1755,   lon: 73.5093  },
+    { name: 'Bangkok',          country: 'Thailand',        lat: 13.7563,  lon: 100.5018 },
+    { name: 'Phuket',           country: 'Thailand',        lat: 7.8804,   lon: 98.3923  },
+    { name: 'Kuala Lumpur',     country: 'Malaysia',        lat: 3.1390,   lon: 101.6869 },
+    { name: 'Singapore',        country: 'Singapore',       lat: 1.3521,   lon: 103.8198 },
+    { name: 'Bali (Denpasar)',  country: 'Indonesia',       lat: -8.6705,  lon: 115.2126 },
+    { name: 'Tokyo',            country: 'Japan',           lat: 35.6762,  lon: 139.6503 },
+    { name: 'Kyoto',            country: 'Japan',           lat: 35.0116,  lon: 135.7681 },
+    { name: 'Seoul',            country: 'South Korea',     lat: 37.5665,  lon: 126.9780 },
+    { name: 'Sydney',           country: 'Australia',       lat: -33.8688, lon: 151.2093 },
+    { name: 'Auckland',         country: 'New Zealand',     lat: -36.8509, lon: 174.7645 },
+    { name: 'Queenstown',       country: 'New Zealand',     lat: -45.0312, lon: 168.6626 },
+    { name: 'New York',         country: 'USA',             lat: 40.7128,  lon: -74.0060 },
+    { name: 'Miami',            country: 'USA',             lat: 25.7617,  lon: -80.1918 },
+    { name: 'Honolulu',         country: 'USA',             lat: 21.3069,  lon: -157.8583},
+    { name: 'Vancouver',        country: 'Canada',          lat: 49.2827,  lon: -123.1207},
+    { name: 'Banff',            country: 'Canada',          lat: 51.1784,  lon: -115.5708},
+    { name: 'Cancun',           country: 'Mexico',          lat: 21.1619,  lon: -86.8515 },
+    { name: 'Havana',           country: 'Cuba',            lat: 23.1136,  lon: -82.3666 },
+    { name: 'Rio de Janeiro',   country: 'Brazil',          lat: -22.9068, lon: -43.1729 },
+    { name: 'Buenos Aires',     country: 'Argentina',       lat: -34.6037, lon: -58.3816 },
+    { name: 'Lima',             country: 'Peru',            lat: -12.0464, lon: -77.0428 },
+  ];
+
+  // ── Map setup ────────────────────────────────────────────────────────────
+  const map = L.map('map', { worldCopyJump: true }).setView([20, 10], 2);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19,
+    detectRetina: true,
+  }).addTo(map);
+
+  function makeDotIcon(kind, active) {
+    const cls = ['city-dot'];
+    if (kind === 'search') cls.push('search-pin');
+    if (active) cls.push('active');
+    return L.divIcon({ className: '', html: `<div class="${cls.join(' ')}"></div>`, iconSize: [12, 12] });
+  }
+
+  const markerLayer = L.layerGroup().addTo(map);
+  const cityMarkers = new Map();
+  let activeMarker = null;
+  let searchMarker = null;
+  let selectionGen = 0;
+
+  HOLIDAY_CITIES.forEach((city) => {
+    const marker = L.marker([city.lat, city.lon], { icon: makeDotIcon('city', false) }).addTo(markerLayer);
+    marker.__kind = 'city';
+    marker.bindTooltip(`${city.name}, ${city.country}`, { direction: 'top', offset: [0, -4] });
+    marker.on('click', () => selectCity(city, marker));
+    cityMarkers.set(city.name, marker);
+  });
+
+  function setActiveMarker(marker) {
+    if (activeMarker && activeMarker !== marker) activeMarker.setIcon(makeDotIcon(activeMarker.__kind, false));
+    marker.setIcon(makeDotIcon(marker.__kind, true));
+    activeMarker = marker;
+  }
+
+  // ── Extensible overlay-module registry ──────────────────────────────────
+  // Add a new holiday-info section by appending one entry here — nothing
+  // else in the page needs to change.
+  const OVERLAY_MODULES = [
+    { id: 'weather', title: 'Average weather by month', icon: '🌤️', render: renderWeatherModule },
+    { id: 'beaches', title: 'Nearby beaches',            icon: '🏖️', render: renderBeachesModule },
+  ];
+
+  const overlayCache = new Map();
+
+  function selectCity(city, marker) {
+    selectionGen++;
+    const gen = selectionGen;
+
+    setActiveMarker(marker);
+    map.flyTo([city.lat, city.lon], Math.max(map.getZoom(), 6), { duration: 0.8 });
+
+    document.getElementById('infoCityName').textContent = city.name;
+    document.getElementById('infoCityCountry').textContent =
+      city.country || `${city.lat.toFixed(2)}, ${city.lon.toFixed(2)}`;
+
+    const infoPanel = document.getElementById('infoPanel');
+    infoPanel.hidden = false;
+
+    const sections = document.getElementById('infoSections');
+    sections.innerHTML = OVERLAY_MODULES.map(sectionSkeletonHTML).join('');
+    OVERLAY_MODULES.forEach((m) => bindSectionToggle(m.id));
+    OVERLAY_MODULES.forEach((m) => loadModule(m, city, gen));
+
+    infoPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function sectionSkeletonHTML(m) {
+    return `
+      <div class="ov-section" data-module="${m.id}">
+        <button class="ov-section-toggle" aria-expanded="true">
+          <span class="ov-icon">${m.icon}</span>
+          <span class="ov-title">${m.title}</span>
+          <span class="ov-chevron">&#9662;</span>
+        </button>
+        <div class="ov-section-body">
+          <div class="ov-section-content-wrap" id="ov-body-${m.id}">
+            <div class="ov-spinner">Loading&hellip;</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function bindSectionToggle(id) {
+    const section = document.querySelector(`.ov-section[data-module="${id}"]`);
+    const btn = section.querySelector('.ov-section-toggle');
+    btn.addEventListener('click', () => {
+      const collapsed = section.classList.toggle('collapsed');
+      btn.setAttribute('aria-expanded', String(!collapsed));
+    });
+  }
+
+  async function loadModule(m, city, gen) {
+    const key = `${m.id}|${city.name}|${city.lat.toFixed(2)},${city.lon.toFixed(2)}`;
+    const bodyEl = document.getElementById(`ov-body-${m.id}`);
+    if (!bodyEl) return;
+
+    if (overlayCache.has(key)) {
+      if (gen !== selectionGen) return;
+      bodyEl.innerHTML = overlayCache.get(key);
+      return;
+    }
+
+    try {
+      const html = await m.render(city);
+      if (gen !== selectionGen) return;
+      overlayCache.set(key, html);
+      bodyEl.innerHTML = html;
+    } catch (err) {
+      if (gen !== selectionGen) return;
+      bodyEl.innerHTML = `
+        <div class="ov-error">Couldn't load this &mdash; ${escapeHtml(err.message || 'network error')}.</div>
+        <button class="btn-ghost ov-retry">Try again</button>`;
+      const retryBtn = bodyEl.querySelector('.ov-retry');
+      if (retryBtn) {
+        retryBtn.addEventListener('click', () => {
+          overlayCache.delete(key);
+          bodyEl.innerHTML = '<div class="ov-spinner">Loading&hellip;</div>';
+          loadModule(m, city, selectionGen);
+        });
+      }
+    }
+  }
+
+  // ── Weather-by-month overlay ────────────────────────────────────────────
+  const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  async function renderWeatherModule(city) {
+    const endYear = new Date().getFullYear() - 1; // last complete calendar year
+    const startYear = endYear - 4;                // 5 years total
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${city.lat}&longitude=${city.lon}` +
+      `&start_date=${startYear}-01-01&end_date=${endYear}-12-31` +
+      `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
+
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`weather API returned ${resp.status}`);
+    const data = await resp.json();
+    const daily = data.daily;
+    if (!daily || !daily.time || !daily.time.length) throw new Error('no weather data available');
+
+    const buckets = Array.from({ length: 12 }, () => ({ hiSum: 0, loSum: 0, days: 0, yearRain: {} }));
+    daily.time.forEach((t, i) => {
+      const [year, monthStr] = t.split('-');
+      const month = parseInt(monthStr, 10) - 1;
+      const b = buckets[month];
+      b.hiSum += daily.temperature_2m_max[i];
+      b.loSum += daily.temperature_2m_min[i];
+      b.days += 1;
+      b.yearRain[year] = (b.yearRain[year] || 0) + (daily.precipitation_sum[i] || 0);
+    });
+
+    const monthly = buckets.map((b) => {
+      const yearTotals = Object.values(b.yearRain);
+      return {
+        avgHi: b.hiSum / b.days,
+        avgLo: b.loSum / b.days,
+        avgRain: yearTotals.reduce((a, v) => a + v, 0) / yearTotals.length,
+      };
+    });
+
+    const maxHi = Math.max(...monthly.map((m) => m.avgHi));
+    const minLo = Math.min(...monthly.map((m) => m.avgLo));
+    const span = Math.max(1, maxHi - minLo);
+
+    const rows = monthly.map((m, i) => {
+      const leftPct = ((m.avgLo - minLo) / span) * 100;
+      const widthPct = Math.max(((m.avgHi - m.avgLo) / span) * 100, 4);
+      return `
+        <div class="month-row">
+          <span class="month-label">${MONTH_NAMES[i]}</span>
+          <div class="month-bar-track">
+            <div class="month-bar" style="left:${leftPct.toFixed(1)}%;width:${widthPct.toFixed(1)}%"></div>
+          </div>
+          <span class="month-stats">${Math.round(m.avgHi)}&deg; / ${Math.round(m.avgLo)}&deg;<span class="month-rain"> &middot; ${Math.round(m.avgRain)}mm</span></span>
+        </div>`;
+    }).join('');
+
+    return `${rows}<p class="muted weather-note">${startYear}&ndash;${endYear} average &middot; high / low &deg;C and monthly rainfall</p>`;
+  }
+
+  // ── Beaches overlay ──────────────────────────────────────────────────────
+  const BEACH_RADIUS_M = 50000;
+
+  async function renderBeachesModule(city) {
+    const query = `[out:json][timeout:25];` +
+      `(node["natural"="beach"](around:${BEACH_RADIUS_M},${city.lat},${city.lon});` +
+      `way["natural"="beach"](around:${BEACH_RADIUS_M},${city.lat},${city.lon}););` +
+      `out center 30;`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+    let resp;
+    try {
+      resp = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(query),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+    if (!resp.ok) throw new Error(`beaches API returned ${resp.status}`);
+    const data = await resp.json();
+
+    const beaches = (data.elements || [])
+      .map((el) => {
+        const lat = el.type === 'node' ? el.lat : el.center && el.center.lat;
+        const lon = el.type === 'node' ? el.lon : el.center && el.center.lon;
+        if (lat == null || lon == null) return null;
+        return {
+          name: (el.tags && el.tags.name) || 'Unnamed beach',
+          distanceKm: haversineKm(city.lat, city.lon, lat, lon),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.distanceKm - b.distanceKm)
+      .slice(0, 10);
+
+    if (!beaches.length) {
+      return `<p class="ov-empty">No beaches found within ${BEACH_RADIUS_M / 1000} km &mdash; ${escapeHtml(city.name)} looks landlocked. 🏔️</p>`;
+    }
+
+    const rows = beaches.map((b) => `
+      <li class="beach-row">
+        <span>🏖️ ${escapeHtml(b.name)}</span>
+        <span class="beach-dist">${b.distanceKm.toFixed(1)} km</span>
+      </li>`).join('');
+
+    return `<ul class="beach-list">${rows}</ul>`;
+  }
+
+  function haversineKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.asin(Math.sqrt(a));
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
+  // ── Search box (Nominatim) ──────────────────────────────────────────────
+  const searchInput = document.getElementById('citySearch');
+  const searchBtn = document.getElementById('searchBtn');
+  const searchError = document.getElementById('searchError');
+
+  async function runSearch() {
+    const q = searchInput.value.trim();
+    if (!q) return;
+
+    searchError.classList.remove('show');
+    searchBtn.disabled = true;
+    try {
+      const resp = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`);
+      const results = await resp.json();
+      if (!results.length) {
+        searchError.textContent = `No results for "${q}".`;
+        searchError.classList.add('show');
+        return;
+      }
+
+      const r = results[0];
+      const lat = parseFloat(r.lat);
+      const lon = parseFloat(r.lon);
+
+      const curated = HOLIDAY_CITIES.find((c) => haversineKm(c.lat, c.lon, lat, lon) < 25);
+      if (curated) {
+        selectCity(curated, cityMarkers.get(curated.name));
+        return;
+      }
+
+      const parts = (r.display_name || q).split(',').map((p) => p.trim());
+      const adhocCity = { name: parts[0], country: parts[parts.length - 1] || '', lat, lon };
+
+      if (searchMarker) markerLayer.removeLayer(searchMarker);
+      searchMarker = L.marker([lat, lon], { icon: makeDotIcon('search', false) }).addTo(markerLayer);
+      searchMarker.__kind = 'search';
+      searchMarker.bindTooltip(adhocCity.name, { direction: 'top', offset: [0, -4] });
+      searchMarker.on('click', () => selectCity(adhocCity, searchMarker));
+
+      selectCity(adhocCity, searchMarker);
+    } catch (err) {
+      searchError.textContent = 'Search failed — try again.';
+      searchError.classList.add('show');
+    } finally {
+      searchBtn.disabled = false;
+    }
+  }
+
+  searchBtn.addEventListener('click', runSearch);
+  searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
+
+  document.getElementById('infoPanelClose').addEventListener('click', () => {
+    document.getElementById('infoPanel').hidden = true;
+  });
+</script>
+<script src="js/pwa.js"></script>
+</body>
+</html>
