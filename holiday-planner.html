@@ -24,14 +24,34 @@
   }
   .search-error.show { display: block; }
 
+  /* Map controls: month filter + temperature legend */
+  .map-controls {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .month-select-wrap { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .month-select-wrap label {
+    margin: 0; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted);
+  }
+  #monthFilter { width: auto; padding: 8px 12px; font-size: 0.82rem; }
+  #climateLoadingBadge {
+    font-size: 0.66rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+    animation: ovPulse 1.2s ease-in-out infinite;
+  }
+
+  .temp-legend { display: flex; align-items: center; gap: 8px; font-size: 0.68rem; color: var(--muted); }
+  .temp-legend-gradient {
+    width: 120px; height: 10px; border-radius: 6px; border: 1px solid var(--border);
+  }
+
   #map {
-    width: 100%; height: 480px; border-radius: var(--radius);
+    width: 100%; height: clamp(560px, 66vh, 700px); border-radius: var(--radius);
     border: 2px solid #2c3e54;
     box-shadow: inset 1px 1px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.5);
   }
-  @media (max-width: 640px) { #map { height: 340px; } }
+  @media (max-width: 640px) { #map { height: clamp(380px, 58vh, 460px); } }
 
-  .map-hint { margin-top: 12px; text-align: center; font-size: 0.78rem; }
+  .map-hint { margin: 0; text-align: center; font-size: 0.78rem; }
 
   .leaflet-control-attribution, .leaflet-control-zoom a {
     font-family: var(--font-mono) !important;
@@ -47,13 +67,18 @@
 
   .city-dot {
     width: 12px; height: 12px; border-radius: 50%;
-    background: var(--gold); border: 2px solid var(--dark);
+    background: var(--muted); border: 2px solid var(--dark);
     box-shadow: var(--glow-cyan);
-    transition: transform .15s;
+    transition: transform .15s, box-shadow .15s, width .15s, height .15s;
   }
   .city-dot:hover { transform: scale(1.35); }
-  .city-dot.active { background: var(--green); box-shadow: var(--glow-orange); }
-  .city-dot.search-pin { background: transparent; border: 2px dashed var(--gold); box-shadow: none; }
+  .city-dot.no-data { background: var(--muted) !important; }
+  .city-dot.search-pin { border-style: dashed; }
+  .city-dot.selected {
+    width: 16px; height: 16px;
+    border-color: var(--text);
+    box-shadow: 0 0 0 3px rgba(246,234,216,.35), var(--glow-cyan);
+  }
   .leaflet-tooltip {
     background: var(--panel) !important; color: var(--text) !important;
     border: 1px solid #2c3e54 !important; font-family: var(--font-mono) !important;
@@ -61,7 +86,21 @@
   }
   .leaflet-tooltip-top:before { border-top-color: #2c3e54 !important; }
 
-  /* Info panel */
+  /* Selection strip: hint text or chips + clear-all */
+  #selectionStrip { margin-top: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .city-chip {
+    display: inline-flex; align-items: center; gap: 4px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 20px; padding: 4px 4px 4px 12px;
+    font-size: 0.78rem; color: var(--text);
+  }
+  .chip-x {
+    background: transparent; border: none; box-shadow: none; color: var(--muted);
+    font-size: 0.95rem; line-height: 1; padding: 2px 8px; cursor: pointer;
+  }
+  .chip-x:hover { color: var(--red); transform: none; box-shadow: none; filter: none; }
+  #clearAllBtn { font-size: 0.58rem; padding: 6px 12px; }
+
+  /* Comparison table */
   .info-panel {
     background: var(--mid); border: 3px solid #2c3e54; border-radius: var(--radius);
     padding: 24px; position: relative;
@@ -71,34 +110,22 @@
       6px 6px 0 rgba(0,0,0,.5);
     animation: fadeIn 0.3s ease;
   }
-  .info-panel-close {
-    position: absolute; top: 12px; right: 12px; background: transparent; border: none;
-    box-shadow: none; color: var(--muted); font-size: 1.5rem; line-height: 1;
-    padding: 4px 10px; cursor: pointer;
+  .table-scroll { overflow-x: auto; }
+  #comparisonTable { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  #comparisonTable th {
+    text-align: left; color: var(--muted); font-size: 0.66rem; text-transform: uppercase;
+    letter-spacing: .05em; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap;
   }
-  .info-panel-close:hover { color: var(--text); transform: none; box-shadow: none; filter: none; }
-  .info-panel-header { margin-bottom: 18px; padding-right: 34px; }
-  .info-panel-header h2 { margin-bottom: 4px; }
-
-  .ov-section + .ov-section { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; }
-  .ov-section-toggle {
-    width: 100%; background: transparent; border: none; box-shadow: none;
-    display: flex; align-items: center; gap: 10px; padding: 0; cursor: pointer;
-    font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; color: var(--text);
-    text-transform: none; letter-spacing: 0;
+  #comparisonTable td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  #comparisonTable tr:last-child td { border-bottom: none; }
+  .table-city-name { font-weight: 700; }
+  .table-city-country { color: var(--muted); font-size: 0.75rem; }
+  .table-remove-btn {
+    background: transparent; border: none; box-shadow: none; color: var(--muted);
+    font-size: 1.1rem; cursor: pointer; padding: 2px 8px; line-height: 1;
   }
-  .ov-section-toggle:hover { transform: none; box-shadow: none; filter: none; color: var(--gold); }
-  .ov-icon { font-size: 1.2rem; }
-  .ov-title { flex: 1; text-align: left; }
-  .ov-chevron { color: var(--muted); transition: transform .2s; }
-  .ov-section.collapsed .ov-chevron { transform: rotate(-90deg); }
-
-  .ov-section-body {
-    display: grid; grid-template-rows: 1fr; transition: grid-template-rows .25s ease;
-  }
-  .ov-section-body > div { min-height: 0; overflow: hidden; }
-  .ov-section.collapsed .ov-section-body { grid-template-rows: 0fr; }
-  .ov-section-content-wrap { padding-top: 14px; }
+  .table-remove-btn:hover { color: var(--red); transform: none; box-shadow: none; filter: none; }
+  .table-note { margin-top: 12px; font-size: 0.7rem; }
 
   .ov-spinner {
     font-size: 0.72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
@@ -108,37 +135,24 @@
 
   .ov-error {
     background: rgba(255,59,92,.1); border: 1px solid var(--red); border-radius: var(--radius);
-    padding: 10px 14px; font-size: 0.82rem; color: var(--red); margin-bottom: 10px;
+    padding: 8px 12px; font-size: 0.78rem; color: var(--red); margin-bottom: 8px;
   }
-  .ov-retry { font-size: 0.58rem; padding: 8px 12px; }
-  .ov-empty { color: var(--muted); font-size: 0.85rem; }
+  .ov-retry { font-size: 0.58rem; padding: 6px 10px; }
+  .ov-empty { color: var(--muted); font-size: 0.82rem; margin: 0; }
 
-  /* Weather-by-month rows */
-  .month-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
-  .month-label {
-    width: 32px; flex-shrink: 0; color: var(--muted);
-    font-family: var(--font-mono); font-size: 0.72rem;
+  /* Beaches cell (native <details> disclosure) */
+  .beaches-details summary {
+    cursor: pointer; color: var(--text); font-family: var(--font-mono); font-size: 0.78rem;
   }
-  .month-bar-track {
-    flex: 1; height: 10px; background: var(--panel); border-radius: 6px;
-    position: relative; overflow: hidden;
-  }
-  .month-bar { position: absolute; top: 0; bottom: 0; border-radius: 6px; background: var(--grad-accent); }
-  .month-stats {
-    font-family: var(--font-mono); font-size: 0.7rem; color: var(--text);
-    white-space: nowrap; flex-shrink: 0;
-  }
-  .month-rain { color: var(--muted); }
-  .weather-note { margin-top: 10px; font-size: 0.72rem; }
-
-  /* Beaches list */
-  .beach-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .beaches-details summary:hover { color: var(--gold); }
+  .beaches-details .beach-list { margin-top: 8px; }
+  .beach-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
   .beach-row {
     display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    font-size: 0.85rem; background: var(--panel); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 8px 12px;
+    font-size: 0.8rem; background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 6px 10px;
   }
-  .beach-dist { color: var(--muted); font-family: var(--font-mono); font-size: 0.75rem; white-space: nowrap; }
+  .beach-dist { color: var(--muted); font-family: var(--font-mono); font-size: 0.72rem; white-space: nowrap; }
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#140a18">
@@ -162,7 +176,7 @@
 
   <section class="hero-plain">
     <h1>🌍 Holiday Planner</h1>
-    <p>Pick a spot on the map, or search any place. See the weather by month and the nearest beaches.</p>
+    <p>Pick spots on the map, or search any place. Compare weather by month and the nearest beaches.</p>
   </section>
 
   <div class="card" id="mapCard">
@@ -171,17 +185,32 @@
       <button class="btn-ghost" id="searchBtn">Search</button>
     </div>
     <div class="search-error" id="searchError"></div>
+
+    <div class="map-controls">
+      <div class="month-select-wrap">
+        <label for="monthFilter">Month</label>
+        <select id="monthFilter"></select>
+        <span id="climateLoadingBadge" hidden>⏳ Loading climate data&hellip;</span>
+      </div>
+      <div class="temp-legend">
+        <span id="tempLegendMin"></span>
+        <div class="temp-legend-gradient" id="tempLegendGradient"></div>
+        <span id="tempLegendMax"></span>
+      </div>
+    </div>
+
     <div id="map"></div>
-    <p class="map-hint muted">Click a marker to open its holiday info card</p>
+
+    <div id="selectionStrip">
+      <p class="map-hint muted">Click markers to add cities to your comparison</p>
+    </div>
   </div>
 
   <aside class="info-panel" id="infoPanel" hidden>
-    <button class="info-panel-close" id="infoPanelClose" aria-label="Close">&times;</button>
-    <div class="info-panel-header">
-      <h2 id="infoCityName"></h2>
-      <p class="muted" id="infoCityCountry"></p>
+    <div class="table-scroll">
+      <table id="comparisonTable"></table>
     </div>
-    <div class="info-panel-sections" id="infoSections"></div>
+    <p class="muted table-note">High / low are 5-yr averages for the selected month &middot; rainfall is a monthly average total &middot; data via Open-Meteo.</p>
   </aside>
 
 </div>
@@ -248,6 +277,56 @@
     { name: 'Lima',             country: 'Peru',            lat: -12.0464, lon: -77.0428 },
   ];
 
+  const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
+  function haversineKm(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.asin(Math.sqrt(a));
+  }
+
+  function climateKey(city) { return `${city.lat.toFixed(2)},${city.lon.toFixed(2)}`; }
+
+  // ── Temperature colour scale (drives both markers and the legend) ──────
+  const TEMP_COLOR_STOPS = [
+    { temp: -10, rgb: [60, 90, 220] },
+    { temp: 0,   rgb: [70, 150, 230] },
+    { temp: 10,  rgb: [80, 200, 190] },
+    { temp: 20,  rgb: [235, 205, 80] },
+    { temp: 28,  rgb: [255, 140, 60] },
+    { temp: 36,  rgb: [225, 50, 50] },
+  ];
+
+  function tempToColor(t) {
+    const stops = TEMP_COLOR_STOPS;
+    const clamped = Math.max(stops[0].temp, Math.min(stops[stops.length - 1].temp, t));
+    for (let i = 0; i < stops.length - 1; i++) {
+      const a = stops[i], b = stops[i + 1];
+      if (clamped >= a.temp && clamped <= b.temp) {
+        const frac = (clamped - a.temp) / (b.temp - a.temp);
+        const rgb = a.rgb.map((v, idx) => Math.round(v + (b.rgb[idx] - v) * frac));
+        return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+      }
+    }
+    return `rgb(${stops[stops.length - 1].rgb.join(',')})`;
+  }
+
+  function buildLegendGradient() {
+    const stops = TEMP_COLOR_STOPS;
+    const min = stops[0].temp, max = stops[stops.length - 1].temp;
+    const parts = stops.map((s) => `${tempToColor(s.temp)} ${(((s.temp - min) / (max - min)) * 100).toFixed(0)}%`);
+    return `linear-gradient(to right, ${parts.join(', ')})`;
+  }
+
   // ── Map setup ────────────────────────────────────────────────────────────
   const map = L.map('map', { worldCopyJump: true }).setView([20, 10], 2);
 
@@ -258,182 +337,212 @@
     detectRetina: true,
   }).addTo(map);
 
-  function makeDotIcon(kind, active) {
+  const markerLayer = L.layerGroup().addTo(map);
+  const allMarkers = new Map();      // climateKey -> { city, marker }
+  const selectedCities = new Map();  // climateKey -> { city, marker }, insertion-ordered
+  const climateCache = new Map();    // climateKey -> { monthly, source, error? }
+  const columnCache = new Map();     // "colId|climateKey" -> rendered HTML
+  let currentMonth = new Date().getMonth();
+  let tableGen = 0;
+
+  function makeDotIcon(kind, selected, hasData, colorCss) {
     const cls = ['city-dot'];
     if (kind === 'search') cls.push('search-pin');
-    if (active) cls.push('active');
-    return L.divIcon({ className: '', html: `<div class="${cls.join(' ')}"></div>`, iconSize: [12, 12] });
+    if (selected) cls.push('selected');
+    if (!hasData) cls.push('no-data');
+    const style = hasData ? ` style="background:${colorCss}"` : '';
+    const size = selected ? 16 : 12;
+    return L.divIcon({ className: '', html: `<div class="${cls.join(' ')}"${style}></div>`, iconSize: [size, size] });
   }
 
-  const markerLayer = L.layerGroup().addTo(map);
-  const cityMarkers = new Map();
-  let activeMarker = null;
-  let searchMarker = null;
-  let selectionGen = 0;
-
-  HOLIDAY_CITIES.forEach((city) => {
-    const marker = L.marker([city.lat, city.lon], { icon: makeDotIcon('city', false) }).addTo(markerLayer);
-    marker.__kind = 'city';
-    marker.bindTooltip(`${city.name}, ${city.country}`, { direction: 'top', offset: [0, -4] });
-    marker.on('click', () => selectCity(city, marker));
-    cityMarkers.set(city.name, marker);
-  });
-
-  function setActiveMarker(marker) {
-    if (activeMarker && activeMarker !== marker) activeMarker.setIcon(makeDotIcon(activeMarker.__kind, false));
-    marker.setIcon(makeDotIcon(marker.__kind, true));
-    activeMarker = marker;
+  function tooltipHTML(city) {
+    const entry = climateCache.get(climateKey(city));
+    if (entry && entry.monthly) {
+      return `${escapeHtml(city.name)}, ${escapeHtml(city.country || '')} &mdash; ${Math.round(entry.monthly[currentMonth].avgHi)}&deg; avg high (${MONTH_NAMES[currentMonth]})`;
+    }
+    return `${escapeHtml(city.name)}, ${escapeHtml(city.country || '')}`;
   }
 
-  // ── Extensible overlay-module registry ──────────────────────────────────
-  // Add a new holiday-info section by appending one entry here — nothing
+  function updateMarkerVisual(marker, city) {
+    const key = climateKey(city);
+    const selected = selectedCities.has(key);
+    const entry = climateCache.get(key);
+    const hasData = !!(entry && entry.monthly);
+    const color = hasData ? tempToColor(entry.monthly[currentMonth].avgHi) : null;
+    marker.setIcon(makeDotIcon(marker.__kind, selected, hasData, color));
+  }
+
+  function registerMarker(city, kind) {
+    const marker = L.marker([city.lat, city.lon], { icon: makeDotIcon(kind, false, false, null) }).addTo(markerLayer);
+    marker.__kind = kind;
+    marker.bindTooltip(tooltipHTML(city), { direction: 'top', offset: [0, -4] });
+    marker.on('click', () => toggleCitySelection(city, marker));
+    allMarkers.set(climateKey(city), { city, marker });
+    return marker;
+  }
+
+  HOLIDAY_CITIES.forEach((city) => registerMarker(city, 'city'));
+
+  // ── Selection state ──────────────────────────────────────────────────────
+  function addSelection(city, marker, opts) {
+    const flyTo = !opts || opts.flyTo !== false;
+    const key = climateKey(city);
+    if (selectedCities.has(key)) return;
+    selectedCities.set(key, { city, marker });
+    updateMarkerVisual(marker, city);
+    if (flyTo) map.flyTo([city.lat, city.lon], Math.max(map.getZoom(), 6), { duration: 0.6 });
+    syncSelectionUI();
+  }
+
+  function removeSelection(city) {
+    const key = climateKey(city);
+    const rec = selectedCities.get(key);
+    if (!rec) return;
+    selectedCities.delete(key);
+    updateMarkerVisual(rec.marker, city);
+    syncSelectionUI();
+  }
+
+  function toggleCitySelection(city, marker) {
+    if (selectedCities.has(climateKey(city))) removeSelection(city);
+    else addSelection(city, marker);
+  }
+
+  function selectFromSearch(city, marker) {
+    if (!selectedCities.has(climateKey(city))) addSelection(city, marker);
+    else map.flyTo([city.lat, city.lon], Math.max(map.getZoom(), 6), { duration: 0.6 });
+  }
+
+  function syncSelectionUI() {
+    renderChips();
+    renderTable();
+  }
+
+  function renderChips() {
+    const strip = document.getElementById('selectionStrip');
+    if (!selectedCities.size) {
+      strip.innerHTML = '<p class="map-hint muted">Click markers to add cities to your comparison</p>';
+      return;
+    }
+    const chips = [...selectedCities.values()].map(({ city }) => `
+      <span class="city-chip" data-key="${climateKey(city)}">
+        ${escapeHtml(city.name)}
+        <button class="chip-x" aria-label="Remove ${escapeHtml(city.name)}">&times;</button>
+      </span>`).join('');
+    strip.innerHTML = `${chips}<button class="btn-ghost" id="clearAllBtn">Clear all</button>`;
+
+    strip.querySelectorAll('.city-chip').forEach((chipEl) => {
+      const rec = selectedCities.get(chipEl.dataset.key);
+      if (!rec) return;
+      chipEl.querySelector('.chip-x').addEventListener('click', () => removeSelection(rec.city));
+    });
+    const clearBtn = document.getElementById('clearAllBtn');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        [...selectedCities.values()].forEach(({ city }) => removeSelection(city));
+      });
+    }
+  }
+
+  // ── Extensible comparison-table column registry ─────────────────────────
+  // Add a new comparison-table column by appending one entry here — nothing
   // else in the page needs to change.
-  const OVERLAY_MODULES = [
-    { id: 'weather', title: 'Average weather by month', icon: '🌤️', render: renderWeatherModule },
-    { id: 'beaches', title: 'Nearby beaches',            icon: '🏖️', render: renderBeachesModule },
+  const TABLE_COLUMNS = [
+    { id: 'city',    title: () => 'City',                                render: cityCellHTML },
+    { id: 'weather', title: () => `Weather (${MONTH_NAMES[currentMonth]})`, render: weatherCellHTML },
+    { id: 'beaches', title: () => 'Beaches', async: true,                 render: renderBeachesCell },
   ];
 
-  const overlayCache = new Map();
-
-  function selectCity(city, marker) {
-    selectionGen++;
-    const gen = selectionGen;
-
-    setActiveMarker(marker);
-    map.flyTo([city.lat, city.lon], Math.max(map.getZoom(), 6), { duration: 0.8 });
-
-    document.getElementById('infoCityName').textContent = city.name;
-    document.getElementById('infoCityCountry').textContent =
-      city.country || `${city.lat.toFixed(2)}, ${city.lon.toFixed(2)}`;
-
-    const infoPanel = document.getElementById('infoPanel');
-    infoPanel.hidden = false;
-
-    const sections = document.getElementById('infoSections');
-    sections.innerHTML = OVERLAY_MODULES.map(sectionSkeletonHTML).join('');
-    OVERLAY_MODULES.forEach((m) => bindSectionToggle(m.id));
-    OVERLAY_MODULES.forEach((m) => loadModule(m, city, gen));
-
-    infoPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  function cityCellHTML(city) {
+    return `<div class="table-city-name">${escapeHtml(city.name)}</div><div class="table-city-country">${escapeHtml(city.country || '')}</div>`;
   }
 
-  function sectionSkeletonHTML(m) {
-    return `
-      <div class="ov-section" data-module="${m.id}">
-        <button class="ov-section-toggle" aria-expanded="true">
-          <span class="ov-icon">${m.icon}</span>
-          <span class="ov-title">${m.title}</span>
-          <span class="ov-chevron">&#9662;</span>
-        </button>
-        <div class="ov-section-body">
-          <div class="ov-section-content-wrap" id="ov-body-${m.id}">
-            <div class="ov-spinner">Loading&hellip;</div>
-          </div>
-        </div>
-      </div>`;
+  function weatherCellHTML(city) {
+    const entry = climateCache.get(climateKey(city));
+    if (!entry) {
+      ensureClimateForCity(city);
+      return '<div class="ov-spinner">Loading&hellip;</div>';
+    }
+    if (entry.source === 'pending') return '<div class="ov-spinner">Loading&hellip;</div>';
+    if (entry.source === 'error' || !entry.monthly) return '<div class="ov-error">Couldn\'t load weather.</div>';
+    const m = entry.monthly[currentMonth];
+    return `${Math.round(m.avgHi)}&deg; / ${Math.round(m.avgLo)}&deg; <span class="muted">&middot; ${Math.round(m.avgRain)}mm</span>`;
   }
 
-  function bindSectionToggle(id) {
-    const section = document.querySelector(`.ov-section[data-module="${id}"]`);
-    const btn = section.querySelector('.ov-section-toggle');
-    btn.addEventListener('click', () => {
-      const collapsed = section.classList.toggle('collapsed');
-      btn.setAttribute('aria-expanded', String(!collapsed));
+  function renderTable() {
+    tableGen++;
+    const gen = tableGen;
+    const panel = document.getElementById('infoPanel');
+    const rows = [...selectedCities.values()];
+
+    if (!rows.length) {
+      panel.hidden = true;
+      return;
+    }
+    panel.hidden = false;
+
+    const theadHtml = `<thead><tr>${TABLE_COLUMNS.map((c) => `<th>${c.title()}</th>`).join('')}<th></th></tr></thead>`;
+    const tbodyHtml = `<tbody>${rows.map(({ city }) => {
+      const key = climateKey(city);
+      const safeId = key.replace(/[^a-z0-9]/gi, '_');
+      const cells = TABLE_COLUMNS.map((col) => {
+        if (col.async) return `<td id="td-${col.id}-${safeId}"><div class="ov-spinner">Loading&hellip;</div></td>`;
+        return `<td>${col.render(city)}</td>`;
+      }).join('');
+      return `<tr data-key="${key}">${cells}<td><button class="table-remove-btn" aria-label="Remove ${escapeHtml(city.name)}">&times;</button></td></tr>`;
+    }).join('')}</tbody>`;
+
+    document.getElementById('comparisonTable').innerHTML = theadHtml + tbodyHtml;
+
+    document.querySelectorAll('#comparisonTable tbody tr').forEach((tr) => {
+      const rec = selectedCities.get(tr.dataset.key);
+      if (!rec) return;
+      tr.querySelector('.table-remove-btn').addEventListener('click', () => removeSelection(rec.city));
+    });
+
+    rows.forEach(({ city }) => {
+      TABLE_COLUMNS.filter((c) => c.async).forEach((col) => loadColumnCell(col, city, gen));
     });
   }
 
-  async function loadModule(m, city, gen) {
-    const key = `${m.id}|${city.name}|${city.lat.toFixed(2)},${city.lon.toFixed(2)}`;
-    const bodyEl = document.getElementById(`ov-body-${m.id}`);
-    if (!bodyEl) return;
+  async function loadColumnCell(col, city, gen) {
+    const key = climateKey(city);
+    const cacheKey = `${col.id}|${key}`;
+    const cellId = `td-${col.id}-${key.replace(/[^a-z0-9]/gi, '_')}`;
 
-    if (overlayCache.has(key)) {
-      if (gen !== selectionGen) return;
-      bodyEl.innerHTML = overlayCache.get(key);
+    function paint(html) {
+      if (gen !== tableGen) return;
+      const cell = document.getElementById(cellId);
+      if (cell) cell.innerHTML = html;
+    }
+
+    if (columnCache.has(cacheKey)) {
+      paint(columnCache.get(cacheKey));
       return;
     }
 
     try {
-      const html = await m.render(city);
-      if (gen !== selectionGen) return;
-      overlayCache.set(key, html);
-      bodyEl.innerHTML = html;
+      const html = await col.render(city);
+      columnCache.set(cacheKey, html);
+      paint(html);
     } catch (err) {
-      if (gen !== selectionGen) return;
-      bodyEl.innerHTML = `
-        <div class="ov-error">Couldn't load this &mdash; ${escapeHtml(err.message || 'network error')}.</div>
-        <button class="btn-ghost ov-retry">Try again</button>`;
-      const retryBtn = bodyEl.querySelector('.ov-retry');
+      paint(`<div class="ov-error">Couldn't load &mdash; ${escapeHtml(err.message || 'network error')}.</div><button class="btn-ghost ov-retry">Try again</button>`);
+      const cell = document.getElementById(cellId);
+      const retryBtn = cell && cell.querySelector('.ov-retry');
       if (retryBtn) {
         retryBtn.addEventListener('click', () => {
-          overlayCache.delete(key);
-          bodyEl.innerHTML = '<div class="ov-spinner">Loading&hellip;</div>';
-          loadModule(m, city, selectionGen);
+          columnCache.delete(cacheKey);
+          paint('<div class="ov-spinner">Loading&hellip;</div>');
+          loadColumnCell(col, city, tableGen);
         });
       }
     }
   }
 
-  // ── Weather-by-month overlay ────────────────────────────────────────────
-  const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-  async function renderWeatherModule(city) {
-    const endYear = new Date().getFullYear() - 1; // last complete calendar year
-    const startYear = endYear - 4;                // 5 years total
-    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${city.lat}&longitude=${city.lon}` +
-      `&start_date=${startYear}-01-01&end_date=${endYear}-12-31` +
-      `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
-
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`weather API returned ${resp.status}`);
-    const data = await resp.json();
-    const daily = data.daily;
-    if (!daily || !daily.time || !daily.time.length) throw new Error('no weather data available');
-
-    const buckets = Array.from({ length: 12 }, () => ({ hiSum: 0, loSum: 0, days: 0, yearRain: {} }));
-    daily.time.forEach((t, i) => {
-      const [year, monthStr] = t.split('-');
-      const month = parseInt(monthStr, 10) - 1;
-      const b = buckets[month];
-      b.hiSum += daily.temperature_2m_max[i];
-      b.loSum += daily.temperature_2m_min[i];
-      b.days += 1;
-      b.yearRain[year] = (b.yearRain[year] || 0) + (daily.precipitation_sum[i] || 0);
-    });
-
-    const monthly = buckets.map((b) => {
-      const yearTotals = Object.values(b.yearRain);
-      return {
-        avgHi: b.hiSum / b.days,
-        avgLo: b.loSum / b.days,
-        avgRain: yearTotals.reduce((a, v) => a + v, 0) / yearTotals.length,
-      };
-    });
-
-    const maxHi = Math.max(...monthly.map((m) => m.avgHi));
-    const minLo = Math.min(...monthly.map((m) => m.avgLo));
-    const span = Math.max(1, maxHi - minLo);
-
-    const rows = monthly.map((m, i) => {
-      const leftPct = ((m.avgLo - minLo) / span) * 100;
-      const widthPct = Math.max(((m.avgHi - m.avgLo) / span) * 100, 4);
-      return `
-        <div class="month-row">
-          <span class="month-label">${MONTH_NAMES[i]}</span>
-          <div class="month-bar-track">
-            <div class="month-bar" style="left:${leftPct.toFixed(1)}%;width:${widthPct.toFixed(1)}%"></div>
-          </div>
-          <span class="month-stats">${Math.round(m.avgHi)}&deg; / ${Math.round(m.avgLo)}&deg;<span class="month-rain"> &middot; ${Math.round(m.avgRain)}mm</span></span>
-        </div>`;
-    }).join('');
-
-    return `${rows}<p class="muted weather-note">${startYear}&ndash;${endYear} average &middot; high / low &deg;C and monthly rainfall</p>`;
-  }
-
-  // ── Beaches overlay ──────────────────────────────────────────────────────
+  // ── Beaches column (Overpass, lazy per selected city) ───────────────────
   const BEACH_RADIUS_M = 50000;
 
-  async function renderBeachesModule(city) {
+  async function fetchBeaches(city) {
     const query = `[out:json][timeout:25];` +
       `(node["natural"="beach"](around:${BEACH_RADIUS_M},${city.lat},${city.lon});` +
       `way["natural"="beach"](around:${BEACH_RADIUS_M},${city.lat},${city.lon}););` +
@@ -455,7 +564,7 @@
     if (!resp.ok) throw new Error(`beaches API returned ${resp.status}`);
     const data = await resp.json();
 
-    const beaches = (data.elements || [])
+    return (data.elements || [])
       .map((el) => {
         const lat = el.type === 'node' ? el.lat : el.center && el.center.lat;
         const lon = el.type === 'node' ? el.lon : el.center && el.center.lon;
@@ -468,34 +577,197 @@
       .filter(Boolean)
       .sort((a, b) => a.distanceKm - b.distanceKm)
       .slice(0, 10);
+  }
 
+  async function renderBeachesCell(city) {
+    const beaches = await fetchBeaches(city);
     if (!beaches.length) {
-      return `<p class="ov-empty">No beaches found within ${BEACH_RADIUS_M / 1000} km &mdash; ${escapeHtml(city.name)} looks landlocked. 🏔️</p>`;
+      return `<p class="ov-empty">No beaches within ${BEACH_RADIUS_M / 1000}km 🏔️</p>`;
     }
-
+    const nearest = beaches[0];
     const rows = beaches.map((b) => `
       <li class="beach-row">
         <span>🏖️ ${escapeHtml(b.name)}</span>
         <span class="beach-dist">${b.distanceKm.toFixed(1)} km</span>
       </li>`).join('');
-
-    return `<ul class="beach-list">${rows}</ul>`;
+    return `
+      <details class="beaches-details">
+        <summary>🏖️ ${escapeHtml(nearest.name)} &middot; ${nearest.distanceKm.toFixed(1)} km</summary>
+        <ul class="beach-list">${rows}</ul>
+      </details>`;
   }
 
-  function haversineKm(lat1, lon1, lat2, lon2) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.asin(Math.sqrt(a));
+  // ── Climate data: shared aggregation + eager batched pre-fetch ─────────
+  function climateYearRange() {
+    const endYear = new Date().getFullYear() - 1; // last complete calendar year
+    return { startYear: endYear - 4, endYear };    // 5 years total
   }
 
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (c) => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-    }[c]));
+  function aggregateMonthly(daily) {
+    const buckets = Array.from({ length: 12 }, () => ({ hiSum: 0, loSum: 0, days: 0, yearRain: {} }));
+    daily.time.forEach((t, i) => {
+      const [year, monthStr] = t.split('-');
+      const month = parseInt(monthStr, 10) - 1;
+      const b = buckets[month];
+      b.hiSum += daily.temperature_2m_max[i];
+      b.loSum += daily.temperature_2m_min[i];
+      b.days += 1;
+      b.yearRain[year] = (b.yearRain[year] || 0) + (daily.precipitation_sum[i] || 0);
+    });
+    return buckets.map((b) => {
+      const yearTotals = Object.values(b.yearRain);
+      return {
+        avgHi: b.hiSum / b.days,
+        avgLo: b.loSum / b.days,
+        avgRain: yearTotals.length ? yearTotals.reduce((a, v) => a + v, 0) / yearTotals.length : 0,
+      };
+    });
   }
+
+  function setClimateEntry(city, entry) {
+    climateCache.set(climateKey(city), entry);
+    const rec = allMarkers.get(climateKey(city));
+    if (rec) {
+      updateMarkerVisual(rec.marker, city);
+      rec.marker.setTooltipContent(tooltipHTML(city));
+    }
+    if (selectedCities.has(climateKey(city))) renderTable();
+  }
+
+  async function ensureClimateForCity(city) {
+    const key = climateKey(city);
+    if (climateCache.has(key)) return;
+    climateCache.set(key, { source: 'pending' });
+    try {
+      const r = await fetchClimateForOne(city);
+      setClimateEntry(city, r);
+    } catch (err) {
+      setClimateEntry(city, { source: 'error', error: err.message || 'network error' });
+    }
+  }
+
+  async function fetchClimateForOne(city) {
+    const { startYear, endYear } = climateYearRange();
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${city.lat}&longitude=${city.lon}` +
+      `&start_date=${startYear}-01-01&end_date=${endYear}-12-31` +
+      `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`weather API returned ${resp.status}`);
+    const data = await resp.json();
+    if (!data.daily || !data.daily.time || !data.daily.time.length) throw new Error('no weather data available');
+    return { monthly: aggregateMonthly(data.daily), startYear, endYear, source: 'individual' };
+  }
+
+  async function fetchClimateBatch(cities) {
+    const { startYear, endYear } = climateYearRange();
+    const lats = cities.map((c) => c.lat).join(',');
+    const lons = cities.map((c) => c.lon).join(',');
+    const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${lats}&longitude=${lons}` +
+      `&start_date=${startYear}-01-01&end_date=${endYear}-12-31` +
+      `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`batch weather API returned ${resp.status}`);
+    const data = await resp.json();
+    if (!Array.isArray(data) || data.length !== cities.length) throw new Error('unexpected batch response shape');
+    return data.map((entry) => {
+      if (!entry.daily || !entry.daily.time || !entry.daily.time.length) return null;
+      return { monthly: aggregateMonthly(entry.daily), startYear, endYear };
+    });
+  }
+
+  async function runPool(items, concurrency, worker) {
+    let idx = 0;
+    const runners = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+      while (idx < items.length) {
+        const i = idx++;
+        await worker(items[i]);
+      }
+    });
+    await Promise.all(runners);
+  }
+
+  async function loadAllClimateEager() {
+    const badge = document.getElementById('climateLoadingBadge');
+    if (badge) badge.hidden = false;
+
+    let remaining = HOLIDAY_CITIES.slice();
+
+    // Tier 1: one batched request for every curated city.
+    try {
+      const results = await fetchClimateBatch(remaining);
+      const stillMissing = [];
+      remaining.forEach((city, i) => {
+        const r = results[i];
+        if (r) setClimateEntry(city, { ...r, source: 'batch' });
+        else stillMissing.push(city);
+      });
+      remaining = stillMissing;
+    } catch (err) {
+      // Whole batch failed (unsupported, non-OK, network error) — everyone
+      // falls through to the chunked tier untouched.
+    }
+
+    // Tier 2: smaller batched chunks for whatever's still missing.
+    if (remaining.length) {
+      const CHUNK_SIZE = 10;
+      const chunks = [];
+      for (let i = 0; i < remaining.length; i += CHUNK_SIZE) chunks.push(remaining.slice(i, i + CHUNK_SIZE));
+      const chunkResults = await Promise.allSettled(chunks.map((chunk) => fetchClimateBatch(chunk)));
+      const stillMissing = [];
+      chunks.forEach((chunk, ci) => {
+        const outcome = chunkResults[ci];
+        if (outcome.status === 'fulfilled') {
+          chunk.forEach((city, i) => {
+            const r = outcome.value[i];
+            if (r) setClimateEntry(city, { ...r, source: 'chunk' });
+            else stillMissing.push(city);
+          });
+        } else {
+          stillMissing.push(...chunk);
+        }
+      });
+      remaining = stillMissing;
+    }
+
+    // Tier 3: bounded-concurrency individual fetches for the rest. Also the
+    // function reused for ad-hoc/searched cities via ensureClimateForCity.
+    if (remaining.length) {
+      await runPool(remaining, 6, async (city) => {
+        try {
+          const r = await fetchClimateForOne(city);
+          setClimateEntry(city, r);
+        } catch (err) {
+          setClimateEntry(city, { source: 'error', error: err.message || 'network error' });
+        }
+      });
+    }
+
+    if (badge) badge.hidden = true;
+  }
+
+  // ── Month filter ─────────────────────────────────────────────────────────
+  const monthFilter = document.getElementById('monthFilter');
+  monthFilter.innerHTML = MONTH_NAMES.map((m, i) => `<option value="${i}">${m}</option>`).join('');
+  monthFilter.value = String(currentMonth);
+
+  function recolorAllMarkers() {
+    allMarkers.forEach(({ city, marker }) => updateMarkerVisual(marker, city));
+  }
+  function refreshAllTooltips() {
+    allMarkers.forEach(({ city, marker }) => marker.setTooltipContent(tooltipHTML(city)));
+  }
+
+  monthFilter.addEventListener('change', () => {
+    currentMonth = parseInt(monthFilter.value, 10);
+    recolorAllMarkers();
+    refreshAllTooltips();
+    renderTable();
+  });
+
+  // ── Legend ───────────────────────────────────────────────────────────────
+  document.getElementById('tempLegendGradient').style.background = buildLegendGradient();
+  document.getElementById('tempLegendMin').textContent = `${TEMP_COLOR_STOPS[0].temp}°`;
+  document.getElementById('tempLegendMax').textContent = `${TEMP_COLOR_STOPS[TEMP_COLOR_STOPS.length - 1].temp}°+`;
 
   // ── Search box (Nominatim) ──────────────────────────────────────────────
   const searchInput = document.getElementById('citySearch');
@@ -523,20 +795,30 @@
 
       const curated = HOLIDAY_CITIES.find((c) => haversineKm(c.lat, c.lon, lat, lon) < 25);
       if (curated) {
-        selectCity(curated, cityMarkers.get(curated.name));
+        const rec = allMarkers.get(climateKey(curated));
+        selectFromSearch(curated, rec.marker);
         return;
       }
 
       const parts = (r.display_name || q).split(',').map((p) => p.trim());
       const adhocCity = { name: parts[0], country: parts[parts.length - 1] || '', lat, lon };
+      const key = climateKey(adhocCity);
 
-      if (searchMarker) markerLayer.removeLayer(searchMarker);
-      searchMarker = L.marker([lat, lon], { icon: makeDotIcon('search', false) }).addTo(markerLayer);
-      searchMarker.__kind = 'search';
-      searchMarker.bindTooltip(adhocCity.name, { direction: 'top', offset: [0, -4] });
-      searchMarker.on('click', () => selectCity(adhocCity, searchMarker));
+      let rec = allMarkers.get(key);
+      if (!rec) {
+        // Drop any stale, unselected search pins before adding a new one.
+        [...allMarkers.entries()].forEach(([k, entry]) => {
+          if (entry.marker.__kind === 'search' && !selectedCities.has(k)) {
+            markerLayer.removeLayer(entry.marker);
+            allMarkers.delete(k);
+          }
+        });
+        const marker = registerMarker(adhocCity, 'search');
+        ensureClimateForCity(adhocCity);
+        rec = { city: adhocCity, marker };
+      }
 
-      selectCity(adhocCity, searchMarker);
+      selectFromSearch(rec.city, rec.marker);
     } catch (err) {
       searchError.textContent = 'Search failed — try again.';
       searchError.classList.add('show');
@@ -548,9 +830,9 @@
   searchBtn.addEventListener('click', runSearch);
   searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
 
-  document.getElementById('infoPanelClose').addEventListener('click', () => {
-    document.getElementById('infoPanel').hidden = true;
-  });
+  // ── Init ─────────────────────────────────────────────────────────────────
+  renderChips();
+  loadAllClimateEager();
 </script>
 <script src="js/pwa.js"></script>
 </body>
