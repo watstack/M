@@ -1,0 +1,2632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<title>Decorator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --paper:  #efece5;
+    --canvas: #ffffff;
+    --panel:  #ffffff;
+    --ink:    #23262b;
+    --muted:  #767c85;
+    --line:   #dcd7cc;
+    --line-2: #eceae4;
+    --accent: #2f6f8f;
+    --accent-soft: #e2eef4;
+    --warn:   #b5563f;
+    --radius: 8px;
+    --topbar-h: 52px;
+    --mobilebar-h: 58px;
+  }
+
+  html, body { height: 100%; overscroll-behavior: none; }
+
+  body {
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 14px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ------------------------------------------------------------- layout -- */
+
+  .app {
+    height: 100dvh;
+    display: grid;
+    grid-template-columns: 260px 1fr 290px;
+    grid-template-rows: var(--topbar-h) 1fr;
+    grid-template-areas:
+      "topbar topbar topbar"
+      "left   stage  right";
+  }
+
+  .topbar {
+    grid-area: topbar;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--line);
+    min-width: 0;
+    overflow: hidden;
+  }
+  .topbar > * { flex: 0 0 auto; }
+
+  .brand {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    margin-right: 4px;
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .brand span { color: var(--accent); }
+
+  .stage {
+    grid-area: stage;
+    position: relative;
+    background: var(--canvas);
+    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  #canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+    cursor: grab;
+  }
+  #canvas.is-dragging { cursor: grabbing; }
+
+  /* The dock holds both panels. On desktop `display:contents` lets them fall
+     into the grid as sidebars; on mobile it becomes one slide-up drawer. */
+  .dock { display: contents; }
+
+  .panel {
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    min-height: 0;
+  }
+  #panelCatalog  { grid-area: left; }
+  #panelInspector{ grid-area: right; border-right: 0; border-left: 1px solid var(--line); }
+
+  .dock-handle, .dock-tabs, .mobilebar { display: none; }
+
+  /* -------------------------------------------------------------- pieces -- */
+
+  .seg {
+    display: inline-flex;
+    background: var(--line-2);
+    border-radius: 6px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .seg button {
+    font: inherit;
+    font-size: 13px;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    padding: 6px 11px;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .seg button[aria-pressed="true"] { background: var(--panel); color: var(--ink); font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+
+  .btn {
+    font: inherit;
+    font-size: 13px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    padding: 7px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    min-height: 34px;
+  }
+  .btn:hover:not(:disabled) { background: var(--line-2); }
+  .btn:disabled { opacity: .4; cursor: default; }
+  .btn--primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn--primary:hover:not(:disabled) { background: #27607c; }
+  .btn--danger { color: var(--warn); }
+  .btn--icon { padding: 7px 9px; min-width: 34px; }
+  .btn--block { display: block; width: 100%; }
+
+  .spacer { flex: 1 1 auto; }
+
+  .section { padding: 12px; border-bottom: 1px solid var(--line-2); }
+  .section:last-child { border-bottom: 0; }
+
+  .section h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--muted);
+    font-weight: 700;
+    margin-bottom: 9px;
+  }
+
+  .hint { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  .cat-group { margin-bottom: 12px; }
+  .cat-group:last-child { margin-bottom: 0; }
+  .cat-group > h3 {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--muted);
+  }
+  .cat-list { display: flex; flex-direction: column; gap: 4px; }
+
+  .cat-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    font: inherit;
+    font-size: 13px;
+    text-align: left;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--ink);
+    padding: 7px 8px;
+    border-radius: 6px;
+    cursor: grab;
+    touch-action: none;
+    min-height: 38px;
+  }
+  .cat-item:hover { background: var(--accent-soft); border-color: #cfe2ea; }
+  .cat-item .sw {
+    width: 22px; height: 16px;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,.22);
+    flex: 0 0 auto;
+  }
+  .cat-item .sw.round { border-radius: 50%; width: 18px; height: 18px; }
+  .cat-item .dims { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+
+  .rows { display: flex; flex-direction: column; gap: 9px; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .row label { font-size: 12px; color: var(--muted); flex: 0 0 62px; }
+  .row.wide label { flex: 0 0 auto; }
+
+  input[type="text"], input[type="number"], select {
+    font: inherit;
+    font-size: 13px;
+    padding: 7px 8px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--ink);
+    width: 100%;
+    min-width: 0;
+    min-height: 34px;
+  }
+  input[type="color"] {
+    width: 42px; height: 34px; padding: 2px;
+    border: 1px solid var(--line); border-radius: 6px; background: var(--panel); cursor: pointer;
+  }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  input:focus-visible, select:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px;
+  }
+
+  .check { display: flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; min-height: 32px; }
+  .check input { width: 16px; height: 16px; accent-color: var(--accent); }
+
+  .swatches { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .swatches button {
+    aspect-ratio: 1;
+    border: 1px solid rgba(0,0,0,.18);
+    border-radius: 5px;
+    cursor: pointer;
+    padding: 0;
+  }
+  .swatches button[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .wall-list { display: flex; flex-direction: column; gap: 3px; max-height: 260px; overflow-y: auto; }
+  .wall-list button {
+    font: inherit; font-size: 13px; text-align: left;
+    border: 1px solid transparent; background: transparent; color: var(--ink);
+    padding: 7px 8px; border-radius: 6px; cursor: pointer; min-height: 36px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .wall-list button:hover { background: var(--accent-soft); }
+  .wall-list button[aria-pressed="true"] { background: var(--accent-soft); border-color: #cfe2ea; font-weight: 500; }
+  .wall-list .len { margin-left: auto; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); }
+
+  .stage-hud {
+    position: absolute;
+    left: 12px; bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,.92);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 6px 9px;
+    backdrop-filter: blur(3px);
+    pointer-events: none;
+  }
+  .compass {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    border-left: 1px solid var(--line);
+    padding-left: 10px;
+    white-space: nowrap;
+  }
+
+  .scalebar { pointer-events: none; }
+  .scalebar .bar { height: 6px; border: 1px solid var(--ink); border-top: 0; }
+  .scalebar .txt { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .zoomers {
+    position: absolute; right: 12px; bottom: 12px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .zoomers .btn { box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+
+  .toast {
+    position: absolute;
+    left: 50%; transform: translateX(-50%);
+    top: 12px;
+    background: var(--ink); color: #fff;
+    padding: 9px 14px; border-radius: 7px;
+    font-size: 13px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .18s ease;
+    max-width: min(90%, 460px);
+    z-index: 40;
+  }
+  .toast.show { opacity: 1; }
+
+  dialog {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 0;
+    max-width: 400px;
+    width: calc(100% - 32px);
+    color: var(--ink);
+    background: var(--panel);
+  }
+  dialog::backdrop { background: rgba(20,20,24,.42); }
+  dialog h2 { font-size: 16px; padding: 16px 16px 0; }
+  dialog .body { padding: 14px 16px; }
+  dialog .foot { display: flex; gap: 8px; justify-content: flex-end; padding: 0 16px 16px; }
+  .err { color: var(--warn); font-size: 12px; min-height: 16px; margin-top: 6px; }
+
+  .menu-wrap { position: relative; }
+  .menu {
+    position: absolute; right: 0; top: calc(100% + 6px);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.14);
+    padding: 5px;
+    min-width: 200px;
+    z-index: 30;
+  }
+  .menu button {
+    display: block; width: 100%; text-align: left;
+    font: inherit; font-size: 13px;
+    border: 0; background: transparent; color: var(--ink);
+    padding: 9px 10px; border-radius: 5px; cursor: pointer; min-height: 38px;
+  }
+  .menu button:hover { background: var(--line-2); }
+  .menu hr { border: 0; border-top: 1px solid var(--line-2); margin: 5px 0; }
+
+  .only-mobile { display: none; }
+
+  /* ------------------------------------------------------------- mobile -- */
+
+  @media (max-width: 899px) {
+    .app {
+      grid-template-columns: 1fr;
+      grid-template-rows: var(--topbar-h) 1fr var(--mobilebar-h);
+      grid-template-areas:
+        "topbar"
+        "stage"
+        "mobilebar";
+    }
+
+    .only-mobile { display: initial; }
+    .no-mobile { display: none !important; }
+
+    /* Everything in the top bar has to fit 390px without a horizontal scroll. */
+    .topbar { gap: 7px; padding: 0 8px; }
+    .brand { display: none; }
+    #floorSelect { min-width: 0 !important; max-width: 124px; flex: 0 1 auto; }
+    .topbar .seg button { padding: 6px 9px; }
+
+    /* One bottom sheet holding every panel. */
+    .dock {
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      height: 86dvh;
+      background: var(--panel);
+      border-top: 1px solid var(--line);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -6px 28px rgba(0,0,0,.16);
+      z-index: 25;
+      transform: translateY(var(--dock-y, 100%));
+      transition: transform .26s cubic-bezier(.22,.61,.36,1);
+      touch-action: none;
+    }
+    .dock.is-dragging { transition: none; }
+    .dock[data-state="closed"] { --dock-y: 100%; }
+    .dock[data-state="peek"]   { --dock-y: 56%; }
+    .dock[data-state="full"]   { --dock-y: 0%; }
+
+    .dock-handle {
+      display: block;
+      padding: 9px 0 5px;
+      flex: 0 0 auto;
+      cursor: grab;
+    }
+    .dock-handle::before {
+      content: "";
+      display: block;
+      width: 40px; height: 4px;
+      margin: 0 auto;
+      border-radius: 2px;
+      background: var(--line);
+    }
+
+    .dock-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 4px 10px 9px;
+      border-bottom: 1px solid var(--line-2);
+      flex: 0 0 auto;
+      overflow-x: auto;
+    }
+    .dock-tabs button {
+      font: inherit; font-size: 13px;
+      border: 0; background: transparent; color: var(--muted);
+      padding: 7px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap;
+      min-height: 36px;
+    }
+    .dock-tabs button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+
+    .panel {
+      border: 0 !important;
+      flex: 1 1 auto;
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+    .panel[hidden] { display: none; }
+
+    .mobilebar {
+      grid-area: mobilebar;
+      display: flex;
+      align-items: stretch;
+      background: var(--panel);
+      border-top: 1px solid var(--line);
+      padding-bottom: env(safe-area-inset-bottom);
+      z-index: 26;
+    }
+    .mobilebar button {
+      flex: 1 1 0;
+      font: inherit; font-size: 11px;
+      border: 0; background: transparent; color: var(--muted);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      cursor: pointer; min-height: 44px;
+    }
+    .mobilebar button[aria-pressed="true"] { color: var(--accent); }
+    .mobilebar .ic { font-size: 17px; line-height: 1; }
+
+    .stage-hud { left: 8px; bottom: 8px; padding: 5px 8px; }
+    .zoomers { right: 8px; bottom: 8px; }
+    .swatches { grid-template-columns: repeat(7, 1fr); }
+    .row label { flex: 0 0 74px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dock { transition: none; }
+    .toast { transition: none; }
+  }
+</style>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#140a18">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kickoff">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="icon" href="assets/icons/favicon.png">
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">Decor<span>ator</span></div>
+
+    <select id="floorSelect" style="width:auto;min-width:112px" aria-label="Floor"></select>
+
+    <div class="seg" role="group" aria-label="View">
+      <button type="button" id="modePlan" aria-pressed="true">Plan</button>
+      <button type="button" id="modeElev" aria-pressed="false">Wall</button>
+    </div>
+
+    <div class="spacer"></div>
+
+    <button type="button" class="btn btn--icon" id="undoBtn" title="Undo (Ctrl+Z)" aria-label="Undo">↺</button>
+    <button type="button" class="btn btn--icon" id="redoBtn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">↻</button>
+
+    <div class="menu-wrap no-mobile">
+      <button type="button" class="btn" id="menuBtn" aria-expanded="false">File</button>
+    </div>
+  </header>
+
+  <main class="stage">
+    <svg id="canvas" role="img" aria-label="Floor plan"></svg>
+
+    <div class="stage-hud">
+      <div class="scalebar">
+        <div class="bar" id="scaleBar" style="width:80px"></div>
+        <div class="txt" id="scaleTxt">1 m</div>
+      </div>
+      <div class="compass" id="compass" title="North points right on this plan">N&nbsp;→</div>
+    </div>
+
+    <div class="zoomers">
+      <button type="button" class="btn btn--icon" id="zoomIn" aria-label="Zoom in">+</button>
+      <button type="button" class="btn btn--icon" id="zoomOut" aria-label="Zoom out">−</button>
+      <button type="button" class="btn btn--icon" id="zoomFit" aria-label="Fit to view" title="Fit">⤢</button>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <div class="dock" id="dock" data-state="closed">
+    <div class="dock-handle" id="dockHandle" role="button" tabindex="-1" aria-label="Resize panel"></div>
+    <div class="dock-tabs" id="dockTabs">
+      <button type="button" data-tab="catalog" aria-pressed="true">Add</button>
+      <button type="button" data-tab="inspector" aria-pressed="false">Properties</button>
+    </div>
+
+    <aside class="panel" id="panelCatalog">
+      <div class="section">
+        <h2>Add furniture</h2>
+        <p class="hint" id="catalogHint">Tap to drop into the middle of the view, or drag straight onto the plan.</p>
+        <button type="button" class="btn btn--primary btn--block" id="addCustomBtn" style="margin-top:9px">+ New piece from dimensions</button>
+      </div>
+      <div class="section" id="catalogBody"></div>
+    </aside>
+
+    <aside class="panel" id="panelInspector">
+      <div id="inspectorBody"></div>
+    </aside>
+  </div>
+
+  <nav class="mobilebar" id="mobilebar" aria-label="Tools">
+    <button type="button" data-open="catalog"><span class="ic">＋</span>Add</button>
+    <button type="button" data-open="inspector"><span class="ic">⚙</span>Properties</button>
+    <button type="button" data-open="walls"><span class="ic">▤</span>Walls</button>
+    <button type="button" data-open="file"><span class="ic">⤓</span>File</button>
+  </nav>
+</div>
+
+<dialog id="addDialog">
+  <h2>New piece of furniture</h2>
+  <form method="dialog" class="body" id="addForm">
+    <div class="rows">
+      <div class="row"><label for="fName">Name</label><input type="text" id="fName" required placeholder="Hall bench"></div>
+      <div class="row"><label for="fW">Width</label><input type="number" id="fW" min="1" step="10" value="1000" required><span class="hint">mm</span></div>
+      <div class="row"><label for="fD">Depth</label><input type="number" id="fD" min="1" step="10" value="500" required><span class="hint">mm</span></div>
+      <div class="row"><label for="fH">Height</label><input type="number" id="fH" min="1" step="10" value="750" required><span class="hint">mm</span></div>
+      <div class="row"><label for="fShape">Shape</label>
+        <select id="fShape"><option value="rect">Rectangle</option><option value="ellipse">Round / oval</option></select>
+      </div>
+      <div class="row"><label for="fColor">Colour</label><input type="color" id="fColor" value="#b9b2a4"></div>
+    </div>
+    <p class="err" id="addErr"></p>
+  </form>
+  <div class="foot">
+    <button type="button" class="btn" id="addCancel">Cancel</button>
+    <button type="button" class="btn btn--primary" id="addSave">Add to plan</button>
+  </div>
+</dialog>
+
+<input type="file" id="fileInput" accept="application/json,.json" hidden>
+
+<script src="js/decorator-house.js?v=17891724"></script>
+<script src="js/decorator-catalog.js?v=17891724"></script>
+<script src="js/decorator-model.js?v=17891724"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ===================================================================== *
+   *  State
+   * ===================================================================== */
+
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  var XLINKNS = 'http://www.w3.org/1999/xlink';
+
+  var design = loadDesign() || defaultDesign();
+  var undoStack = [];
+  var redoStack = [];
+  var UNDO_LIMIT = 60;
+
+  /* viewBox in millimetres */
+  var vb = { x: -3500, y: -3000, w: 14000, h: 22000 };
+
+  /* selection: {kind:'item'|'elev'|'wall'|null, id} */
+  var sel = { kind: null, id: null };
+  var editWalls = false;
+  var saveTimer = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var canvas = $('canvas');
+  var dock = $('dock');
+
+  function currentFloor() { return findFloor(design, design.view.floorId) || design.house.floors[0]; }
+  function currentWall() {
+    var f = currentFloor();
+    return findWall(f, design.view.wallId);
+  }
+  function isMobile() { return window.matchMedia('(max-width: 899px)').matches; }
+
+  /* ===================================================================== *
+   *  Undo / autosave
+   * ===================================================================== */
+
+  function pushUndo() {
+    undoStack.push(JSON.stringify(design));
+    if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+    redoStack.length = 0;
+    updateUndoButtons();
+  }
+
+  function applySnapshot(json) {
+    try {
+      design = deserializeDesign(json);
+    } catch (e) {
+      return false;
+    }
+    sel = { kind: null, id: null };
+    return true;
+  }
+
+  function undo() {
+    if (!undoStack.length) return;
+    var snap = undoStack.pop();
+    redoStack.push(JSON.stringify(design));
+    applySnapshot(snap);
+    updateUndoButtons();
+    renderAll();
+    scheduleSave();
+  }
+
+  function redo() {
+    if (!redoStack.length) return;
+    var snap = redoStack.pop();
+    undoStack.push(JSON.stringify(design));
+    applySnapshot(snap);
+    updateUndoButtons();
+    renderAll();
+    scheduleSave();
+  }
+
+  function updateUndoButtons() {
+    $('undoBtn').disabled = !undoStack.length;
+    $('redoBtn').disabled = !redoStack.length;
+  }
+
+  function scheduleSave() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      saveTimer = null;
+      if (!saveDesign(design)) toast('Could not save to this browser — use File → Save to a file.');
+    }, 400);
+  }
+
+  /* Write immediately rather than waiting out the debounce — a tab can be
+     closed or backgrounded inside those 400ms and the work would be lost. */
+  function flushSave() {
+    if (!saveTimer) return;
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    saveDesign(design);
+  }
+  window.addEventListener('pagehide', flushSave);
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') flushSave();
+  });
+
+  var toastTimer = null;
+  function toast(message) {
+    var el = $('toast');
+    el.textContent = message;
+    el.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2600);
+  }
+
+  /* ===================================================================== *
+   *  SVG helpers
+   * ===================================================================== */
+
+  function el(name, attrs, parent) {
+    var node = document.createElementNS(SVGNS, name);
+    if (attrs) {
+      for (var k in attrs) {
+        if (Object.prototype.hasOwnProperty.call(attrs, k) && attrs[k] != null) {
+          node.setAttribute(k, String(attrs[k]));
+        }
+      }
+    }
+    if (parent) parent.appendChild(node);
+    return node;
+  }
+
+  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+  /* Screen pixels → viewBox millimetres. */
+  function toLocal(clientX, clientY) {
+    var ctm = canvas.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0 };
+    var inv = ctm.inverse();
+    var pt = canvas.createSVGPoint ? canvas.createSVGPoint() : new DOMPoint();
+    pt.x = clientX; pt.y = clientY;
+    var out = pt.matrixTransform ? pt.matrixTransform(inv) : { x: 0, y: 0 };
+    return { x: out.x, y: out.y };
+  }
+
+  function mmPerPixel() {
+    var rect = canvas.getBoundingClientRect();
+    if (!rect.width) return 1;
+    return vb.w / rect.width;
+  }
+
+  function applyViewBox() {
+    canvas.setAttribute('viewBox', vb.x + ' ' + vb.y + ' ' + vb.w + ' ' + vb.h);
+    canvas.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  }
+
+  /* Keep the viewBox aspect matched to the element so nothing is stretched. */
+  function syncAspect(keepCentre) {
+    var rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    var target = rect.width / rect.height;
+    var cx = vb.x + vb.w / 2;
+    var cy = vb.y + vb.h / 2;
+    var current = vb.w / vb.h;
+    if (Math.abs(current - target) < 1e-6) return;
+    if (current < target) vb.w = vb.h * target;
+    else vb.h = vb.w / target;
+    if (keepCentre !== false) {
+      vb.x = cx - vb.w / 2;
+      vb.y = cy - vb.h / 2;
+    }
+    applyViewBox();
+  }
+
+  function fitTo(bounds, pad) {
+    var margin = pad == null ? 1500 : pad;
+    var w = Math.max(bounds.maxX - bounds.minX, 1) + margin * 2;
+    var h = Math.max(bounds.maxY - bounds.minY, 1) + margin * 2;
+    vb.x = bounds.minX - margin;
+    vb.y = bounds.minY - margin;
+    vb.w = w;
+    vb.h = h;
+    syncAspect(true);
+    applyViewBox();
+    updateScaleBar();
+  }
+
+  function zoomBy(factor, anchorX, anchorY) {
+    var ax = anchorX == null ? vb.x + vb.w / 2 : anchorX;
+    var ay = anchorY == null ? vb.y + vb.h / 2 : anchorY;
+    var nw = Math.min(Math.max(vb.w * factor, 600), 200000);
+    var scale = nw / vb.w;
+    vb.x = ax - (ax - vb.x) * scale;
+    vb.y = ay - (ay - vb.y) * scale;
+    vb.w = nw;
+    vb.h = vb.h * scale;
+    applyViewBox();
+    updateScaleBar();
+  }
+
+  function updateScaleBar() {
+    var mmpp = mmPerPixel();
+    var steps = [100, 250, 500, 1000, 2000, 5000, 10000, 20000];
+    var chosen = steps[steps.length - 1];
+    for (var i = 0; i < steps.length; i++) {
+      if (steps[i] / mmpp >= 55) { chosen = steps[i]; break; }
+    }
+    $('scaleBar').style.width = Math.round(chosen / mmpp) + 'px';
+    $('scaleTxt').textContent = chosen >= 1000 ? (chosen / 1000) + ' m' : chosen + ' mm';
+  }
+
+  /* ===================================================================== *
+   *  Plan rendering
+   * ===================================================================== */
+
+  var ROOM_FILL = {
+    room: '#fbfaf7',
+    outdoor: '#eef3ea',
+    stair: '#f1efe9',
+    robe: '#f4f2ec',
+  };
+
+  function wallBandPoints(wall, a0, a1) {
+    var a = wallAxes(wall);
+    var t = (wall.thickness || 110) / 2;
+    var p = [];
+    var pts = [[a0, 1], [a1, 1], [a1, -1], [a0, -1]];
+    for (var i = 0; i < pts.length; i++) {
+      var along = pts[i][0];
+      var side = pts[i][1];
+      p.push(
+        (wall.x1 + a.ux * along + a.nx * t * side).toFixed(1) + ',' +
+        (wall.y1 + a.uy * along + a.ny * t * side).toFixed(1)
+      );
+    }
+    return p.join(' ');
+  }
+
+  function renderGrid(g) {
+    var mmpp = mmPerPixel();
+    var minor = 100, major = 1000;
+    var x0 = Math.floor(vb.x / major) * major;
+    var y0 = Math.floor(vb.y / major) * major;
+    var x1 = vb.x + vb.w, y1 = vb.y + vb.h;
+    var x, y;
+
+    if (minor / mmpp >= 7) {
+      var mx0 = Math.floor(vb.x / minor) * minor;
+      var my0 = Math.floor(vb.y / minor) * minor;
+      for (x = mx0; x <= x1; x += minor) {
+        if (x % major === 0) continue;
+        el('line', { x1: x, y1: vb.y, x2: x, y2: y1, stroke: '#f0eee9', 'stroke-width': mmpp }, g);
+      }
+      for (y = my0; y <= y1; y += minor) {
+        if (y % major === 0) continue;
+        el('line', { x1: vb.x, y1: y, x2: x1, y2: y, stroke: '#f0eee9', 'stroke-width': mmpp }, g);
+      }
+    }
+    if (major / mmpp >= 6) {
+      for (x = x0; x <= x1; x += major) {
+        el('line', { x1: x, y1: vb.y, x2: x, y2: y1, stroke: '#e4e0d8', 'stroke-width': mmpp }, g);
+      }
+      for (y = y0; y <= y1; y += major) {
+        el('line', { x1: vb.x, y1: y, x2: x1, y2: y, stroke: '#e4e0d8', 'stroke-width': mmpp }, g);
+      }
+    }
+  }
+
+  function renderWall(wall, g, mmpp) {
+    var len = wallLength(wall);
+    var a = wallAxes(wall);
+    var openings = (wall.openings || []).slice().sort(function (p, q) { return p.offset - q.offset; });
+
+    /* Solid runs between the openings. */
+    var cursor = 0;
+    for (var i = 0; i < openings.length; i++) {
+      var o = openings[i];
+      if (o.offset > cursor) {
+        el('polygon', {
+          points: wallBandPoints(wall, cursor, o.offset),
+          fill: '#3b3f45', stroke: 'none', 'data-wall-id': wall.id,
+        }, g);
+      }
+      cursor = Math.max(cursor, o.offset + o.width);
+    }
+    if (cursor < len) {
+      el('polygon', {
+        points: wallBandPoints(wall, cursor, len),
+        fill: '#3b3f45', stroke: 'none', 'data-wall-id': wall.id,
+      }, g);
+    }
+
+    /* Opening symbols. */
+    for (var k = 0; k < openings.length; k++) {
+      var op = openings[k];
+      var sx = wall.x1 + a.ux * op.offset;
+      var sy = wall.y1 + a.uy * op.offset;
+      var ex = wall.x1 + a.ux * (op.offset + op.width);
+      var ey = wall.y1 + a.uy * (op.offset + op.width);
+      var t = (wall.thickness || 110) / 2;
+
+      var style = op.style || (op.kind === 'window' ? 'fixed' : 'swing');
+      if (style === 'fixed') {
+        /* Window: the two panes of glazing across the opening. */
+        el('line', {
+          x1: sx + a.nx * t * 0.45, y1: sy + a.ny * t * 0.45,
+          x2: ex + a.nx * t * 0.45, y2: ey + a.ny * t * 0.45,
+          stroke: '#3b3f45', 'stroke-width': Math.max(mmpp, 18),
+        }, g);
+        el('line', {
+          x1: sx - a.nx * t * 0.45, y1: sy - a.ny * t * 0.45,
+          x2: ex - a.nx * t * 0.45, y2: ey - a.ny * t * 0.45,
+          stroke: '#3b3f45', 'stroke-width': Math.max(mmpp, 18),
+        }, g);
+      } else if (style === 'slide') {
+        /* Slider: two overlapping panels offset either side of the wall line. */
+        var half = op.width / 2;
+        el('line', {
+          x1: sx + a.nx * t * 0.5, y1: sy + a.ny * t * 0.5,
+          x2: sx + a.ux * half + a.nx * t * 0.5, y2: sy + a.uy * half + a.ny * t * 0.5,
+          stroke: '#6c727a', 'stroke-width': Math.max(mmpp, 26),
+        }, g);
+        el('line', {
+          x1: sx + a.ux * half - a.nx * t * 0.5, y1: sy + a.uy * half - a.ny * t * 0.5,
+          x2: ex - a.nx * t * 0.5, y2: ey - a.ny * t * 0.5,
+          stroke: '#6c727a', 'stroke-width': Math.max(mmpp, 26),
+        }, g);
+      } else if (style === 'roller') {
+        /* Roller/garage door: a single panel filling the opening. */
+        el('line', {
+          x1: sx, y1: sy, x2: ex, y2: ey,
+          stroke: '#6c727a', 'stroke-width': Math.max(mmpp, 26),
+          'stroke-dasharray': (mmpp * 5) + ' ' + (mmpp * 3),
+        }, g);
+      } else {
+        /* Hinged door: the leaf plus its swing arc. */
+        var hx = sx + a.nx * op.width;
+        var hy = sy + a.ny * op.width;
+        el('line', { x1: sx, y1: sy, x2: hx, y2: hy, stroke: '#6c727a', 'stroke-width': Math.max(mmpp, 22) }, g);
+        el('path', {
+          d: 'M ' + ex.toFixed(1) + ' ' + ey.toFixed(1) +
+             ' A ' + op.width + ' ' + op.width + ' 0 0 0 ' + hx.toFixed(1) + ' ' + hy.toFixed(1),
+          fill: 'none', stroke: '#b9bcc1', 'stroke-width': Math.max(mmpp, 16),
+        }, g);
+      }
+      /* Jambs. */
+      el('line', {
+        x1: sx + a.nx * t, y1: sy + a.ny * t, x2: sx - a.nx * t, y2: sy - a.ny * t,
+        stroke: '#3b3f45', 'stroke-width': Math.max(mmpp, 18),
+      }, g);
+      el('line', {
+        x1: ex + a.nx * t, y1: ey + a.ny * t, x2: ex - a.nx * t, y2: ey - a.ny * t,
+        stroke: '#3b3f45', 'stroke-width': Math.max(mmpp, 18),
+      }, g);
+    }
+
+    /* A fat invisible hit strip, so walls are easy to tap. */
+    el('line', {
+      x1: wall.x1, y1: wall.y1, x2: wall.x2, y2: wall.y2,
+      stroke: 'transparent',
+      'stroke-width': Math.max((wall.thickness || 110) * 1.6, mmpp * 18),
+      'data-wall-id': wall.id,
+      style: 'cursor:pointer',
+    }, g);
+  }
+
+  function renderItem(item, g, mmpp) {
+    var wrap = el('g', {
+      transform: 'translate(' + item.x.toFixed(1) + ' ' + item.y.toFixed(1) + ') rotate(' + (item.rotation || 0) + ')',
+      'data-item-id': item.id,
+      style: 'cursor:move',
+    }, g);
+
+    var stroke = Math.max(mmpp * 1.1, 12);
+    if (item.shape === 'ellipse') {
+      el('ellipse', {
+        cx: 0, cy: 0, rx: item.w / 2, ry: item.d / 2,
+        fill: item.color, 'fill-opacity': 0.85, stroke: '#4a4e54', 'stroke-width': stroke,
+      }, wrap);
+    } else {
+      el('rect', {
+        x: -item.w / 2, y: -item.d / 2, width: item.w, height: item.d,
+        fill: item.color, 'fill-opacity': 0.85, stroke: '#4a4e54', 'stroke-width': stroke, rx: 20,
+      }, wrap);
+    }
+
+    /* A tick marking the front, so rotation reads at a glance. */
+    el('line', {
+      x1: 0, y1: -item.d / 2, x2: 0, y2: -item.d / 2 + Math.min(item.d * 0.22, 220),
+      stroke: '#4a4e54', 'stroke-width': stroke, 'stroke-opacity': 0.7,
+    }, wrap);
+
+    /* Label only when it will actually be legible. */
+    var labelSize = 190;
+    if (item.w / mmpp > 58 && labelSize / mmpp > 7) {
+      el('text', {
+        x: 0, y: labelSize * 0.35,
+        'text-anchor': 'middle',
+        'font-family': "'DM Sans', system-ui, sans-serif",
+        'font-size': labelSize,
+        fill: '#3b3f45', 'fill-opacity': 0.75,
+        style: 'pointer-events:none',
+      }, wrap).textContent = item.name;
+    }
+  }
+
+  function renderSelectionHandles(item, g, mmpp) {
+    var hs = Math.max(mmpp * (isMobile() ? 15 : 10), 90); /* handle size in mm */
+    var wrap = el('g', {
+      transform: 'translate(' + item.x.toFixed(1) + ' ' + item.y.toFixed(1) + ') rotate(' + (item.rotation || 0) + ')',
+    }, g);
+
+    el('rect', {
+      x: -item.w / 2, y: -item.d / 2, width: item.w, height: item.d,
+      fill: 'none', stroke: '#2f6f8f', 'stroke-width': Math.max(mmpp * 1.6, 16),
+      'stroke-dasharray': (mmpp * 6) + ' ' + (mmpp * 4),
+    }, wrap);
+
+    var corners = [['nw', -1, -1], ['ne', 1, -1], ['se', 1, 1], ['sw', -1, 1]];
+    for (var i = 0; i < corners.length; i++) {
+      el('rect', {
+        x: corners[i][1] * item.w / 2 - hs / 2,
+        y: corners[i][2] * item.d / 2 - hs / 2,
+        width: hs, height: hs,
+        fill: '#ffffff', stroke: '#2f6f8f', 'stroke-width': Math.max(mmpp * 1.4, 14),
+        'data-handle': 'resize', 'data-corner': corners[i][0],
+        style: 'cursor:nwse-resize',
+      }, wrap);
+    }
+
+    var armY = -item.d / 2 - hs * 1.8;
+    el('line', {
+      x1: 0, y1: -item.d / 2, x2: 0, y2: armY,
+      stroke: '#2f6f8f', 'stroke-width': Math.max(mmpp * 1.4, 14),
+    }, wrap);
+    el('circle', {
+      cx: 0, cy: armY, r: hs * 0.62,
+      fill: '#ffffff', stroke: '#2f6f8f', 'stroke-width': Math.max(mmpp * 1.4, 14),
+      'data-handle': 'rotate', style: 'cursor:grab',
+    }, wrap);
+  }
+
+  function renderWallHandles(floor, g, mmpp) {
+    var hs = Math.max(mmpp * (isMobile() ? 14 : 9), 80);
+    for (var i = 0; i < floor.walls.length; i++) {
+      var w = floor.walls[i];
+      var ends = [['1', w.x1, w.y1], ['2', w.x2, w.y2]];
+      for (var e = 0; e < ends.length; e++) {
+        el('circle', {
+          cx: ends[e][1], cy: ends[e][2], r: hs / 2,
+          fill: sel.kind === 'wall' && sel.id === w.id ? '#2f6f8f' : '#ffffff',
+          stroke: '#2f6f8f', 'stroke-width': Math.max(mmpp * 1.4, 14),
+          'data-handle': 'wall-end', 'data-wall-id': w.id, 'data-end': ends[e][0],
+          style: 'cursor:move',
+        }, g);
+      }
+    }
+  }
+
+  function renderPlan() {
+    clear(canvas);
+    var floor = currentFloor();
+    var mmpp = mmPerPixel();
+
+    var gBackdrop = el('g', { id: 'l-backdrop' }, canvas);
+    var gGrid = el('g', { id: 'l-grid' }, canvas);
+    var gRooms = el('g', { id: 'l-rooms' }, canvas);
+    var gWalls = el('g', { id: 'l-walls' }, canvas);
+    var gItems = el('g', { id: 'l-items' }, canvas);
+    var gOverlay = el('g', { id: 'l-overlay' }, canvas);
+
+    /* Backdrop: the original plan image, for checking the trace. */
+    if (design.view.backdrop.visible && design.house.backdropSrc) {
+      var bd = floor.backdrop || { x: 0, y: 0, scaleX: 23.4, scaleY: 23.4 };
+      var nat = design.house.backdropImage || { width: 1079, height: 1208 };
+      var img = el('image', {
+        x: bd.x, y: bd.y,
+        width: nat.width * bd.scaleX, height: nat.height * bd.scaleY,
+        opacity: design.view.backdrop.opacity,
+        /* Exact natural size, so image pixel p maps to bd + p * scale. */
+        preserveAspectRatio: 'none',
+        'data-role': 'backdrop',
+        style: 'pointer-events:none',
+      }, gBackdrop);
+      img.setAttribute('href', design.house.backdropSrc);
+      img.setAttributeNS(XLINKNS, 'xlink:href', design.house.backdropSrc);
+    }
+
+    renderGrid(gGrid);
+
+    /* Rooms. */
+    for (var r = 0; r < floor.rooms.length; r++) {
+      var room = floor.rooms[r];
+      var pts = room.polygon.map(function (p) { return p[0] + ',' + p[1]; }).join(' ');
+      el('polygon', {
+        points: pts,
+        fill: ROOM_FILL[room.kind] || ROOM_FILL.room,
+        stroke: '#e7e3db', 'stroke-width': mmpp,
+        style: 'pointer-events:none',
+      }, gRooms);
+
+      var c = roomCentroid(room);
+      var rb = polygonBounds(room.polygon);
+      var nameSize = 250;
+      /* Only label a room the label actually fits in — otherwise a 400mm hall
+         and the stair beside it print their names over each other. */
+      var nameWidth = room.name.length * nameSize * 0.52;
+      var fitsName = nameSize / mmpp > 7 && nameWidth < (rb.maxX - rb.minX) * 0.98;
+      var fitsArea = fitsName && (rb.maxY - rb.minY) > nameSize * 2.6;
+
+      if (fitsName) {
+        el('text', {
+          x: c.x, y: fitsArea ? c.y : c.y + nameSize * 0.35, 'text-anchor': 'middle',
+          'font-family': "'DM Sans', system-ui, sans-serif",
+          'font-size': nameSize, 'font-weight': 500,
+          fill: '#8d9299', style: 'pointer-events:none',
+        }, gRooms).textContent = room.name;
+      }
+      if (fitsArea) {
+        el('text', {
+          x: c.x, y: c.y + nameSize * 1.15, 'text-anchor': 'middle',
+          'font-family': "'DM Mono', monospace",
+          'font-size': nameSize * 0.8,
+          fill: '#b3b7bd', style: 'pointer-events:none',
+        }, gRooms).textContent = roomArea(room).toFixed(1) + ' m²';
+      }
+    }
+
+    for (var w = 0; w < floor.walls.length; w++) renderWall(floor.walls[w], gWalls, mmpp);
+
+    /* Highlight the selected / previewed wall. */
+    var hw = sel.kind === 'wall' ? findWall(floor, sel.id) : null;
+    if (hw) {
+      el('line', {
+        x1: hw.x1, y1: hw.y1, x2: hw.x2, y2: hw.y2,
+        stroke: '#2f6f8f', 'stroke-width': Math.max((hw.thickness || 110) * 1.15, mmpp * 4),
+        'stroke-opacity': 0.55, style: 'pointer-events:none',
+      }, gOverlay);
+    }
+
+    var items = itemsOnFloor(design, floor.id);
+    for (var i = 0; i < items.length; i++) renderItem(items[i], gItems, mmpp);
+
+    if (editWalls) renderWallHandles(floor, gOverlay, mmpp);
+
+    if (sel.kind === 'item') {
+      var selected = itemById(sel.id);
+      if (selected && selected.floorId === floor.id) renderSelectionHandles(selected, gOverlay, mmpp);
+    }
+  }
+
+  /* ===================================================================== *
+   *  Elevation rendering
+   * ===================================================================== */
+
+  /* Canonical wall-space x → displayed x (mirrored when viewing the far side). */
+  function elevX(x, width, length, flip) { return flip ? length - x - width : x; }
+
+  function renderElevation() {
+    clear(canvas);
+    var floor = currentFloor();
+    var wall = currentWall();
+    if (!wall) {
+      el('text', {
+        x: vb.x + vb.w / 2, y: vb.y + vb.h / 2, 'text-anchor': 'middle',
+        'font-family': "'DM Sans', system-ui, sans-serif", 'font-size': vb.w / 28, fill: '#9aa0a6',
+      }, canvas).textContent = 'Pick a wall to paint';
+      return;
+    }
+
+    var finish = wallFinishFor(design, wall.id);
+    var flip = !!finish.flip;
+    var geo = elevationGeometry(wall, floor, { flip: flip });
+    var L = geo.length, H = geo.height;
+    var mmpp = mmPerPixel();
+
+    var gBody = el('g', { id: 'l-elev' }, canvas);
+
+    /* Floor→SVG: y measured down from the ceiling. */
+    function ty(heightAboveFloor) { return H - heightAboveFloor; }
+
+    /* The wall face. */
+    el('rect', { x: 0, y: 0, width: L, height: H, fill: finish.paint, stroke: 'none' }, gBody);
+
+    /* Paint and tile zones. */
+    for (var z = 0; z < finish.zones.length; z++) {
+      var zone = finish.zones[z];
+      var zx = elevX(zone.x, zone.w, L, flip);
+      el('rect', {
+        x: zx, y: ty(zone.y + zone.h), width: zone.w, height: zone.h,
+        fill: zone.color,
+        stroke: zone.kind === 'tile' ? '#ffffff' : 'none',
+        'stroke-width': zone.kind === 'tile' ? Math.max(mmpp, 8) : 0,
+        'data-elev-id': zone.id, 'data-elev-kind': 'zones',
+        style: 'cursor:move',
+      }, gBody);
+      if (zone.kind === 'tile') {
+        /* A light tile grid, so a splashback reads as tiles rather than paint. */
+        var step = 300;
+        for (var tx = zx + step; tx < zx + zone.w; tx += step) {
+          el('line', { x1: tx, y1: ty(zone.y + zone.h), x2: tx, y2: ty(zone.y), stroke: '#ffffff', 'stroke-width': Math.max(mmpp, 6), 'stroke-opacity': .6, style: 'pointer-events:none' }, gBody);
+        }
+        for (var tyy = zone.y + step; tyy < zone.y + zone.h; tyy += step) {
+          el('line', { x1: zx, y1: ty(tyy), x2: zx + zone.w, y2: ty(tyy), stroke: '#ffffff', 'stroke-width': Math.max(mmpp, 6), 'stroke-opacity': .6, style: 'pointer-events:none' }, gBody);
+        }
+      }
+    }
+
+    /* Ghosts of the plan furniture standing against this wall. */
+    var ghosts = ghostItemsOnWall(itemsOnFloor(design, floor.id), wall, { flip: flip });
+    for (var gi = 0; gi < ghosts.length; gi++) {
+      var gh = ghosts[gi];
+      if (!gh.height) continue;
+      el('rect', {
+        x: gh.x, y: ty(gh.height), width: gh.width, height: gh.height,
+        fill: '#2f6f8f', 'fill-opacity': 0.07,
+        stroke: '#2f6f8f', 'stroke-opacity': 0.4,
+        'stroke-width': Math.max(mmpp, 10),
+        'stroke-dasharray': (mmpp * 7) + ' ' + (mmpp * 5),
+        style: 'pointer-events:none',
+      }, gBody);
+      if (gh.width / mmpp > 50) {
+        el('text', {
+          x: gh.x + gh.width / 2, y: ty(gh.height) - 60,
+          'text-anchor': 'middle', 'font-family': "'DM Sans', system-ui, sans-serif",
+          'font-size': 130, fill: '#2f6f8f', 'fill-opacity': .55, style: 'pointer-events:none',
+        }, gBody).textContent = gh.name;
+      }
+    }
+
+    /* Skirting and cornice. */
+    if (finish.skirting && finish.skirting.on) {
+      el('rect', { x: 0, y: ty(finish.skirting.height), width: L, height: finish.skirting.height,
+        fill: '#ffffff', 'fill-opacity': .75, stroke: '#c9ccd1', 'stroke-width': Math.max(mmpp, 8), style: 'pointer-events:none' }, gBody);
+    }
+    if (finish.cornice && finish.cornice.on) {
+      el('rect', { x: 0, y: 0, width: L, height: finish.cornice.height,
+        fill: '#ffffff', 'fill-opacity': .75, stroke: '#c9ccd1', 'stroke-width': Math.max(mmpp, 8), style: 'pointer-events:none' }, gBody);
+    }
+
+    /* Cabinets and fixtures, drawn back to front. */
+    var groups = ['cabinets', 'fixtures'];
+    for (var gk = 0; gk < groups.length; gk++) {
+      var list = finish[groups[gk]] || [];
+      for (var n = 0; n < list.length; n++) {
+        var it = list[n];
+        var ix = elevX(it.x, it.w, L, flip);
+        el('rect', {
+          x: ix, y: ty(it.y + it.h), width: it.w, height: it.h,
+          fill: it.color, stroke: '#4a4e54', 'stroke-width': Math.max(mmpp, 10), rx: 12,
+          'data-elev-id': it.id, 'data-elev-kind': groups[gk],
+          style: 'cursor:move',
+        }, gBody);
+        /* Cabinet door lines. */
+        if (groups[gk] === 'cabinets' && (it.kind === 'base' || it.kind === 'wall') && it.w > 200) {
+          el('line', {
+            x1: ix + it.w / 2, y1: ty(it.y + it.h) + 40, x2: ix + it.w / 2, y2: ty(it.y) - 40,
+            stroke: '#4a4e54', 'stroke-opacity': .35, 'stroke-width': Math.max(mmpp, 8), style: 'pointer-events:none',
+          }, gBody);
+        }
+        if (it.w / mmpp > 46 && it.h / mmpp > 20) {
+          el('text', {
+            x: ix + it.w / 2, y: ty(it.y + it.h / 2) + 45,
+            'text-anchor': 'middle', 'font-family': "'DM Sans', system-ui, sans-serif",
+            'font-size': 115, fill: '#3b3f45', 'fill-opacity': .6, style: 'pointer-events:none',
+          }, gBody).textContent = it.name;
+        }
+      }
+    }
+
+    /* Doors and windows, punched through everything above. */
+    for (var o = 0; o < geo.openings.length; o++) {
+      var op = geo.openings[o];
+      var oy = ty(op.headHeight);
+      el('rect', {
+        x: op.x, y: oy, width: op.width, height: op.height,
+        fill: op.kind === 'window' ? '#dfeef5' : '#f3f1ec',
+        stroke: '#3b3f45', 'stroke-width': Math.max(mmpp * 1.4, 16),
+        style: 'pointer-events:none',
+      }, gBody);
+      if (op.kind === 'window') {
+        el('line', { x1: op.x + op.width / 2, y1: oy, x2: op.x + op.width / 2, y2: oy + op.height,
+          stroke: '#3b3f45', 'stroke-width': Math.max(mmpp, 9), 'stroke-opacity': .55, style: 'pointer-events:none' }, gBody);
+        el('line', { x1: op.x, y1: oy + op.height / 2, x2: op.x + op.width, y2: oy + op.height / 2,
+          stroke: '#3b3f45', 'stroke-width': Math.max(mmpp, 9), 'stroke-opacity': .55, style: 'pointer-events:none' }, gBody);
+      } else {
+        el('line', { x1: op.x + 60, y1: oy + 60, x2: op.x + op.width - 60, y2: oy + op.height,
+          stroke: '#c2c6cb', 'stroke-width': Math.max(mmpp, 9), style: 'pointer-events:none' }, gBody);
+      }
+    }
+
+    /* Wall outline last, so it sits over the fills. */
+    el('rect', { x: 0, y: 0, width: L, height: H, fill: 'none', stroke: '#3b3f45',
+      'stroke-width': Math.max(mmpp * 2, 24), style: 'pointer-events:none' }, gBody);
+
+    renderElevationRulers(gBody, L, H, mmpp, ty);
+
+    /* Selection outline. */
+    if (sel.kind === 'elev') {
+      var found = findElevItem(finish, sel.id);
+      if (found) {
+        var fx = elevX(found.item.x, found.item.w, L, flip);
+        el('rect', {
+          x: fx, y: ty(found.item.y + found.item.h), width: found.item.w, height: found.item.h,
+          fill: 'none', stroke: '#2f6f8f', 'stroke-width': Math.max(mmpp * 1.8, 18),
+          'stroke-dasharray': (mmpp * 6) + ' ' + (mmpp * 4), style: 'pointer-events:none',
+        }, gBody);
+      }
+    }
+  }
+
+  function renderElevationRulers(g, L, H, mmpp, ty) {
+    var tick = 500;
+    var fontSize = Math.max(mmpp * 10, 110);
+    var off = mmpp * 14;
+
+    /* Height ruler, to the left of the wall. */
+    el('line', { x1: -off, y1: 0, x2: -off, y2: H, stroke: '#b3b7bd', 'stroke-width': Math.max(mmpp, 8), style: 'pointer-events:none' }, g);
+    for (var h = 0; h <= H; h += tick) {
+      el('line', { x1: -off, y1: ty(h), x2: -off - mmpp * 5, y2: ty(h), stroke: '#b3b7bd', 'stroke-width': Math.max(mmpp, 8), style: 'pointer-events:none' }, g);
+      el('text', {
+        x: -off - mmpp * 8, y: ty(h) + fontSize * 0.35, 'text-anchor': 'end',
+        'font-family': "'DM Mono', monospace", 'font-size': fontSize, fill: '#9aa0a6', style: 'pointer-events:none',
+      }, g).textContent = h;
+    }
+
+    /* Position ruler, below the wall. */
+    el('line', { x1: 0, y1: H + off, x2: L, y2: H + off, stroke: '#b3b7bd', 'stroke-width': Math.max(mmpp, 8), style: 'pointer-events:none' }, g);
+    for (var x = 0; x <= L; x += 1000) {
+      el('line', { x1: x, y1: H + off, x2: x, y2: H + off + mmpp * 5, stroke: '#b3b7bd', 'stroke-width': Math.max(mmpp, 8), style: 'pointer-events:none' }, g);
+      el('text', {
+        x: x, y: H + off + mmpp * 8 + fontSize, 'text-anchor': 'middle',
+        'font-family': "'DM Mono', monospace", 'font-size': fontSize, fill: '#9aa0a6', style: 'pointer-events:none',
+      }, g).textContent = x;
+    }
+    el('text', {
+      x: L / 2, y: -off - mmpp * 6, 'text-anchor': 'middle',
+      'font-family': "'DM Sans', system-ui, sans-serif", 'font-size': fontSize * 1.3, fill: '#767c85', style: 'pointer-events:none',
+    }, g).textContent = Math.round(L) + ' × ' + Math.round(H) + ' mm';
+  }
+
+  /* ===================================================================== *
+   *  Lookups
+   * ===================================================================== */
+
+  function itemById(id) {
+    for (var i = 0; i < design.items.length; i++) {
+      if (design.items[i].id === id) return design.items[i];
+    }
+    return null;
+  }
+
+  function findElevItem(finish, id) {
+    var groups = ['zones', 'cabinets', 'fixtures'];
+    for (var g = 0; g < groups.length; g++) {
+      var list = finish[groups[g]] || [];
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].id === id) return { item: list[i], group: groups[g], index: i };
+      }
+    }
+    return null;
+  }
+
+  /* Compass, from the plan's "N →" arrow: north is +x. A floor plan is viewed
+     from above, so N→E→S→W must run clockwise on screen — which puts east at
+     +y (down the page) and west at -y. */
+  function compassSide(dx, dy) {
+    if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? 'north' : 'south';
+    return dy > 0 ? 'east' : 'west';
+  }
+
+  /* Name a wall by the room it belongs to and which side of that room it is,
+     so the list reads the way you would describe the wall out loud. */
+  function wallLabel(floor, wall) {
+    var mid = { x: (wall.x1 + wall.x2) / 2, y: (wall.y1 + wall.y2) / 2 };
+    var best = null;
+    for (var r = 0; r < floor.rooms.length; r++) {
+      var room = floor.rooms[r];
+      var c = roomCentroid(room);
+      var d = Math.sqrt((c.x - mid.x) * (c.x - mid.x) + (c.y - mid.y) * (c.y - mid.y));
+      if (best === null || d < best.d) best = { d: d, name: room.name, centroid: c };
+    }
+    if (!best) return 'Wall';
+    return best.name + ' · ' + compassSide(mid.x - best.centroid.x, mid.y - best.centroid.y) + ' wall';
+  }
+
+  /* ===================================================================== *
+   *  Rendering entry point
+   * ===================================================================== */
+
+  function renderAll() {
+    syncAspect(true);
+    if (design.view.mode === 'elevation') renderElevation(); else renderPlan();
+    renderPanels();
+    updateTopbar();
+    updateScaleBar();
+  }
+
+  function renderCanvasOnly() {
+    if (design.view.mode === 'elevation') renderElevation(); else renderPlan();
+  }
+
+  function updateTopbar() {
+    $('modePlan').setAttribute('aria-pressed', String(design.view.mode === 'plan'));
+    $('modeElev').setAttribute('aria-pressed', String(design.view.mode === 'elevation'));
+    $('compass').hidden = design.view.mode === 'elevation';
+    var sel2 = $('floorSelect');
+    if (sel2.value !== design.view.floorId) sel2.value = design.view.floorId;
+  }
+
+  /* ===================================================================== *
+   *  Panels
+   * ===================================================================== */
+
+  function h(tag, attrs, children) {
+    var node = document.createElement(tag);
+    if (attrs) {
+      for (var k in attrs) {
+        if (!Object.prototype.hasOwnProperty.call(attrs, k)) continue;
+        if (k === 'class') node.className = attrs[k];
+        else if (k === 'text') node.textContent = attrs[k];
+        else if (k === 'html') node.innerHTML = attrs[k];
+        else if (k.slice(0, 2) === 'on') node.addEventListener(k.slice(2), attrs[k]);
+        else if (attrs[k] != null) node.setAttribute(k, attrs[k]);
+      }
+    }
+    if (children) {
+      for (var i = 0; i < children.length; i++) {
+        if (children[i]) node.appendChild(children[i]);
+      }
+    }
+    return node;
+  }
+
+  function section(title, children) {
+    var kids = [];
+    if (title) kids.push(h('h2', { text: title }));
+    return h('div', { class: 'section' }, kids.concat(children || []));
+  }
+
+  function allFurniture() {
+    return FURNITURE_CATALOG.concat(design.customCatalog || []);
+  }
+
+  function renderCatalog() {
+    var body = $('catalogBody');
+    body.innerHTML = '';
+
+    var list = design.view.mode === 'elevation' ? ELEVATION_CATALOG : allFurniture();
+    var groups = catalogGroups(list);
+
+    for (var g = 0; g < groups.length; g++) {
+      var groupName = groups[g];
+      var rows = [];
+      for (var i = 0; i < list.length; i++) {
+        if ((list[i].group || 'Other') !== groupName) continue;
+        rows.push(catalogButton(list[i]));
+      }
+      body.appendChild(h('div', { class: 'cat-group' }, [
+        h('h3', { text: groupName }),
+        h('div', { class: 'cat-list' }, rows),
+      ]));
+    }
+
+    $('catalogHint').textContent = design.view.mode === 'elevation'
+      ? 'Tap to place on the wall, or drag it where you want it.'
+      : 'Tap to drop into the middle of the view, or drag straight onto the plan.';
+    $('addCustomBtn').hidden = design.view.mode === 'elevation';
+  }
+
+  function catalogButton(entry) {
+    var dims = design.view.mode === 'elevation'
+      ? entry.w + '×' + entry.h
+      : entry.w + '×' + entry.d;
+    var btn = h('button', { type: 'button', class: 'cat-item', 'data-entry-id': entry.id }, [
+      h('span', { class: 'sw' + (entry.shape === 'ellipse' ? ' round' : '') }),
+      h('span', { text: entry.name }),
+      h('span', { class: 'dims', text: dims }),
+    ]);
+    btn.querySelector('.sw').style.background = entry.color || '#b9b2a4';
+    btn.addEventListener('pointerdown', function (ev) { startCatalogDrag(ev, entry); });
+    return btn;
+  }
+
+  function renderPanels() {
+    renderCatalog();
+    renderInspector();
+  }
+
+  function numberRow(label, value, onChange, step, min) {
+    var input = h('input', {
+      type: 'number', value: Math.round(value),
+      step: step || 10, min: min == null ? 1 : min,
+    });
+    input.addEventListener('change', function () {
+      var v = Number(input.value);
+      if (!isFinite(v)) return;
+      onChange(v);
+    });
+    return h('div', { class: 'row' }, [h('label', { text: label }), input]);
+  }
+
+  /* Live-preview while the picker is open, and only rebuild the panel on
+     commit — re-rendering mid-drag would tear the open picker away. */
+  function colorRow(label, value, onLive, onCommit) {
+    var input = h('input', { type: 'color', value: value });
+    input.addEventListener('input', function () { onLive(input.value); });
+    input.addEventListener('change', function () { onCommit(input.value); });
+    return h('div', { class: 'row' }, [h('label', { text: label }), input]);
+  }
+
+  function swatchGrid(current, onPick) {
+    var kids = [];
+    for (var i = 0; i < PAINT_SWATCHES.length; i++) {
+      (function (sw) {
+        var b = h('button', {
+          type: 'button', title: sw.name,
+          'aria-pressed': String((current || '').toLowerCase() === sw.hex.toLowerCase()),
+          'aria-label': sw.name,
+        });
+        b.style.background = sw.hex;
+        b.addEventListener('click', function () { onPick(sw.hex); });
+        kids.push(b);
+      })(PAINT_SWATCHES[i]);
+    }
+    return h('div', { class: 'swatches' }, kids);
+  }
+
+  function renderInspector() {
+    var body = $('inspectorBody');
+    body.innerHTML = '';
+
+    if (design.view.mode === 'elevation') renderElevationInspector(body);
+    else renderPlanInspector(body);
+
+    body.appendChild(renderWallsSection());
+    body.appendChild(renderViewSection());
+    if (isMobile()) body.appendChild(renderFileSection());
+  }
+
+  function renderPlanInspector(body) {
+    var item = sel.kind === 'item' ? itemById(sel.id) : null;
+
+    if (!item) {
+      body.appendChild(section('Selection', [
+        h('p', { class: 'hint', text: 'Nothing selected. Tap a piece of furniture to edit it, or tap a wall to open its elevation.' }),
+      ]));
+      return;
+    }
+
+    var nameInput = h('input', { type: 'text', value: item.name });
+    nameInput.addEventListener('change', function () {
+      pushUndo(); item.name = nameInput.value; commit();
+    });
+
+    var rotInput = h('input', { type: 'number', value: Math.round(item.rotation || 0), step: 15 });
+    rotInput.addEventListener('change', function () {
+      pushUndo(); item.rotation = ((Number(rotInput.value) || 0) % 360 + 360) % 360; commit();
+    });
+
+    body.appendChild(section('Selected', [
+      h('div', { class: 'rows' }, [
+        h('div', { class: 'row' }, [h('label', { text: 'Name' }), nameInput]),
+        numberRow('Width', item.w, function (v) { pushUndo(); item.w = Math.max(1, v); commit(); }),
+        numberRow('Depth', item.d, function (v) { pushUndo(); item.d = Math.max(1, v); commit(); }),
+        numberRow('Height', item.h, function (v) { pushUndo(); item.h = Math.max(1, v); commit(); }),
+        h('div', { class: 'row' }, [h('label', { text: 'Rotation' }), rotInput]),
+        colorRow('Colour', item.color,
+          function (v) { item.color = v; renderCanvasOnly(); },
+          function (v) { pushUndo(); item.color = v; commit(); }),
+      ]),
+      h('div', { class: 'row', style: 'margin-top:10px;gap:6px' }, [
+        h('button', { type: 'button', class: 'btn', text: 'Rotate 90°', onclick: function () {
+          pushUndo(); item.rotation = ((item.rotation || 0) + 90) % 360; commit();
+        } }),
+        h('button', { type: 'button', class: 'btn', text: 'Duplicate', onclick: function () { duplicateSelected(); } }),
+      ]),
+      h('button', {
+        type: 'button', class: 'btn btn--danger btn--block', text: 'Delete', style: 'margin-top:6px',
+        onclick: function () { deleteSelected(); },
+      }),
+    ]));
+  }
+
+  function renderElevationInspector(body) {
+    var floor = currentFloor();
+    var wall = currentWall();
+    if (!wall) {
+      body.appendChild(section('Wall', [h('p', { class: 'hint', text: 'Pick a wall below to start painting it.' })]));
+      return;
+    }
+    var finish = wallFinishFor(design, wall.id);
+
+    body.appendChild(section('Wall · ' + wallLabels(floor)[wall.id], [
+      h('p', { class: 'hint', text: Math.round(wallLength(wall)) + ' mm long · ' + floor.ceilingHeight + ' mm high' }),
+      h('button', {
+        type: 'button', class: 'btn btn--block', text: 'View from the other side', style: 'margin-top:9px',
+        onclick: function () { pushUndo(); finish.flip = !finish.flip; commit(); },
+      }),
+    ]));
+
+    body.appendChild(section('Wall colour', [
+      swatchGrid(finish.paint, function (hex) { pushUndo(); finish.paint = hex; commit(); }),
+      h('div', { class: 'row', style: 'margin-top:9px' }, [
+        h('label', { text: 'Custom' }),
+        (function () {
+          var inp = h('input', { type: 'color', value: finish.paint });
+          inp.addEventListener('input', function () { finish.paint = inp.value; renderCanvasOnly(); scheduleSave(); });
+          return inp;
+        })(),
+      ]),
+    ]));
+
+    var selected = sel.kind === 'elev' ? findElevItem(finish, sel.id) : null;
+    if (selected) {
+      var it = selected.item;
+      body.appendChild(section('Selected · ' + it.name, [
+        h('div', { class: 'rows' }, [
+          numberRow('From left', it.x, function (v) { pushUndo(); it.x = v; commit(); }, 10, -100000),
+          numberRow('Off floor', it.y, function (v) { pushUndo(); it.y = Math.max(0, v); commit(); }, 10, 0),
+          numberRow('Width', it.w, function (v) { pushUndo(); it.w = Math.max(1, v); commit(); }),
+          numberRow('Height', it.h, function (v) { pushUndo(); it.h = Math.max(1, v); commit(); }),
+          colorRow('Colour', it.color,
+            function (v) { it.color = v; renderCanvasOnly(); },
+            function (v) { pushUndo(); it.color = v; commit(); }),
+        ]),
+        h('button', {
+          type: 'button', class: 'btn btn--danger btn--block', text: 'Delete', style: 'margin-top:9px',
+          onclick: function () { deleteSelected(); },
+        }),
+      ]));
+    }
+
+    body.appendChild(section('Paint & tile zones', [
+      h('p', { class: 'hint', text: 'A zone is a block of colour on the wall — a feature panel, a dado, a splashback.' }),
+      h('div', { class: 'row', style: 'margin-top:9px;gap:6px' }, [
+        h('button', { type: 'button', class: 'btn', text: '+ Paint zone', onclick: function () { addZone('paint'); } }),
+        h('button', { type: 'button', class: 'btn', text: '+ Tiles', onclick: function () { addZone('tile'); } }),
+      ]),
+    ]));
+
+    body.appendChild(section('Trim', [
+      h('label', { class: 'check' }, [
+        (function () {
+          var c = h('input', { type: 'checkbox' });
+          c.checked = !!(finish.skirting && finish.skirting.on);
+          c.addEventListener('change', function () { pushUndo(); finish.skirting.on = c.checked; commit(); });
+          return c;
+        })(),
+        h('span', { text: 'Skirting' }),
+      ]),
+      numberRow('Height', finish.skirting.height, function (v) { pushUndo(); finish.skirting.height = Math.max(1, v); commit(); }),
+      h('label', { class: 'check', style: 'margin-top:6px' }, [
+        (function () {
+          var c = h('input', { type: 'checkbox' });
+          c.checked = !!(finish.cornice && finish.cornice.on);
+          c.addEventListener('change', function () { pushUndo(); finish.cornice.on = c.checked; commit(); });
+          return c;
+        })(),
+        h('span', { text: 'Cornice' }),
+      ]),
+      numberRow('Height', finish.cornice.height, function (v) { pushUndo(); finish.cornice.height = Math.max(1, v); commit(); }),
+    ]));
+  }
+
+  /* Two walls can honestly earn the same name (a room with a stepped edge), so
+     number the repeats rather than showing the same row twice. */
+  function wallLabels(floor) {
+    var counts = {};
+    var raw = [];
+    var i;
+    for (i = 0; i < floor.walls.length; i++) {
+      var name = wallLabel(floor, floor.walls[i]);
+      raw.push(name);
+      counts[name] = (counts[name] || 0) + 1;
+    }
+    var seen = {};
+    var out = {};
+    for (i = 0; i < raw.length; i++) {
+      if (counts[raw[i]] > 1) {
+        seen[raw[i]] = (seen[raw[i]] || 0) + 1;
+        out[floor.walls[i].id] = raw[i] + ' ' + seen[raw[i]];
+      } else {
+        out[floor.walls[i].id] = raw[i];
+      }
+    }
+    return out;
+  }
+
+  function renderWallsSection() {
+    var floor = currentFloor();
+    var labels = wallLabels(floor);
+    var rows = [];
+    for (var i = 0; i < floor.walls.length; i++) {
+      (function (wall) {
+        var pressed = design.view.wallId === wall.id;
+        var btn = h('button', {
+          type: 'button', 'aria-pressed': String(pressed),
+        }, [
+          h('span', { text: labels[wall.id] }),
+          h('span', { class: 'len', text: Math.round(wallLength(wall)) }),
+        ]);
+        btn.addEventListener('click', function () { openWall(wall.id); });
+        rows.push(btn);
+      })(floor.walls[i]);
+    }
+
+    return section('Walls on this floor', [
+      h('div', { class: 'wall-list' }, rows),
+      h('label', { class: 'check', style: 'margin-top:8px' }, [
+        (function () {
+          var c = h('input', { type: 'checkbox' });
+          c.checked = editWalls;
+          c.addEventListener('change', function () {
+            editWalls = c.checked;
+            if (editWalls && design.view.mode !== 'plan') setMode('plan');
+            renderAll();
+          });
+          return c;
+        })(),
+        h('span', { text: 'Edit wall positions' }),
+      ]),
+      h('p', { class: 'hint', text: editWalls ? 'Drag the round handles to move a wall end. Turn the backdrop on to line them up with the original plan.' : '' }),
+    ]);
+  }
+
+  function renderViewSection() {
+    var kids = [];
+
+    kids.push(h('label', { class: 'check' }, [
+      (function () {
+        var c = h('input', { type: 'checkbox' });
+        c.checked = design.view.backdrop.visible;
+        c.addEventListener('change', function () {
+          design.view.backdrop.visible = c.checked;
+          renderCanvasOnly(); renderInspector(); scheduleSave();
+        });
+        return c;
+      })(),
+      h('span', { text: 'Show original plan behind' }),
+    ]));
+
+    if (design.view.backdrop.visible) {
+      var range = h('input', { type: 'range', min: '0.05', max: '1', step: '0.05', value: String(design.view.backdrop.opacity) });
+      range.addEventListener('input', function () {
+        design.view.backdrop.opacity = Number(range.value);
+        renderCanvasOnly(); scheduleSave();
+      });
+      kids.push(h('div', { class: 'row wide', style: 'margin-top:6px' }, [h('label', { text: 'Fade' }), range]));
+
+      var floor = currentFloor();
+      var nudge = function (dx, dy, ds) {
+        return function () {
+          floor.backdrop.x += dx;
+          floor.backdrop.y += dy;
+          floor.backdrop.scaleX *= ds;
+          floor.backdrop.scaleY *= ds;
+          renderCanvasOnly(); scheduleSave();
+        };
+      };
+      var step = 200;
+      kids.push(h('div', { class: 'row', style: 'margin-top:6px;gap:5px;flex-wrap:wrap' }, [
+        h('button', { type: 'button', class: 'btn btn--icon', text: '←', onclick: nudge(-step, 0, 1), 'aria-label': 'Move backdrop left' }),
+        h('button', { type: 'button', class: 'btn btn--icon', text: '→', onclick: nudge(step, 0, 1), 'aria-label': 'Move backdrop right' }),
+        h('button', { type: 'button', class: 'btn btn--icon', text: '↑', onclick: nudge(0, -step, 1), 'aria-label': 'Move backdrop up' }),
+        h('button', { type: 'button', class: 'btn btn--icon', text: '↓', onclick: nudge(0, step, 1), 'aria-label': 'Move backdrop down' }),
+        h('button', { type: 'button', class: 'btn btn--icon', text: '＋', onclick: nudge(0, 0, 1.02), 'aria-label': 'Grow backdrop' }),
+        h('button', { type: 'button', class: 'btn btn--icon', text: '−', onclick: nudge(0, 0, 1 / 1.02), 'aria-label': 'Shrink backdrop' }),
+      ]));
+    }
+
+    kids.push(h('label', { class: 'check', style: 'margin-top:8px' }, [
+      (function () {
+        var c = h('input', { type: 'checkbox' });
+        c.checked = design.view.snap;
+        c.addEventListener('change', function () { design.view.snap = c.checked; scheduleSave(); });
+        return c;
+      })(),
+      h('span', { text: 'Snap to grid and walls' }),
+    ]));
+
+    return section('View', kids);
+  }
+
+  function renderFileSection() {
+    return section('File', [
+      h('button', { type: 'button', class: 'btn btn--block', text: 'Save design to a file', onclick: saveToFile, style: 'margin-bottom:6px' }),
+      h('button', { type: 'button', class: 'btn btn--block', text: 'Load design from a file', onclick: function () { $('fileInput').click(); }, style: 'margin-bottom:6px' }),
+      h('button', { type: 'button', class: 'btn btn--block', text: 'Export this view as PNG', onclick: function () { exportImage('png'); }, style: 'margin-bottom:6px' }),
+      h('button', { type: 'button', class: 'btn btn--block', text: 'Export this view as SVG', onclick: function () { exportImage('svg'); }, style: 'margin-bottom:6px' }),
+      h('button', { type: 'button', class: 'btn btn--block', text: 'Reset walls to the original plan', onclick: resetWalls, style: 'margin-bottom:6px' }),
+      h('button', { type: 'button', class: 'btn btn--block btn--danger', text: 'Remove all furniture', onclick: clearFurniture }),
+    ]);
+  }
+
+  /* ===================================================================== *
+   *  Mutations
+   * ===================================================================== */
+
+  function commit() {
+    renderAll();
+    scheduleSave();
+  }
+
+  function setMode(mode) {
+    if (design.view.mode === mode) return;
+    design.view.mode = mode;
+    sel = { kind: null, id: null };
+    if (mode === 'elevation') {
+      if (!currentWall()) {
+        var f = currentFloor();
+        design.view.wallId = f.walls.length ? f.walls[0].id : null;
+      }
+      fitElevation();
+    } else {
+      fitFloor();
+    }
+    editWalls = editWalls && mode === 'plan';
+    renderAll();
+    scheduleSave();
+  }
+
+  function openWall(wallId) {
+    design.view.wallId = wallId;
+    sel = { kind: null, id: null };
+    design.view.mode = 'elevation';
+    fitElevation();
+    renderAll();
+    scheduleSave();
+  }
+
+  function fitFloor() {
+    fitTo(floorBounds(currentFloor()), 1500);
+  }
+
+  function fitElevation() {
+    var wall = currentWall();
+    var floor = currentFloor();
+    if (!wall) return;
+    var L = wallLength(wall);
+    var H = floor.ceilingHeight;
+    fitTo({ minX: 0, minY: 0, maxX: L, maxY: H }, Math.max(L, H) * 0.16 + 400);
+  }
+
+  function setFloor(floorId) {
+    if (design.view.floorId === floorId) return;
+    design.view.floorId = floorId;
+    design.view.wallId = null;
+    sel = { kind: null, id: null };
+    if (design.view.mode === 'elevation') design.view.mode = 'plan';
+    fitFloor();
+    renderAll();
+    scheduleSave();
+  }
+
+  function addZone(kind) {
+    var wall = currentWall();
+    if (!wall) return;
+    var floor = currentFloor();
+    var finish = wallFinishFor(design, wall.id);
+    var L = wallLength(wall);
+    pushUndo();
+    var zone = {
+      id: newId('zn'),
+      kind: kind,
+      x: Math.max(0, L / 2 - 600),
+      y: kind === 'tile' ? 870 : 0,
+      w: Math.min(1200, L),
+      h: kind === 'tile' ? 600 : floor.ceilingHeight,
+      color: kind === 'tile' ? '#dfe7e4' : '#4c5f52',
+    };
+    finish.zones.push(zone);
+    sel = { kind: 'elev', id: zone.id };
+    commit();
+  }
+
+  function deleteSelected() {
+    if (sel.kind === 'item') {
+      var idx = -1;
+      for (var i = 0; i < design.items.length; i++) {
+        if (design.items[i].id === sel.id) { idx = i; break; }
+      }
+      if (idx < 0) return;
+      pushUndo();
+      design.items.splice(idx, 1);
+      sel = { kind: null, id: null };
+      commit();
+    } else if (sel.kind === 'elev') {
+      var wall = currentWall();
+      if (!wall) return;
+      var finish = wallFinishFor(design, wall.id);
+      var found = findElevItem(finish, sel.id);
+      if (!found) return;
+      pushUndo();
+      finish[found.group].splice(found.index, 1);
+      sel = { kind: null, id: null };
+      commit();
+    }
+  }
+
+  function duplicateSelected() {
+    if (sel.kind !== 'item') return;
+    var item = itemById(sel.id);
+    if (!item) return;
+    pushUndo();
+    var copy = JSON.parse(JSON.stringify(item));
+    copy.id = newId('it');
+    copy.x += 300;
+    copy.y += 300;
+    design.items.push(copy);
+    sel = { kind: 'item', id: copy.id };
+    commit();
+  }
+
+  function resetWalls() {
+    if (!window.confirm('Put every wall back where it started? Your furniture and wall colours are kept.')) return;
+    pushUndo();
+    resetHouseGeometry(design);
+    sel = { kind: null, id: null };
+    fitFloor();
+    commit();
+    toast('Walls reset to the original plan.');
+  }
+
+  function clearFurniture() {
+    if (!design.items.length) { toast('There is no furniture to remove.'); return; }
+    if (!window.confirm('Remove all ' + design.items.length + ' pieces of furniture from every floor?')) return;
+    pushUndo();
+    design.items = [];
+    sel = { kind: null, id: null };
+    commit();
+  }
+
+  /* ===================================================================== *
+   *  Pointer interaction
+   * ===================================================================== */
+
+  var drag = null;
+  var pointers = new Map();
+  var pinch = null;
+
+  canvas.addEventListener('pointerdown', onCanvasPointerDown);
+  canvas.addEventListener('pointermove', onCanvasPointerMove);
+  canvas.addEventListener('pointerup', onCanvasPointerUp);
+  canvas.addEventListener('pointercancel', onCanvasPointerUp);
+  canvas.addEventListener('wheel', onWheel, { passive: false });
+  canvas.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  function onCanvasPointerDown(ev) {
+    pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+
+    if (pointers.size === 2) {
+      drag = null;
+      startPinch();
+      return;
+    }
+    if (pointers.size > 2) return;
+
+    var target = ev.target;
+    var local = toLocal(ev.clientX, ev.clientY);
+    canvas.setPointerCapture(ev.pointerId);
+
+    var handle = target.getAttribute && target.getAttribute('data-handle');
+
+    if (handle === 'resize' || handle === 'rotate') {
+      var item = itemById(sel.id);
+      if (!item) return;
+      pushUndo();
+      drag = {
+        type: handle, item: item, corner: target.getAttribute('data-corner'),
+        start: local, startItem: JSON.parse(JSON.stringify(item)), moved: false,
+      };
+      return;
+    }
+
+    if (handle === 'wall-end') {
+      var wid = target.getAttribute('data-wall-id');
+      var wall = findWall(currentFloor(), wid);
+      if (!wall) return;
+      pushUndo();
+      sel = { kind: 'wall', id: wid };
+      design.view.wallId = wid;
+      drag = { type: 'wall-end', wall: wall, end: target.getAttribute('data-end'), moved: false };
+      renderCanvasOnly();
+      return;
+    }
+
+    var elevId = target.getAttribute && target.getAttribute('data-elev-id');
+    if (elevId && design.view.mode === 'elevation') {
+      var wallE = currentWall();
+      var finish = wallFinishFor(design, wallE.id);
+      var found = findElevItem(finish, elevId);
+      if (!found) return;
+      pushUndo();
+      sel = { kind: 'elev', id: elevId };
+      drag = {
+        type: 'elev-move', item: found.item, flip: !!finish.flip,
+        length: wallLength(wallE), height: currentFloor().ceilingHeight,
+        start: local, startPos: { x: found.item.x, y: found.item.y }, moved: false,
+      };
+      renderAll();
+      return;
+    }
+
+    var itemId = target.getAttribute && target.getAttribute('data-item-id');
+    if (!itemId && target.parentNode && target.parentNode.getAttribute) {
+      itemId = target.parentNode.getAttribute('data-item-id');
+    }
+    if (itemId && design.view.mode === 'plan') {
+      var it = itemById(itemId);
+      if (!it) return;
+      pushUndo();
+      sel = { kind: 'item', id: itemId };
+      drag = { type: 'item-move', item: it, start: local, startPos: { x: it.x, y: it.y }, moved: false };
+      renderAll();
+      return;
+    }
+
+    var wallId = target.getAttribute && target.getAttribute('data-wall-id');
+    if (wallId && design.view.mode === 'plan' && !editWalls) {
+      sel = { kind: 'wall', id: wallId };
+      design.view.wallId = wallId;
+      drag = { type: 'wall-tap', wallId: wallId, start: local, moved: false };
+      renderAll();
+      return;
+    }
+
+    /* Empty space: pan, and clear the selection on a clean tap. */
+    drag = { type: 'pan', startClient: { x: ev.clientX, y: ev.clientY }, startVb: { x: vb.x, y: vb.y }, moved: false };
+    canvas.classList.add('is-dragging');
+  }
+
+  function onCanvasPointerMove(ev) {
+    if (pointers.has(ev.pointerId)) pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+
+    if (pinch && pointers.size >= 2) { updatePinch(); return; }
+    if (!drag) return;
+
+    var local = toLocal(ev.clientX, ev.clientY);
+    var grid = design.view.snap ? design.view.grid : 0;
+
+    if (drag.type === 'pan') {
+      var mmpp = mmPerPixel();
+      var dx = (ev.clientX - drag.startClient.x) * mmpp;
+      var dy = (ev.clientY - drag.startClient.y) * mmpp;
+      if (Math.abs(dx) > mmpp * 3 || Math.abs(dy) > mmpp * 3) drag.moved = true;
+      vb.x = drag.startVb.x - dx;
+      vb.y = drag.startVb.y - dy;
+      applyViewBox();
+      return;
+    }
+
+    if (drag.type === 'wall-tap') {
+      if (Math.abs(local.x - drag.start.x) > mmPerPixel() * 6) drag.moved = true;
+      return;
+    }
+
+    if (drag.type === 'item-move') {
+      drag.moved = true;
+      var nx = drag.startPos.x + (local.x - drag.start.x);
+      var ny = drag.startPos.y + (local.y - drag.start.y);
+      drag.item.x = snapToGrid(nx, grid);
+      drag.item.y = snapToGrid(ny, grid);
+      if (design.view.snap) {
+        var snapped = snapItemToWalls(drag.item, currentFloor().walls, DEFAULT_WALL_SNAP);
+        drag.item.x = snapped.x;
+        drag.item.y = snapped.y;
+      }
+      renderCanvasOnly();
+      return;
+    }
+
+    if (drag.type === 'rotate') {
+      drag.moved = true;
+      var ang = Math.atan2(local.y - drag.item.y, local.x - drag.item.x) * 180 / Math.PI + 90;
+      if (design.view.snap) ang = Math.round(ang / 15) * 15;
+      drag.item.rotation = ((Math.round(ang) % 360) + 360) % 360;
+      renderCanvasOnly();
+      return;
+    }
+
+    if (drag.type === 'resize') {
+      drag.moved = true;
+      /* Work in the item's own frame so resize follows its rotation. */
+      var r = -(drag.startItem.rotation || 0) * Math.PI / 180;
+      var dxw = local.x - drag.startItem.x;
+      var dyw = local.y - drag.startItem.y;
+      var lx = dxw * Math.cos(r) - dyw * Math.sin(r);
+      var ly = dxw * Math.sin(r) + dyw * Math.cos(r);
+      var newW = Math.max(60, Math.abs(lx) * 2);
+      var newD = Math.max(60, Math.abs(ly) * 2);
+      drag.item.w = grid ? Math.max(grid, snapToGrid(newW, grid)) : Math.round(newW);
+      drag.item.d = grid ? Math.max(grid, snapToGrid(newD, grid)) : Math.round(newD);
+      renderCanvasOnly();
+      return;
+    }
+
+    if (drag.type === 'wall-end') {
+      drag.moved = true;
+      var wx = snapToGrid(local.x, grid || 50);
+      var wy = snapToGrid(local.y, grid || 50);
+      if (drag.end === '1') { drag.wall.x1 = wx; drag.wall.y1 = wy; }
+      else { drag.wall.x2 = wx; drag.wall.y2 = wy; }
+      renderCanvasOnly();
+      return;
+    }
+
+    if (drag.type === 'elev-move') {
+      drag.moved = true;
+      var dxE = local.x - drag.start.x;
+      var dyE = local.y - drag.start.y;
+      /* The view mirrors x when flipped, so the drag must mirror back. */
+      var newX = drag.startPos.x + (drag.flip ? -dxE : dxE);
+      /* SVG y grows downward; height above floor grows upward. */
+      var newY = drag.startPos.y - dyE;
+      drag.item.x = snapToGrid(newX, grid);
+      drag.item.y = Math.max(0, snapToGrid(newY, grid));
+      renderCanvasOnly();
+      return;
+    }
+  }
+
+  function onCanvasPointerUp(ev) {
+    pointers.delete(ev.pointerId);
+    if (canvas.hasPointerCapture && canvas.hasPointerCapture(ev.pointerId)) {
+      canvas.releasePointerCapture(ev.pointerId);
+    }
+    if (pointers.size < 2) pinch = null;
+    canvas.classList.remove('is-dragging');
+
+    if (!drag) return;
+    var d = drag;
+    drag = null;
+
+    if (d.type === 'pan') {
+      if (!d.moved && sel.kind) { sel = { kind: null, id: null }; renderAll(); }
+      updateScaleBar();
+      return;
+    }
+    if (d.type === 'wall-tap') {
+      if (!d.moved) openWall(d.wallId);
+      return;
+    }
+    if (d.moved) { commit(); }
+    else {
+      /* A tap that changed nothing should not clog the undo stack. */
+      undoStack.pop();
+      updateUndoButtons();
+      renderAll();
+      /* Tapping something on a phone should show its settings — at peek, so
+         the thing you just tapped stays visible above the sheet. */
+      if (isMobile() && (sel.kind === 'item' || sel.kind === 'elev')) {
+        setDockTab('inspector');
+        setDockState('peek');
+      }
+    }
+  }
+
+  function onWheel(ev) {
+    ev.preventDefault();
+    var local = toLocal(ev.clientX, ev.clientY);
+    var factor = ev.deltaY > 0 ? 1.12 : 1 / 1.12;
+    zoomBy(factor, local.x, local.y);
+  }
+
+  function startPinch() {
+    var pts = Array.from(pointers.values());
+    pinch = {
+      dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y),
+      mid: { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 },
+      vb: { x: vb.x, y: vb.y, w: vb.w, h: vb.h },
+    };
+  }
+
+  function updatePinch() {
+    var pts = Array.from(pointers.values());
+    if (pts.length < 2 || !pinch) return;
+    var dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    var mid = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 };
+    if (!pinch.dist) return;
+
+    var scale = Math.min(Math.max(pinch.dist / dist, 0.2), 5);
+    var rect = canvas.getBoundingClientRect();
+    var nw = Math.min(Math.max(pinch.vb.w * scale, 600), 200000);
+    var nh = pinch.vb.h * (nw / pinch.vb.w);
+
+    /* Keep the point under the fingers' midpoint fixed, and follow the drag. */
+    var fx = (pinch.mid.x - rect.left) / rect.width;
+    var fy = (pinch.mid.y - rect.top) / rect.height;
+    var anchorX = pinch.vb.x + pinch.vb.w * fx;
+    var anchorY = pinch.vb.y + pinch.vb.h * fy;
+    var panX = (mid.x - pinch.mid.x) / rect.width * nw;
+    var panY = (mid.y - pinch.mid.y) / rect.height * nh;
+
+    vb.w = nw;
+    vb.h = nh;
+    vb.x = anchorX - nw * fx - panX;
+    vb.y = anchorY - nh * fy - panY;
+    applyViewBox();
+    updateScaleBar();
+  }
+
+  /* --- dragging a catalogue entry onto the canvas ----------------------- */
+
+  function startCatalogDrag(ev, entry) {
+    ev.preventDefault();
+    var btn = ev.currentTarget;
+    var startX = ev.clientX, startY = ev.clientY;
+    var created = null;
+    var moved = false;
+
+    try { btn.setPointerCapture(ev.pointerId); } catch (e) { /* not critical */ }
+
+    function move(e) {
+      if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) < 8) return;
+      moved = true;
+      var rect = canvas.getBoundingClientRect();
+      var over = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+      if (!created && over) created = placeEntry(entry, toLocal(e.clientX, e.clientY));
+      if (created) {
+        var local = toLocal(e.clientX, e.clientY);
+        var grid = design.view.snap ? design.view.grid : 0;
+        if (design.view.mode === 'elevation') {
+          var wall = currentWall();
+          var finish = wallFinishFor(design, wall.id);
+          var L = wallLength(wall);
+          var hFloor = currentFloor().ceilingHeight;
+          var dispX = finish.flip ? L - local.x - created.w : local.x - created.w / 2;
+          created.x = snapToGrid(dispX, grid);
+          created.y = Math.max(0, snapToGrid(hFloor - local.y - created.h / 2, grid));
+        } else {
+          created.x = snapToGrid(local.x, grid);
+          created.y = snapToGrid(local.y, grid);
+          if (design.view.snap) {
+            var s = snapItemToWalls(created, currentFloor().walls, DEFAULT_WALL_SNAP);
+            created.x = s.x; created.y = s.y;
+          }
+        }
+        renderCanvasOnly();
+      }
+    }
+
+    function up() {
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', up);
+      document.removeEventListener('pointercancel', up);
+      if (!created) {
+        /* A plain tap drops it into the middle of what you are looking at. */
+        placeEntry(entry, { x: vb.x + vb.w / 2, y: vb.y + vb.h / 2 });
+      }
+      commit();
+      /* Hand straight over to the new piece's settings, canvas still in view. */
+      if (isMobile()) { setDockTab('inspector'); setDockState('peek'); }
+    }
+
+    document.addEventListener('pointermove', move);
+    document.addEventListener('pointerup', up);
+    document.addEventListener('pointercancel', up);
+  }
+
+  /* Joinery is drawn as a solid volume; everything else hangs on the face. */
+  var CABINET_KINDS = { base: 1, wall: 1, bench: 1, shelf: 1 };
+  function elevGroupFor(kind) {
+    return CABINET_KINDS[kind] ? 'cabinets' : 'fixtures';
+  }
+
+  /* Everything already occupying the wall face, in canonical wall space. */
+  function occupiedOnWall(finish, wall) {
+    var out = finish.cabinets.concat(finish.fixtures);
+    var openings = wall.openings || [];
+    for (var i = 0; i < openings.length; i++) {
+      var o = openings[i];
+      out.push({ x: o.offset, y: o.sillHeight, w: o.width, h: o.headHeight - o.sillHeight });
+    }
+    return out;
+  }
+
+  /* Start at the middle of the wall, then step right past anything already
+     sitting at that height — otherwise tapping three things in a row stacks
+     them on one spot and only the last is visible, and joinery lands over a
+     window. Gives up back at the left edge if the wall is genuinely full. */
+  function freeSpotOnWall(occupied, entry, wallLen) {
+    var x = Math.max(0, Math.min(wallLen - entry.w, wallLen / 2 - entry.w / 2));
+    for (var guard = 0; guard < 40; guard++) {
+      var clash = null;
+      for (var i = 0; i < occupied.length; i++) {
+        var other = occupied[i];
+        var overlapX = x < other.x + other.w && x + entry.w > other.x;
+        var overlapY = entry.y < other.y + other.h && entry.y + entry.h > other.y;
+        if (overlapX && overlapY) { clash = other; break; }
+      }
+      if (!clash) break;
+      x = clash.x + clash.w + 20;
+      if (x + entry.w > wallLen) { x = 0; break; }
+    }
+    return x;
+  }
+
+  function placeEntry(entry, local) {
+    pushUndo();
+    if (design.view.mode === 'elevation') {
+      var wall = currentWall();
+      if (!wall) { undoStack.pop(); toast('Pick a wall first.'); return null; }
+      var finish = wallFinishFor(design, wall.id);
+      var L = wallLength(wall);
+      var group = elevGroupFor(entry.kind);
+      var item = createElevationItem(entry, freeSpotOnWall(occupiedOnWall(finish, wall), entry, L));
+      finish[group].push(item);
+      sel = { kind: 'elev', id: item.id };
+      return item;
+    }
+    var newItem = createItem(entry, snapToGrid(local.x, design.view.grid), snapToGrid(local.y, design.view.grid), currentFloor().id);
+    design.items.push(newItem);
+    sel = { kind: 'item', id: newItem.id };
+    return newItem;
+  }
+
+  /* ===================================================================== *
+   *  Keyboard
+   * ===================================================================== */
+
+  document.addEventListener('keydown', function (ev) {
+    var tag = (ev.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+
+    var mod = ev.ctrlKey || ev.metaKey;
+    if (mod && ev.key.toLowerCase() === 'z') {
+      ev.preventDefault();
+      if (ev.shiftKey) redo(); else undo();
+      return;
+    }
+    if (mod && ev.key.toLowerCase() === 'y') { ev.preventDefault(); redo(); return; }
+    if (mod && ev.key.toLowerCase() === 'd') { ev.preventDefault(); duplicateSelected(); return; }
+
+    if (ev.key === 'Escape') { sel = { kind: null, id: null }; renderAll(); return; }
+    if (ev.key === 'Delete' || ev.key === 'Backspace') {
+      if (sel.kind) { ev.preventDefault(); deleteSelected(); }
+      return;
+    }
+
+    var nudges = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    if (nudges[ev.key] && sel.kind) {
+      ev.preventDefault();
+      var step = (design.view.snap ? design.view.grid : 10) * (ev.shiftKey ? 10 : 1);
+      if (sel.kind === 'item') {
+        var item = itemById(sel.id);
+        if (!item) return;
+        pushUndo();
+        item.x += nudges[ev.key][0] * step;
+        item.y += nudges[ev.key][1] * step;
+        commit();
+      } else if (sel.kind === 'elev') {
+        var wall = currentWall();
+        if (!wall) return;
+        var finish = wallFinishFor(design, wall.id);
+        var found = findElevItem(finish, sel.id);
+        if (!found) return;
+        pushUndo();
+        found.item.x += nudges[ev.key][0] * step * (finish.flip ? -1 : 1);
+        found.item.y = Math.max(0, found.item.y - nudges[ev.key][1] * step);
+        commit();
+      }
+    }
+  });
+
+  /* ===================================================================== *
+   *  Files and export
+   * ===================================================================== */
+
+  function download(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function stamp() {
+    var d = new Date();
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
+  }
+
+  function saveToFile() {
+    download(new Blob([serializeDesign(design)], { type: 'application/json' }), 'decorator-' + stamp() + '.json');
+    toast('Design saved to a file.');
+  }
+
+  $('fileInput').addEventListener('change', function (ev) {
+    var file = ev.target.files && ev.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var loaded = deserializeDesign(String(reader.result));
+        pushUndo();
+        design = loaded;
+        sel = { kind: null, id: null };
+        buildFloorSelect();
+        fitFloor();
+        commit();
+        toast('Design loaded.');
+      } catch (e) {
+        toast(e.message);
+      }
+    };
+    reader.onerror = function () { toast('Could not read that file.'); };
+    reader.readAsText(file);
+    ev.target.value = '';
+  });
+
+  /* A clean copy of the drawing for export: no backdrop, no selection chrome. */
+  function exportableSvg() {
+    var clone = canvas.cloneNode(true);
+    var strip = clone.querySelectorAll('#l-backdrop, #l-overlay, #l-grid');
+    for (var i = 0; i < strip.length; i++) strip[i].parentNode.removeChild(strip[i]);
+
+    clone.setAttribute('xmlns', SVGNS);
+    clone.setAttribute('xmlns:xlink', XLINKNS);
+    var rect = canvas.getBoundingClientRect();
+    clone.setAttribute('width', Math.round(rect.width));
+    clone.setAttribute('height', Math.round(rect.height));
+
+    var bg = document.createElementNS(SVGNS, 'rect');
+    bg.setAttribute('x', vb.x); bg.setAttribute('y', vb.y);
+    bg.setAttribute('width', vb.w); bg.setAttribute('height', vb.h);
+    bg.setAttribute('fill', '#ffffff');
+    clone.insertBefore(bg, clone.firstChild);
+
+    return new XMLSerializer().serializeToString(clone);
+  }
+
+  function exportImage(kind) {
+    var source = exportableSvg();
+    var name = (design.view.mode === 'elevation' ? 'wall' : currentFloor().id) + '-' + stamp();
+
+    if (kind === 'svg') {
+      download(new Blob([source], { type: 'image/svg+xml' }), name + '.svg');
+      toast('SVG exported.');
+      return;
+    }
+
+    var rect = canvas.getBoundingClientRect();
+    var scale = 2;
+    var img = new Image();
+    img.onload = function () {
+      var c = document.createElement('canvas');
+      c.width = Math.round(rect.width * scale);
+      c.height = Math.round(rect.height * scale);
+      var cx = c.getContext('2d');
+      cx.fillStyle = '#ffffff';
+      cx.fillRect(0, 0, c.width, c.height);
+      cx.drawImage(img, 0, 0, c.width, c.height);
+      c.toBlob(function (blob) {
+        if (!blob) { toast('Could not build the PNG.'); return; }
+        download(blob, name + '.png');
+        toast('PNG exported.');
+      }, 'image/png');
+    };
+    img.onerror = function () { toast('Could not build the PNG.'); };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(source);
+  }
+
+  /* ===================================================================== *
+   *  Chrome: menu, dock, floors
+   * ===================================================================== */
+
+  var menuNode = null;
+  $('menuBtn').addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    if (menuNode) { closeMenu(); return; }
+    menuNode = h('div', { class: 'menu' }, [
+      h('button', { type: 'button', text: 'Save design to a file…', onclick: function () { closeMenu(); saveToFile(); } }),
+      h('button', { type: 'button', text: 'Load design from a file…', onclick: function () { closeMenu(); $('fileInput').click(); } }),
+      h('hr'),
+      h('button', { type: 'button', text: 'Export this view as PNG', onclick: function () { closeMenu(); exportImage('png'); } }),
+      h('button', { type: 'button', text: 'Export this view as SVG', onclick: function () { closeMenu(); exportImage('svg'); } }),
+      h('hr'),
+      h('button', { type: 'button', text: 'Reset walls to the original plan', onclick: function () { closeMenu(); resetWalls(); } }),
+      h('button', { type: 'button', text: 'Remove all furniture', onclick: function () { closeMenu(); clearFurniture(); } }),
+    ]);
+    $('menuBtn').parentNode.appendChild(menuNode);
+    $('menuBtn').setAttribute('aria-expanded', 'true');
+  });
+
+  function closeMenu() {
+    if (!menuNode) return;
+    menuNode.parentNode.removeChild(menuNode);
+    menuNode = null;
+    $('menuBtn').setAttribute('aria-expanded', 'false');
+  }
+  document.addEventListener('click', function () { closeMenu(); });
+
+  function buildFloorSelect() {
+    var s = $('floorSelect');
+    s.innerHTML = '';
+    for (var i = 0; i < design.house.floors.length; i++) {
+      var f = design.house.floors[i];
+      s.appendChild(h('option', { value: f.id, text: f.name }));
+    }
+    s.value = design.view.floorId;
+  }
+  $('floorSelect').addEventListener('change', function () { setFloor($('floorSelect').value); });
+
+  $('modePlan').addEventListener('click', function () { setMode('plan'); });
+  $('modeElev').addEventListener('click', function () { setMode('elevation'); });
+  $('undoBtn').addEventListener('click', undo);
+  $('redoBtn').addEventListener('click', redo);
+  $('zoomIn').addEventListener('click', function () { zoomBy(1 / 1.25); });
+  $('zoomOut').addEventListener('click', function () { zoomBy(1.25); });
+  $('zoomFit').addEventListener('click', function () {
+    if (design.view.mode === 'elevation') fitElevation(); else fitFloor();
+  });
+
+  /* --- the mobile drawer ------------------------------------------------ */
+
+  var dockTab = 'catalog';
+
+  function setDockTab(tab) {
+    dockTab = tab;
+    var tabs = $('dockTabs').querySelectorAll('button');
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].setAttribute('aria-pressed', String(tabs[i].getAttribute('data-tab') === tab));
+    }
+    $('panelCatalog').hidden = isMobile() && tab !== 'catalog';
+    $('panelInspector').hidden = isMobile() && tab !== 'inspector';
+    var bar = $('mobilebar').querySelectorAll('button');
+    for (var b = 0; b < bar.length; b++) {
+      var open = bar[b].getAttribute('data-open');
+      var active = dock.getAttribute('data-state') !== 'closed' &&
+        (open === tab || (tab === 'inspector' && (open === 'walls' || open === 'file')));
+      bar[b].setAttribute('aria-pressed', String(active));
+    }
+  }
+
+  function setDockState(state) {
+    dock.setAttribute('data-state', state);
+    dock.style.removeProperty('--dock-y');
+    setDockTab(dockTab);
+  }
+
+  $('dockTabs').addEventListener('click', function (ev) {
+    var btn = ev.target.closest('button[data-tab]');
+    if (!btn) return;
+    setDockTab(btn.getAttribute('data-tab'));
+  });
+
+  $('mobilebar').addEventListener('click', function (ev) {
+    var btn = ev.target.closest('button[data-open]');
+    if (!btn) return;
+    var what = btn.getAttribute('data-open');
+    var tab = what === 'catalog' ? 'catalog' : 'inspector';
+    var alreadyOpen = dock.getAttribute('data-state') !== 'closed' && dockTab === tab;
+    if (alreadyOpen) { setDockState('closed'); return; }
+    setDockTab(tab);
+    /* Browsing the catalogue wants room; adjusting the selected thing wants to
+       keep it on screen. Either way the handle drags to the other size. */
+    setDockState(what === 'inspector' ? 'peek' : 'full');
+    if (what === 'walls' || what === 'file') {
+      /* Both live in the inspector column; scroll to the one they asked for. */
+      var target = $('panelInspector').querySelectorAll('.section');
+      var wanted = what === 'file' ? target[target.length - 1] : null;
+      for (var i = 0; i < target.length && !wanted; i++) {
+        var head = target[i].querySelector('h2');
+        if (head && head.textContent.indexOf('Walls') === 0) wanted = target[i];
+      }
+      if (wanted) wanted.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+  });
+
+  /* Drag the handle to resize the sheet, then settle on the nearest state. */
+  (function () {
+    var handle = $('dockHandle');
+    var dragging = null;
+
+    handle.addEventListener('pointerdown', function (ev) {
+      if (!isMobile()) return;
+      ev.preventDefault();
+      handle.setPointerCapture(ev.pointerId);
+      dragging = { startY: ev.clientY, startPct: currentPct() };
+      dock.classList.add('is-dragging');
+    });
+
+    handle.addEventListener('pointermove', function (ev) {
+      if (!dragging) return;
+      var pct = dragging.startPct + (ev.clientY - dragging.startY) / dock.offsetHeight * 100;
+      dock.style.setProperty('--dock-y', Math.min(Math.max(pct, 0), 100) + '%');
+    });
+
+    function end(ev) {
+      if (!dragging) return;
+      var pct = dragging.startPct + (ev.clientY - dragging.startY) / dock.offsetHeight * 100;
+      dragging = null;
+      dock.classList.remove('is-dragging');
+      var states = [['full', 0], ['peek', 56], ['closed', 100]];
+      var best = states[0];
+      for (var i = 1; i < states.length; i++) {
+        if (Math.abs(pct - states[i][1]) < Math.abs(pct - best[1])) best = states[i];
+      }
+      setDockState(best[0]);
+    }
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', end);
+
+    function currentPct() {
+      var state = dock.getAttribute('data-state');
+      return state === 'full' ? 0 : (state === 'peek' ? 56 : 100);
+    }
+  })();
+
+  /* --- custom furniture dialog ----------------------------------------- */
+
+  var addDialog = $('addDialog');
+  $('addCustomBtn').addEventListener('click', function () {
+    $('addErr').textContent = '';
+    if (typeof addDialog.showModal === 'function') addDialog.showModal();
+    else addDialog.setAttribute('open', '');
+  });
+  $('addCancel').addEventListener('click', function () { addDialog.close(); });
+
+  $('addSave').addEventListener('click', function () {
+    var spec = {
+      name: $('fName').value,
+      w: $('fW').value,
+      d: $('fD').value,
+      h: $('fH').value,
+      shape: $('fShape').value,
+      color: $('fColor').value,
+    };
+    pushUndo();
+    var res = addCustomCatalogEntry(design, spec);
+    if (!res.ok) {
+      undoStack.pop();
+      updateUndoButtons();
+      $('addErr').textContent = res.error;
+      return;
+    }
+    var placed = createItem(res.entry, snapToGrid(vb.x + vb.w / 2, design.view.grid), snapToGrid(vb.y + vb.h / 2, design.view.grid), currentFloor().id);
+    design.items.push(placed);
+    sel = { kind: 'item', id: placed.id };
+    addDialog.close();
+    if (design.view.mode !== 'plan') setMode('plan');
+    commit();
+    toast(res.entry.name + ' added — it is in the catalogue for next time.');
+  });
+
+  /* ===================================================================== *
+   *  Boot
+   * ===================================================================== */
+
+  var ro = new ResizeObserver(function () {
+    syncAspect(true);
+    updateScaleBar();
+    renderCanvasOnly();
+  });
+  ro.observe(canvas);
+
+  window.addEventListener('orientationchange', function () {
+    setTimeout(function () { syncAspect(true); renderCanvasOnly(); }, 220);
+  });
+
+  var mq = window.matchMedia('(max-width: 899px)');
+  (mq.addEventListener ? mq.addEventListener.bind(mq, 'change') : mq.addListener.bind(mq))(function () {
+    setDockTab(dockTab);
+    if (!isMobile()) {
+      $('panelCatalog').hidden = false;
+      $('panelInspector').hidden = false;
+    }
+    renderAll();
+  });
+
+  buildFloorSelect();
+  applyViewBox();
+  fitFloor();
+  updateUndoButtons();
+  setDockTab('catalog');
+  setDockState('closed');
+  renderAll();
+})();
+</script>
+<script src="js/pwa.js?v=17891724"></script>
+</body>
+</html>
